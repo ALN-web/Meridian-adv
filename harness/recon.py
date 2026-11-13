@@ -74,7 +74,12 @@ async def main(headless: bool) -> None:
         client = PortalClient(settings, ConsoleHumanGate(), screenshot_dir=OUT, download_dir=OUT / "downloads")
         await client.start(browser)
         try:
-            await client.login()
+            try:
+                await client.login()
+            except Exception:
+                path = await client.debug_dump("login_failure")
+                print(f"\nLogin did not finish. Diagnostics saved to {OUT}/ ({path}). Tell Claude 'recon failed'.")
+                raise
             await client.goto("/Default.aspx")
             home = {"screenshot": str(await client.screenshot("recon_home")), "inventory": await client.page.evaluate(_INVENTORY_JS)}
             report = {"home": home, "areas": {}}

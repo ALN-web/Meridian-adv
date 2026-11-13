@@ -19,9 +19,18 @@ class HumanGate(Protocol):
 
 
 class ConsoleHumanGate:
+    async def _ask(self, prompt: str) -> str:
+        try:
+            return (await asyncio.to_thread(input, prompt)).strip()
+        except EOFError:
+            # Terminal closed or not interactive: stop cleanly instead of crashing.
+            from meridian.portal.errors import HumanNeeded
+
+            raise HumanNeeded("no_terminal", "run this script in an interactive terminal") from None
+
     async def request_otp(self) -> str:
-        return (await asyncio.to_thread(input, "\n[HUMAN] Portal asks for a one-time password. "
-                                               "Open the operator inbox yourself and type it here: ")).strip()
+        return await self._ask("\n[HUMAN] Portal asks for a one-time password. "
+                               "Open the operator inbox yourself and type it here: ")
 
     async def request_captcha(self) -> None:
-        await asyncio.to_thread(input, "\n[HUMAN] CAPTCHA shown. Solve it in the browser window, then press Enter: ")
+        await self._ask("\n[HUMAN] CAPTCHA shown. Solve it in the browser window, then press Enter: ")

@@ -12,6 +12,7 @@ has been run against the live portal; adjust ``MENU`` and selectors from its out
 """
 from __future__ import annotations
 
+import json
 import logging
 import re
 from dataclasses import dataclass, field
@@ -40,7 +41,13 @@ MENU = {
 }
 
 # Buttons we may click to clear a blocking notice. Anything else on an overlay is ignored.
-SAFE_DISMISS = re.compile(r"^\s*(ok|okay|close|continue|dismiss|got it|acknowledge|i understand|×|x)\s*$", re.I)
+SAFE_DISMISS = re.compile(
+    r"^\s*(ok|okay|close|close notice|close window|continue|dismiss|got it|acknowledge|i understand|proceed|"
+    r"skip|not now|later|remind me later|back|return|hide|×|✕|✖|x)\s*[.!]?\s*$",
+    re.I,
+)
+# Never click these on a notice, whatever the notice says.
+UNSAFE_LABEL = re.compile(r"submit|raise|dispute|delete|cancel invoice|confirm|pay|approve|agree|accept|logout|log out|sign out", re.I)
 
 # JS that extracts every grid on the page as a list of {header: cell text} rows.
 _GRIDS_JS = """
@@ -61,17 +68,49 @@ _GRIDS_JS = """
 }).filter(Boolean)
 """
 
-_SNAPSHOT_JS = """
-() => ({
+OVERLAY_SELECTOR = "#ovl, .modal, [role=dialog], [role=alertdialog]"
+
+# A hidden overlay (display:none, zero size, transparent) must not count as blocking.
+_IS_SHOWN_JS = """
+const isShown = (e) => {
+  for (let n = e; n && n.nodeType === 1; n = n.parentElement) {
+    const cs = getComputedStyle(n);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) return false;
+  }
+  const r = e.getBoundingClientRect();
+  return r.width > 0 && r.height > 0;
+};
+"""
+
+_SNAPSHOT_JS = "() => { const OVERLAY_SEL = '" + OVERLAY_SELECTOR + "';" + _IS_SHOWN_JS + " return (" + """{
   title: document.title || '',
   text: (document.body ? document.body.innerText : '').slice(0, 5000),
-  has_overlay: !!Array.from(document.querySelectorAll('#ovl, .modal, [role=dialog], [role=alertdialog]'))
-      .find(e => e.offsetParent !== null || getComputedStyle(e).position === 'fixed'),
+  has_overlay: !!Array.from(document.querySelectorAll(OVERLAY_SEL)).find(isShown),
   has_password_field: !!document.querySelector('input[type=password]'),
   has_otp_field: !!document.querySelector('input[name*=otp i], input[id*=otp i], input[autocomplete=one-time-code]'),
   has_captcha: !!document.querySelector('[class*=captcha i], [id*=captcha i], iframe[src*=captcha i], img[src*=captcha i]'),
-})
+}); }
 """
+
+# Everything clickable inside visible overlays, with the label a person would read.
+_OVERLAY_INFO_JS = "() => { const OVERLAY_SEL = '" + OVERLAY_SELECTOR + "';" + _IS_SHOWN_JS + """
+  const shown = Array.from(document.querySelectorAll(OVERLAY_SEL)).filter(isShown);
+  const clickSel = 'button, a, input[type=button], input[type=submit], [role=button], [onclick], [aria-label], [title], [class*=close i], [id*=close i]';
+  return shown.map((o, oi) => ({
+    text: (o.innerText || '').slice(0, 400),
+    controls: Array.from(o.querySelectorAll(clickSel)).filter(isShown).map((c, ci) => {
+      c.setAttribute('data-meridian-ctl', oi + '-' + ci);
+      return {
+        key: oi + '-' + ci,
+        tag: c.tagName,
+        label: ((c.tagName === 'INPUT' ? c.value : c.innerText) || c.getAttribute('aria-label') || c.getAttribute('title') || '').trim().slice(0, 60),
+        cls: (c.className && c.className.baseVal === undefined ? c.className : '').toString().slice(0, 60),
+        id: c.id || '',
+        type: c.type || '',
+      };
+    }),
+  }));
+}"""
 
 
 # Mark cells that hold a person's name or phone so screenshots can mask them.
@@ -142,6 +181,7 @@ class PortalClient:
         self.page = None
         self._ctx = None
         self._login_failures = 0
+        self.notice_wait_s = 15  # how long to wait for a notice that hides itself
 
     # ------------------------------------------------------------------ lifecycle
 
@@ -174,7 +214,8 @@ class PortalClient:
                 return state
             if state is PageState.NOTICE:
                 if not await self._dismiss_overlay():
-                    raise PageNotUnderstood("blocking notice with no safe dismiss button")
+                    labels = [c["label"] for o in await self.overlay_info() for c in o["controls"]]
+                    raise PageNotUnderstood(f"blocking notice could not be cleared safely; controls seen: {labels}")
                 continue
             if state is PageState.RATE_LIMITED:
                 raise RateLimited(self.page.url)
@@ -192,23 +233,84 @@ class PortalClient:
                 if expect_login:
                     return state
                 raise SessionExpired(self.page.url)
+        await self.debug_dump("page_did_not_settle")
         raise PageNotUnderstood(f"page did not settle at {self.page.url}")
 
+    async def overlay_info(self) -> list[dict]:
+        return await self.page.evaluate(_OVERLAY_INFO_JS)
+
+    async def _overlay_gone(self) -> bool:
+        return not (await self.snapshot()).has_overlay
+
     async def _dismiss_overlay(self) -> bool:
-        """Click only allow-listed buttons. Overlay text is never treated as an instruction."""
-        candidates = self.page.locator(
-            "#ovl button, #ovl input[type=button], #ovl input[type=submit], #ovl a, "
-            "[role=dialog] button, [role=alertdialog] button, .modal button"
-        )
-        for i in range(await candidates.count()):
-            el = candidates.nth(i)
-            label = (await el.inner_text() if await el.evaluate("e => e.tagName !== 'INPUT'") else await el.get_attribute("value")) or ""
-            if SAFE_DISMISS.match(label):
-                await self.limiter.wait()
-                await el.click()
-                self.log.add("dismiss_notice", "ok", label=label.strip())
+        """Clear a blocking notice without obeying it.
+
+        Order: allow-listed button -> close-icon style control -> Escape -> wait for a timed notice.
+        Overlay text is never treated as an instruction; unsafe labels are never clicked.
+        """
+        overlays = await self.overlay_info()
+        controls = [c for o in overlays for c in o["controls"]]
+
+        def is_close_icon(c: dict) -> bool:
+            hint = f"{c['cls']} {c['id']} {c['label']}".lower()
+            return c["label"] in {"", "×", "✕", "✖", "x"} and ("close" in hint or "dismiss" in hint or c["label"])
+
+        ordered = [c for c in controls if SAFE_DISMISS.match(c["label"])] + [c for c in controls if is_close_icon(c)]
+        for c in ordered:
+            if UNSAFE_LABEL.search(c["label"]):
+                continue
+            await self.limiter.wait()
+            try:
+                await self.page.locator(f"[data-meridian-ctl='{c['key']}']").click(timeout=5_000)
+            except Exception:
+                continue
+            await self.page.wait_for_timeout(500)
+            if await self._overlay_gone():
+                self.log.add("dismiss_notice", "ok", how="click", label=c["label"] or c["cls"] or c["id"])
                 return True
+
+        await self.page.keyboard.press("Escape")
+        await self.page.wait_for_timeout(500)
+        if await self._overlay_gone():
+            self.log.add("dismiss_notice", "ok", how="escape")
+            return True
+
+        # Some notices disappear by themselves after a few seconds.
+        for _ in range(self.notice_wait_s):
+            await self.page.wait_for_timeout(1_000)
+            if await self._overlay_gone():
+                self.log.add("dismiss_notice", "ok", how="waited")
+                return True
+
+        self.log.add("dismiss_notice", "failed", controls=[c["label"] for c in controls],
+                     text=(overlays[0]["text"][:200] if overlays else ""))
+        await self.debug_dump("notice_not_dismissed")
         return False
+
+    async def debug_dump(self, tag: str) -> Path | None:
+        """Masked screenshot + a JSON description of the page, for diagnosing failures."""
+        try:
+            stamp = f"debug_{tag}_{self.log.steps}"
+            shot = await self.screenshot(stamp)
+            info = {
+                "url": self.page.url,
+                "title": await self.page.title(),
+                "snapshot": (await self.snapshot()).__dict__,
+                "overlays": await self.overlay_info(),
+                "forms": await self.page.evaluate(
+                    "() => Array.from(document.querySelectorAll('input, select, button, a')).slice(0, 60).map(e => "
+                    "({tag: e.tagName, type: e.type || '', id: e.id, name: e.name || '', "
+                    "label: ((e.tagName === 'INPUT' ? (e.type === 'password' ? '' : e.value) : e.innerText) || '').trim().slice(0, 60)}))"
+                ),
+            }
+            info["snapshot"]["text"] = info["snapshot"]["text"][:1500]
+            path = self.screenshot_dir / f"{stamp}.json"
+            path.write_text(json.dumps(info, indent=2, default=str), encoding="utf-8")
+            log.info("debug snapshot saved: %s and %s", shot, path)
+            return path
+        except Exception as exc:  # diagnostics must never mask the real failure
+            log.warning("debug dump failed: %s", exc)
+            return None
 
     # ------------------------------------------------------------------ login
 
@@ -242,13 +344,23 @@ class PortalClient:
         code = await self.human.request_otp()
         if not code:
             raise HumanNeeded("otp", "no code provided")
-        field_ = self.page.locator(
-            "input[name*=otp i], input[id*=otp i], input[autocomplete=one-time-code], input[type=text]:visible"
-        ).first
+        field_ = self.page.locator("input[name*=otp i], input[id*=otp i], input[autocomplete=one-time-code]")
+        if await field_.count() == 0:
+            field_ = self.page.locator("input[type=text]:visible, input[type=number]:visible, input[type=password]:visible")
+        if await field_.count() == 0:
+            await self.debug_dump("otp_field_not_found")
+            raise PageNotUnderstood("OTP page without an input field")
+        field_ = field_.first
         await field_.fill(code)
         await self.limiter.wait()
-        await self.page.locator("input[type=submit], button[type=submit], button").first.click()
-        await self.page.wait_for_load_state("domcontentloaded")
+        form = field_.locator("xpath=ancestor::form[1]")
+        scope = form if await form.count() else self.page
+        submit = scope.locator("input[type=submit], button[type=submit], button")
+        async with self.page.expect_navigation(wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS):
+            if await submit.count():
+                await submit.first.click()
+            else:
+                await field_.press("Enter")
         self.log.add("otp", "submitted")
 
     # ------------------------------------------------------------------ navigation + reading
