@@ -69,6 +69,20 @@ invoice_billed     = invoice total − credit notes
 - **missing in portal** — Meridian delivered on the lane in the month, but it's on no invoice (uses **delivery** month). Not disputed.
 - **Dispute** — one per mismatched invoice where billed > expected + ₹500, with all reasons and expected amount, **after human approval**, skipping invoices that already have one.
 
+### Using the engine
+
+The portal layer collects plain data; the engine decides. No browser, no LLM inside.
+
+```python
+from meridian.reconcile import reconcile_invoice, propose_dispute, missing_in_portal
+
+result = reconcile_invoice(invoice, shipments, reference_data)   # match | mismatch | cancelled
+proposal = propose_dispute(result)                               # None, or a dispute awaiting human approval
+result.to_output()                                               # dict for the task result
+```
+
+`reference_data` holds the rate card, monthly fuel surcharge, PODs, every invoice seen on the portal (for duplicate detection) and invoices that already have a dispute.
+
 ### Edge cases
 - Credit notes reduce an invoice. A shipment on a cancelled invoice is not a duplicate.
 - Portal formats: dates like `14-Oct-26`, amounts like `Rs. 1,23,456.00` (Indian grouping).
@@ -176,7 +190,8 @@ Tracked in [docs/decisions.md](docs/decisions.md).
 ## Roadmap
 
 - [ ] Day 1 — repo, Docker, spend limits; thinnest end-to-end path (log in, list one invoice)
-- [ ] Day 2 — reconciliation engine + core path on public tasks
+- [x] Reconciliation engine (`src/meridian/reconcile/`) — all rules, expected amounts, dispute proposals, missing-in-portal; unit-tested
+- [ ] Day 2 — core path on public tasks
 - [ ] Day 3 — "portal that fights back": retries, resume, OTP, popups; first full test run
 - [ ] Day 4 — safety (dispute gate), failure handling, Langfuse tracing
 - [ ] Day 5 — evaluation page, README, stretch goal, demo rehearsal

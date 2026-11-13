@@ -1,6 +1,34 @@
-"""Deterministic reconciliation engine. The LLM never does arithmetic or decides matches.
+"""Deterministic reconciliation engine. The LLM never does arithmetic or decides matches."""
+from meridian.reconcile.engine import (
+    DisputeProposal,
+    InvoiceResult,
+    LineResult,
+    MissingReferenceData,
+    missing_in_portal,
+    propose_dispute,
+    reconcile_invoice,
+)
+from meridian.reconcile.types import (
+    BillingRecord,
+    Invoice,
+    InvoiceLine,
+    Pod,
+    RateCardEntry,
+    ReferenceData,
+)
 
-TODO (Day 2): implement the rules in the documented order:
-shipment_unknown -> duplicate_billing -> no_pod (short-circuit, line expected = 0), then
-weight_over, rate_wrong, surcharge_wrong, detention_unjustified; math_error at invoice level.
-"""
+__all__ = [
+    "BillingRecord",
+    "DisputeProposal",
+    "Invoice",
+    "InvoiceLine",
+    "InvoiceResult",
+    "LineResult",
+    "MissingReferenceData",
+    "Pod",
+    "RateCardEntry",
+    "ReferenceData",
+    "missing_in_portal",
+    "propose_dispute",
+    "reconcile_invoice",
+]
