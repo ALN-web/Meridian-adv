@@ -154,6 +154,14 @@ playwright install chromium
 pytest
 ```
 
+Operator screen (demo mode works without the portal):
+
+```bash
+streamlit run src/meridian/ui/app.py
+```
+
+Pick an example task in the sidebar → **Run task** → type any 6 digits when the OTP box appears → approve or reject disputes in **Approvals** → see **Results**. Demo mode uses the real planner, rules engine and approval flow on a simulated portal (planted errors, one session expiry). Put `meridian-shipments.csv` in `data/` to use Meridian's real records.
+
 Portal recon (read-only; you type the OTP yourself from the operator inbox):
 
 ```bash
@@ -200,6 +208,7 @@ Tracked in [docs/decisions.md](docs/decisions.md).
 - [ ] Day 1 — repo, Docker, spend limits; thinnest end-to-end path (log in, list one invoice)
 - [x] Reconciliation engine (`src/meridian/reconcile/`) — all rules, expected amounts, dispute proposals, missing-in-portal; unit-tested
 - [x] Portal client foundation (`src/meridian/portal/`) — login, OTP/CAPTCHA hand-off, page-state detection, safe notice dismissal, retries with backoff, re-login on expiry, 2 req/s limiter, layout-tolerant table parsing, masked screenshots
+- [x] Operator screen (`streamlit run src/meridian/ui/app.py`) — plain-English task → plan, live step log, OTP box, dispute approvals, results, evaluation summary; demo mode on a simulated portal
 - [ ] Run `harness/recon.py` against the live portal and tune selectors
 - [ ] Day 2 — core path on public tasks
 - [ ] Day 3 — "portal that fights back": retries, resume, OTP, popups; first full test run
