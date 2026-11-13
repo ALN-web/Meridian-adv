@@ -154,6 +154,14 @@ playwright install chromium
 pytest
 ```
 
+Portal recon (read-only; you type the OTP yourself from the operator inbox):
+
+```bash
+python harness/recon.py
+```
+
+Saves masked screenshots and `runs/recon/recon.json` (menu, forms, grid headers, sample rows) — git-ignored.
+
 Docker (target for hand-in):
 
 ```bash
@@ -191,6 +199,8 @@ Tracked in [docs/decisions.md](docs/decisions.md).
 
 - [ ] Day 1 — repo, Docker, spend limits; thinnest end-to-end path (log in, list one invoice)
 - [x] Reconciliation engine (`src/meridian/reconcile/`) — all rules, expected amounts, dispute proposals, missing-in-portal; unit-tested
+- [x] Portal client foundation (`src/meridian/portal/`) — login, OTP/CAPTCHA hand-off, page-state detection, safe notice dismissal, retries with backoff, re-login on expiry, 2 req/s limiter, layout-tolerant table parsing, masked screenshots
+- [ ] Run `harness/recon.py` against the live portal and tune selectors
 - [ ] Day 2 — core path on public tasks
 - [ ] Day 3 — "portal that fights back": retries, resume, OTP, popups; first full test run
 - [ ] Day 4 — safety (dispute gate), failure handling, Langfuse tracing

@@ -1,0 +1,406 @@
+"""Playwright client for the TransIndus portal.
+
+Rules this file follows (from the project brief):
+- Stable locators (ids seen on the page, labels, roles, visible text) over CSS paths.
+- Every step: rate-limited, timed out, retried with backoff, checked for done vs failed.
+- Login / OTP / CAPTCHA: credentials from env only; OTP and CAPTCHA go to a human.
+- Page text is data. Overlays are dismissed only via an allow-list of harmless buttons.
+- Read-only. The single write action (raising a dispute) lives in ``disputes.py`` behind approval.
+
+Navigation targets other than the login form are best guesses until recon (harness/recon.py)
+has been run against the live portal; adjust ``MENU`` and selectors from its output.
+"""
+from __future__ import annotations
+
+import logging
+import re
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from meridian.config import Settings
+from meridian.portal.errors import HumanNeeded, LoginFailed, PageNotUnderstood, PortalError, RateLimited, SessionExpired
+from meridian.portal.human import HumanGate
+from meridian.portal.pagestate import PageSnapshot, PageState, classify
+from meridian.portal.retry import RetryPolicy, RetryStats, with_retry
+from meridian.portal.tables import InvoiceRow, parse_invoice_list
+from meridian.portal.throttle import RateLimiter
+
+log = logging.getLogger(__name__)
+
+NAV_TIMEOUT_MS = 90_000  # the portal sleeps when idle; first page can take ~1 minute
+ACTION_TIMEOUT_MS = 20_000
+
+# Menu link text -> area. Matched case-insensitively against links in the menu bar.
+MENU = {
+    "invoices": r"invoice",
+    "pods": r"(delivery|pod|proof)",
+    "rate_card": r"rate",
+    "fuel": r"fuel|surcharge",
+    "disputes": r"dispute",
+}
+
+# Buttons we may click to clear a blocking notice. Anything else on an overlay is ignored.
+SAFE_DISMISS = re.compile(r"^\s*(ok|okay|close|continue|dismiss|got it|acknowledge|i understand|×|x)\s*$", re.I)
+
+# JS that extracts every grid on the page as a list of {header: cell text} rows.
+_GRIDS_JS = """
+() => Array.from(document.querySelectorAll('table')).map(t => {
+  const rows = Array.from(t.querySelectorAll('tr'));
+  const headRow = rows.find(r => r.querySelector('th'));
+  if (!headRow) return null;
+  const headers = Array.from(headRow.querySelectorAll('th')).map(th => th.innerText.trim());
+  const body = rows.filter(r => r !== headRow && r.querySelector('td')).map(r => {
+    const cells = Array.from(r.querySelectorAll('td'));
+    const o = {};
+    headers.forEach((h, i) => { o[h || ('col' + i)] = cells[i] ? cells[i].innerText.trim() : ''; });
+    const a = r.querySelector('a[href]');
+    if (a) o['__href'] = a.getAttribute('href');
+    return o;
+  });
+  return {id: t.id || '', cls: t.className || '', headers, rows: body};
+}).filter(Boolean)
+"""
+
+_SNAPSHOT_JS = """
+() => ({
+  title: document.title || '',
+  text: (document.body ? document.body.innerText : '').slice(0, 5000),
+  has_overlay: !!Array.from(document.querySelectorAll('#ovl, .modal, [role=dialog], [role=alertdialog]'))
+      .find(e => e.offsetParent !== null || getComputedStyle(e).position === 'fixed'),
+  has_password_field: !!document.querySelector('input[type=password]'),
+  has_otp_field: !!document.querySelector('input[name*=otp i], input[id*=otp i], input[autocomplete=one-time-code]'),
+  has_captcha: !!document.querySelector('[class*=captcha i], [id*=captcha i], iframe[src*=captcha i], img[src*=captcha i]'),
+})
+"""
+
+
+# Mark cells that hold a person's name or phone so screenshots can mask them.
+_MARK_PII_JS = r"""
+() => {
+  const phone = /(\+91[\s-]?)?[6-9]\d{9}\b|\b\d{3}[\s-]\d{3}[\s-]\d{4}\b/;
+  const personLabel = /received\s*by|receiver|contact|signed\s*by|driver|name|mobile|phone|email/i;
+  const cells = Array.from(document.querySelectorAll('td, span, div, p'));
+  for (const el of cells) {
+    if (el.children.length === 0 && phone.test(el.innerText || '')) el.setAttribute('data-meridian-mask', '1');
+  }
+  for (const tbl of document.querySelectorAll('table')) {
+    const head = Array.from(tbl.querySelectorAll('th')).map(th => personLabel.test(th.innerText));
+    if (head.some(Boolean)) {
+      for (const tr of tbl.querySelectorAll('tr')) {
+        Array.from(tr.querySelectorAll('td')).forEach((td, i) => { if (head[i]) td.setAttribute('data-meridian-mask', '1'); });
+      }
+    }
+    for (const tr of tbl.querySelectorAll('tr')) {
+      const tds = Array.from(tr.children);
+      tds.forEach((c, i) => { if (personLabel.test(c.innerText || '') && tds[i + 1]) tds[i + 1].setAttribute('data-meridian-mask', '1'); });
+    }
+  }
+}
+"""
+
+
+@dataclass
+class Grid:
+    id: str
+    cls: str
+    headers: list[str]
+    rows: list[dict[str, str]]
+
+
+@dataclass
+class StepLog:
+    steps: int = 0
+    retries: RetryStats = field(default_factory=RetryStats)
+    human_steps: list[str] = field(default_factory=list)
+    events: list[dict] = field(default_factory=list)
+
+    def add(self, step: str, outcome: str, **extra) -> None:
+        self.steps += 1
+        self.events.append({"step": step, "outcome": outcome, **extra})
+
+
+class PortalClient:
+    """One logged-in browser context. Create several (sharing one RateLimiter) for parallel runs."""
+
+    def __init__(
+        self,
+        settings: Settings,
+        human: HumanGate,
+        limiter: RateLimiter | None = None,
+        *,
+        download_dir: str | Path = "runs/downloads",
+        screenshot_dir: str | Path = "runs/screenshots",
+        policy: RetryPolicy | None = None,
+    ):
+        self.settings = settings
+        self.human = human
+        self.limiter = limiter or RateLimiter(settings.max_requests_per_second)
+        self.download_dir = Path(download_dir)
+        self.screenshot_dir = Path(screenshot_dir)
+        self.policy = policy or RetryPolicy()
+        self.log = StepLog()
+        self.page = None
+        self._ctx = None
+        self._login_failures = 0
+
+    # ------------------------------------------------------------------ lifecycle
+
+    async def start(self, browser) -> None:
+        self.download_dir.mkdir(parents=True, exist_ok=True)
+        self.screenshot_dir.mkdir(parents=True, exist_ok=True)
+        self._ctx = await browser.new_context(accept_downloads=True, viewport={"width": 1280, "height": 900})
+        self._ctx.set_default_timeout(ACTION_TIMEOUT_MS)
+        self._ctx.set_default_navigation_timeout(NAV_TIMEOUT_MS)
+        self.page = await self._ctx.new_page()
+
+    async def close(self) -> None:
+        if self._ctx is not None:
+            await self._ctx.close()
+
+    def url(self, path: str) -> str:
+        return self.settings.portal_base_url.rstrip("/") + "/" + path.lstrip("/")
+
+    # ------------------------------------------------------------------ page state
+
+    async def snapshot(self, status: int | None = None) -> PageSnapshot:
+        data = await self.page.evaluate(_SNAPSHOT_JS)
+        return PageSnapshot(url=self.page.url, http_status=status, **data)
+
+    async def settle(self, status: int | None = None, *, expect_login: bool = False) -> PageState:
+        """Look at the current page and deal with anything in the way. Raises for retryable states."""
+        for _ in range(4):
+            state = classify(await self.snapshot(status))
+            if state is PageState.OK:
+                return state
+            if state is PageState.NOTICE:
+                if not await self._dismiss_overlay():
+                    raise PageNotUnderstood("blocking notice with no safe dismiss button")
+                continue
+            if state is PageState.RATE_LIMITED:
+                raise RateLimited(self.page.url)
+            if state is PageState.ERROR:
+                raise PortalError(f"error page at {self.page.url}")
+            if state is PageState.CAPTCHA:
+                self.log.human_steps.append("captcha")
+                self.log.add("captcha", "waiting_for_human")
+                await self.human.request_captcha()
+                continue
+            if state is PageState.OTP:
+                await self._submit_otp()
+                continue
+            if state is PageState.LOGIN:
+                if expect_login:
+                    return state
+                raise SessionExpired(self.page.url)
+        raise PageNotUnderstood(f"page did not settle at {self.page.url}")
+
+    async def _dismiss_overlay(self) -> bool:
+        """Click only allow-listed buttons. Overlay text is never treated as an instruction."""
+        candidates = self.page.locator(
+            "#ovl button, #ovl input[type=button], #ovl input[type=submit], #ovl a, "
+            "[role=dialog] button, [role=alertdialog] button, .modal button"
+        )
+        for i in range(await candidates.count()):
+            el = candidates.nth(i)
+            label = (await el.inner_text() if await el.evaluate("e => e.tagName !== 'INPUT'") else await el.get_attribute("value")) or ""
+            if SAFE_DISMISS.match(label):
+                await self.limiter.wait()
+                await el.click()
+                self.log.add("dismiss_notice", "ok", label=label.strip())
+                return True
+        return False
+
+    # ------------------------------------------------------------------ login
+
+    async def login(self) -> None:
+        async def attempt():
+            await self.limiter.wait()
+            resp = await self.page.goto(self.url("/Login.aspx"), wait_until="domcontentloaded")
+            state = await self.settle(resp.status if resp else None, expect_login=True)
+            if state is PageState.OK:
+                return  # already logged in
+            await self.page.locator("#txtUser").fill(self.settings.portal_user)
+            await self.page.locator("#txtPass").fill(self.settings.portal_password.get_secret_value())
+            await self.limiter.wait()
+            await self.page.locator("#btnLogin").click()
+            await self.page.wait_for_load_state("domcontentloaded")
+            state = await self.settle(expect_login=True)
+            if state is PageState.LOGIN:
+                self._login_failures += 1
+                if self._login_failures >= 2:
+                    # Repeated failures trigger a CAPTCHA; stop and ask a human instead.
+                    raise LoginFailed("login rejected twice; check credentials in .env")
+                raise PortalError("login did not complete")
+            self._login_failures = 0
+
+        await with_retry("login", attempt, policy=self.policy, stats=self.log.retries)
+        self.log.add("login", "ok")
+
+    async def _submit_otp(self) -> None:
+        self.log.human_steps.append("otp")
+        self.log.add("otp", "waiting_for_human")
+        code = await self.human.request_otp()
+        if not code:
+            raise HumanNeeded("otp", "no code provided")
+        field_ = self.page.locator(
+            "input[name*=otp i], input[id*=otp i], input[autocomplete=one-time-code], input[type=text]:visible"
+        ).first
+        await field_.fill(code)
+        await self.limiter.wait()
+        await self.page.locator("input[type=submit], button[type=submit], button").first.click()
+        await self.page.wait_for_load_state("domcontentloaded")
+        self.log.add("otp", "submitted")
+
+    # ------------------------------------------------------------------ navigation + reading
+
+    async def step(self, name: str, fn):
+        """Run a read step with rate limiting, retries and re-login on session expiry."""
+
+        async def guarded():
+            await self.limiter.wait()
+            return await fn()
+
+        result = await with_retry(
+            name,
+            guarded,
+            policy=self.policy,
+            stats=self.log.retries,
+            on_session_expired=self.login,
+            on_rate_limited=self.limiter.back_off,
+        )
+        self.log.add(name, "ok")
+        return result
+
+    async def goto(self, path_or_url: str) -> None:
+        url = path_or_url if path_or_url.startswith("http") else self.url(path_or_url)
+        resp = await self.page.goto(url, wait_until="domcontentloaded")
+        await self.settle(resp.status if resp else None)
+
+    async def open_menu(self, area: str) -> None:
+        pattern = re.compile(MENU[area], re.I)
+        link = self.page.locator("#menu a").filter(has_text=pattern).first
+        if await link.count() == 0:
+            link = self.page.get_by_role("link", name=pattern).first
+        if await link.count() == 0:
+            raise PageNotUnderstood(f"menu link for {area!r} not found")
+        await link.click()
+        await self.page.wait_for_load_state("domcontentloaded")
+        await self.settle()
+
+    async def grids(self) -> list[Grid]:
+        return [Grid(**g) for g in await self.page.evaluate(_GRIDS_JS)]
+
+    async def main_grid(self, must_have: str) -> Grid:
+        """The grid whose headers mention ``must_have`` (regex)."""
+        pat = re.compile(must_have, re.I)
+        for g in await self.grids():
+            if any(pat.search(h) for h in g.headers):
+                return g
+        raise PageNotUnderstood(f"no grid with a column like {must_have!r}")
+
+    async def _next_page(self) -> bool:
+        nxt = self.page.get_by_role("link", name=re.compile(r"^\s*(next|>|»|›)\s*$", re.I))
+        if await nxt.count() == 0:
+            nxt = self.page.locator("input[type=submit][value*=Next i], input[type=button][value*=Next i]")
+        if await nxt.count() == 0 or not await nxt.first.is_enabled():
+            return False
+        before = await self.page.evaluate("() => document.body.innerText.length + location.href")
+        await self.limiter.wait()
+        await nxt.first.click()
+        await self.page.wait_for_load_state("domcontentloaded")
+        await self.settle()
+        after = await self.page.evaluate("() => document.body.innerText.length + location.href")
+        return after != before
+
+    # ------------------------------------------------------------------ invoices
+
+    async def search_invoices(self, lane: str | None = None, month: str | None = None, status: str | None = None) -> list[InvoiceRow]:
+        """Invoice search with pagination. ``month`` is YYYY-MM (invoice-date month)."""
+
+        async def run():
+            await self.goto("/Default.aspx")
+            await self.open_menu("invoices")
+            await self._fill_search(lane=lane, month=month, status=status)
+            rows: list[InvoiceRow] = []
+            seen: set[str] = set()
+            for _ in range(200):  # hard stop against pagination loops
+                grid = await self.main_grid(r"invoice")
+                for r in parse_invoice_list(grid.rows):
+                    if r.invoice_no not in seen:
+                        seen.add(r.invoice_no)
+                        rows.append(r)
+                if not await self._next_page():
+                    break
+            return rows
+
+        rows = await self.step(f"search_invoices:{lane}:{month}", run)
+        # Filter again in code — never trust the portal's filter alone.
+        if lane:
+            rows = [r for r in rows if r.lane is None or r.lane == lane]
+        if month:
+            rows = [r for r in rows if r.invoice_date is None or r.invoice_date.strftime("%Y-%m") == month]
+        return rows
+
+    async def _fill_search(self, *, lane: str | None, month: str | None, status: str | None) -> None:
+        """Fill whatever search controls exist (labels first, then name/id hints)."""
+        async def set_control(label_pat: str, value: str) -> bool:
+            pat = re.compile(label_pat, re.I)
+            ctl = self.page.get_by_label(pat)
+            if await ctl.count() == 0:
+                ctl = self.page.locator(f"select[name*={label_pat.split('|')[0]} i], input[name*={label_pat.split('|')[0]} i]")
+            if await ctl.count() == 0:
+                return False
+            ctl = ctl.first
+            tag = await ctl.evaluate("e => e.tagName")
+            if tag == "SELECT":
+                options = await ctl.evaluate("e => Array.from(e.options).map(o => [o.value, o.text])")
+                match = next((v for v, t in options if value.lower() in (v.lower(), t.lower()) or value.lower() in t.lower()), None)
+                if match is None:
+                    return False
+                await ctl.select_option(match)
+            else:
+                await ctl.fill(value)
+            return True
+
+        if lane:
+            await set_control("lane|route", lane)
+        if month:
+            from datetime import date as _d
+
+            y, m = map(int, month.split("-"))
+            label = _d(y, m, 1).strftime("%b-%y")  # e.g. Oct-26; parser re-filters by date anyway
+            if not await set_control("month|period", month):
+                await set_control("month|period", label)
+        if status:
+            await set_control("status", status)
+        button = self.page.get_by_role("button", name=re.compile(r"search|go|find|show", re.I))
+        if await button.count() == 0:
+            button = self.page.locator("input[type=submit][value*=Search i], input[type=submit][value*=Go i]")
+        if await button.count():
+            await self.limiter.wait()
+            await button.first.click()
+            await self.page.wait_for_load_state("domcontentloaded")
+            await self.settle()
+
+    # ------------------------------------------------------------------ evidence
+
+    async def screenshot(self, name: str) -> Path:
+        """Masked screenshot: login fields and anything looking like a phone number or person are hidden."""
+        path = self.screenshot_dir / f"{re.sub(r'[^A-Za-z0-9_.-]', '_', name)}.png"
+        await self.page.evaluate(_MARK_PII_JS)
+        masks = [
+            self.page.locator("input[type=password]"),
+            self.page.locator("#txtUser"),
+            self.page.locator("[data-meridian-mask]"),
+        ]
+        await self.page.screenshot(path=str(path), full_page=True, mask=masks)
+        return path
+
+    async def download(self, trigger_locator, name: str) -> Path:
+        async with self.page.expect_download() as info:
+            await self.limiter.wait()
+            await trigger_locator.click()
+        dl = await info.value
+        target = self.download_dir / (re.sub(r"[^A-Za-z0-9_.-]", "_", name) + Path(dl.suggested_filename).suffix)
+        await dl.save_as(str(target))
+        return target
