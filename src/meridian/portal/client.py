@@ -23,6 +23,7 @@ from meridian.portal.errors import HumanNeeded, LoginFailed, PageNotUnderstood, 
 from meridian.portal.human import HumanGate
 from meridian.portal.pagestate import PageSnapshot, PageState, classify
 from meridian.portal.retry import RetryPolicy, RetryStats, with_retry
+from meridian.parsing import parse_amount, parse_date
 from meridian.portal.tables import InvoiceRow, parse_invoice_list
 from meridian.portal.throttle import RateLimiter
 
@@ -153,9 +154,16 @@ class StepLog:
     human_steps: list[str] = field(default_factory=list)
     events: list[dict] = field(default_factory=list)
 
+    sink: object = None  # optional callable(step, outcome, extra) — e.g. the run store
+
     def add(self, step: str, outcome: str, **extra) -> None:
         self.steps += 1
         self.events.append({"step": step, "outcome": outcome, **extra})
+        if callable(self.sink):
+            try:
+                self.sink(step, outcome, extra)
+            except Exception:
+                pass
 
 
 class PortalClient:
@@ -389,6 +397,8 @@ class PortalClient:
         await self.settle(resp.status if resp else None)
 
     async def open_menu(self, area: str) -> None:
+        if self.page.url in ("", "about:blank") or await self.page.locator("#menu a, nav a").count() == 0:
+            await self.goto("/Default.aspx")
         pattern = re.compile(MENU[area], re.I)
         link = self.page.locator("#menu a").filter(has_text=pattern).first
         if await link.count() == 0:
@@ -426,16 +436,18 @@ class PortalClient:
 
     # ------------------------------------------------------------------ invoices
 
-    async def search_invoices(self, lane: str | None = None, month: str | None = None, status: str | None = None) -> list[InvoiceRow]:
+    async def search_invoices(self, lane: str | None = None, month: str | None = None, status: str | None = None,
+                              *, invoice_no: str | None = None, shipment_id: str | None = None) -> list[InvoiceRow]:
         """Invoice search with pagination. ``month`` is YYYY-MM (invoice-date month)."""
 
         async def run():
-            await self.goto("/Default.aspx")
             await self.open_menu("invoices")
-            await self._fill_search(lane=lane, month=month, status=status)
+            await self._fill_search(lane=lane, month=month, status=status, invoice_no=invoice_no, shipment_id=shipment_id)
             rows: list[InvoiceRow] = []
             seen: set[str] = set()
             for _ in range(200):  # hard stop against pagination loops
+                if re.search(r"no records found|no invoices found", await self.page.inner_text("body"), re.I):
+                    break
                 grid = await self.main_grid(r"invoice")
                 for r in parse_invoice_list(grid.rows):
                     if r.invoice_no not in seen:
@@ -445,47 +457,41 @@ class PortalClient:
                     break
             return rows
 
-        rows = await self.step(f"search_invoices:{lane}:{month}", run)
+        rows = await self.step(f"search_invoices:{lane or ''}:{month or ''}:{invoice_no or shipment_id or ''}", run)
         # Filter again in code — never trust the portal's filter alone.
         if lane:
             rows = [r for r in rows if r.lane is None or r.lane == lane]
         if month:
             rows = [r for r in rows if r.invoice_date is None or r.invoice_date.strftime("%Y-%m") == month]
+        if invoice_no:
+            rows = [r for r in rows if r.invoice_no == invoice_no]
         return rows
 
-    async def _fill_search(self, *, lane: str | None, month: str | None, status: str | None) -> None:
-        """Fill whatever search controls exist (labels first, then name/id hints)."""
-        async def set_control(label_pat: str, value: str) -> bool:
-            pat = re.compile(label_pat, re.I)
-            ctl = self.page.get_by_label(pat)
-            if await ctl.count() == 0:
-                ctl = self.page.locator(f"select[name*={label_pat.split('|')[0]} i], input[name*={label_pat.split('|')[0]} i]")
-            if await ctl.count() == 0:
+    async def _set_control(self, label_pat: str, name_hint: str, value: str) -> bool:
+        pat = re.compile(label_pat, re.I)
+        ctl = self.page.get_by_label(pat)
+        if await ctl.count() == 0:
+            ctl = self.page.locator(f"select[name*={name_hint} i], input[name*={name_hint} i], "
+                                    f"select[id*={name_hint} i], input[id*={name_hint} i]")
+        if await ctl.count() == 0:
+            return False
+        ctl = ctl.first
+        tag = await ctl.evaluate("e => e.tagName")
+        if tag == "SELECT":
+            options = await ctl.evaluate("e => Array.from(e.options).map(o => [o.value, o.text])")
+            v = value.lower()
+            match = next((val for val, t in options if v in (val.lower(), t.strip().lower())), None)
+            if match is None:
+                match = next((val for val, t in options if val and v in t.lower()), None)
+            if match is None:
                 return False
-            ctl = ctl.first
-            tag = await ctl.evaluate("e => e.tagName")
-            if tag == "SELECT":
-                options = await ctl.evaluate("e => Array.from(e.options).map(o => [o.value, o.text])")
-                match = next((v for v, t in options if value.lower() in (v.lower(), t.lower()) or value.lower() in t.lower()), None)
-                if match is None:
-                    return False
-                await ctl.select_option(match)
-            else:
-                await ctl.fill(value)
-            return True
+            await ctl.select_option(match)
+        else:
+            await ctl.fill(value)
+        return True
 
-        if lane:
-            await set_control("lane|route", lane)
-        if month:
-            from datetime import date as _d
-
-            y, m = map(int, month.split("-"))
-            label = _d(y, m, 1).strftime("%b-%y")  # e.g. Oct-26; parser re-filters by date anyway
-            if not await set_control("month|period", month):
-                await set_control("month|period", label)
-        if status:
-            await set_control("status", status)
-        button = self.page.get_by_role("button", name=re.compile(r"search|go|find|show", re.I))
+    async def _click_search(self) -> None:
+        button = self.page.get_by_role("button", name=re.compile(r"^\s*(search|go|find|show)\b", re.I))
         if await button.count() == 0:
             button = self.page.locator("input[type=submit][value*=Search i], input[type=submit][value*=Go i]")
         if await button.count():
@@ -493,6 +499,219 @@ class PortalClient:
             await button.first.click()
             await self.page.wait_for_load_state("domcontentloaded")
             await self.settle()
+
+    async def _fill_search(self, *, lane=None, month=None, status=None, invoice_no=None, shipment_id=None) -> None:
+        """Fill whatever search controls exist (labels first, then name/id hints)."""
+        if lane:
+            await self._set_control(r"\blane\b|route", "lane", lane)
+        if month:
+            from datetime import date as _d
+
+            y, m = map(int, month.split("-"))
+            label = _d(y, m, 1).strftime("%b-%y")  # e.g. Oct-26; results are re-filtered by date anyway
+            if not await self._set_control(r"month|period", "month", month):
+                await self._set_control(r"month|period", "month", label)
+        if status:
+            await self._set_control(r"status", "status", status)
+        if invoice_no:
+            await self._set_control(r"invoice\s*(no|number|#)", "invoice", invoice_no)
+        if shipment_id:
+            await self._set_control(r"shipment|consignment|docket", "shipment", shipment_id)
+        await self._click_search()
+
+    async def key_values(self) -> dict[str, str]:
+        """Label/value pairs from two-cell rows (``<th>Label</th><td>value</td>``)."""
+        return await self.page.evaluate(
+            """() => { const o = {}; document.querySelectorAll('tr').forEach(tr => {
+                 const c = tr.children; if (c.length === 2 && c[0].tagName === 'TH' && c[1].tagName === 'TD')
+                   o[c[0].innerText.trim().replace(/:$/, '')] = c[1].innerText.trim(); }); return o; }"""
+        )
+
+    async def open_invoice(self, invoice_no: str):
+        """Invoice header, lines and credit notes (and its PDF) as an engine ``Invoice``."""
+        from meridian.portal.tables import parse_invoice_lines
+        from meridian.reconcile.types import Invoice
+
+        async def run():
+            await self.open_menu("invoices")
+            await self._fill_search(invoice_no=invoice_no)
+            link = self.page.get_by_role("link", name=invoice_no, exact=True)
+            if await link.count() == 0:
+                if re.search(r"no records found", await self.page.inner_text("body"), re.I):
+                    return None
+                raise PageNotUnderstood(f"invoice {invoice_no} not in search results")
+            await self.limiter.wait()
+            await link.first.click()
+            await self.page.wait_for_load_state("domcontentloaded")
+            await self.settle()
+            kv = {k.lower(): v for k, v in (await self.key_values()).items()}
+            grids = await self.grids()
+            lines_grid = next((g for g in grids if any(re.search(r"shipment|consignment", h, re.I) for h in g.headers)), None)
+            credit_grid = next((g for g in grids if any(re.search(r"credit", h, re.I) for h in g.headers)), None)
+            if lines_grid is None:
+                raise PageNotUnderstood(f"no lines grid on invoice {invoice_no}")
+            lines = parse_invoice_lines(lines_grid.rows)
+            credits = []
+            if credit_grid is not None:
+                amt_col = next((h for h in credit_grid.headers if re.search(r"amount", h, re.I)), None)
+                credits = [parse_amount(r[amt_col]) for r in credit_grid.rows if amt_col and r.get(amt_col)]
+            total_txt = next((v for k, v in kv.items() if re.search(r"invoice total|grand total|net amount", k)), None)
+            if total_txt is None:
+                raise PageNotUnderstood(f"no invoice total on {invoice_no}")
+            return Invoice(
+                invoice_no=invoice_no,
+                invoice_date=parse_date(next(v for k, v in kv.items() if "date" in k)),
+                lane=next((v for k, v in kv.items() if k in ("lane", "route")), ""),
+                status=next((v for k, v in kv.items() if "status" in k), "Open").title(),
+                total=parse_amount(total_txt),
+                lines=tuple(lines),
+                credit_notes=tuple(credits),
+            )
+
+        inv = await self.step(f"open_invoice:{invoice_no}", run)
+        if inv is None:
+            return None, None
+        pdf = None
+        link = self.page.get_by_role("link", name=re.compile(r"download.*pdf|pdf|print", re.I))
+        if await link.count():
+            try:
+                pdf = await self.download(link.first, f"INV_{invoice_no}")
+                self.log.add(f"invoice_pdf:{invoice_no}", "ok", path=str(pdf))
+            except Exception as exc:  # the PDF is evidence, not required for the numbers
+                self.log.add(f"invoice_pdf:{invoice_no}", "failed", error=type(exc).__name__)
+        return inv, pdf
+
+    async def get_pod(self, shipment_id: str):
+        """Delivery proof for one shipment -> (Pod | None, pdf path | None).
+
+        Dates come from the page; if the page only says "see attached", they are read from the
+        PDF. A PDF with no readable text (a scan) gives ``confident=False`` — never a guess.
+        """
+        from meridian.portal.pdftext import pod_dates_from_pdf
+        from meridian.reconcile.types import Pod
+
+        async def run():
+            await self.open_menu("pods")
+            await self._fill_search(shipment_id=shipment_id)
+            body = await self.page.inner_text("body")
+            if re.search(r"no (delivery proof|pod|records?) found", body, re.I):
+                return None
+            kv = {k.lower(): v for k, v in (await self.key_values()).items()}
+            if not kv:
+                raise PageNotUnderstood(f"POD page for {shipment_id} has no details")
+            prom = next((v for k, v in kv.items() if re.search(r"promised|due|expected", k)), "")
+            deliv = next((v for k, v in kv.items() if re.search(r"delivered|delivery date|actual", k)), "")
+            return prom, deliv
+
+        found = await self.step(f"pod:{shipment_id}", run)
+        if found is None:
+            return None, None
+        prom, deliv = found
+        pdf = None
+        link = self.page.get_by_role("link", name=re.compile(r"download|document|attachment", re.I))
+        if await link.count():
+            try:
+                pdf = await self.download(link.first, f"POD_{shipment_id}")
+            except Exception as exc:
+                self.log.add(f"pod_pdf:{shipment_id}", "failed", error=type(exc).__name__)
+
+        def to_date(t):
+            try:
+                return parse_date(t)
+            except ValueError:
+                return None
+
+        p, dl = to_date(prom), to_date(deliv)
+        if p and dl:
+            return Pod(shipment_id, p, dl, confident=True), pdf
+        if pdf is not None:
+            p2, d2 = pod_dates_from_pdf(pdf)
+            if p2 and d2:
+                self.log.add(f"pod_pdf:{shipment_id}", "dates_from_pdf")
+                return Pod(shipment_id, p2, d2, confident=True), pdf
+        self.log.add(f"pod:{shipment_id}", "unreadable", detail="dates not on page and not readable from document")
+        return Pod(shipment_id, None, None, confident=False), pdf
+
+    async def rate_card(self):
+        from meridian.portal.tables import parse_rate_card
+
+        async def run():
+            await self.open_menu("rate_card")
+            return parse_rate_card((await self.main_grid(r"rate")).rows)
+
+        return await self.step("rate_card", run)
+
+    async def fuel_surcharge(self):
+        from meridian.portal.tables import parse_fuel_surcharge
+
+        async def run():
+            await self.open_menu("fuel")
+            return parse_fuel_surcharge((await self.main_grid(r"surcharge|fuel|%")).rows)
+
+        return await self.step("fuel_surcharge", run)
+
+    async def dispute_list(self) -> list[dict[str, str]]:
+        """Rows of the portal's dispute list (raw header -> text)."""
+
+        async def run():
+            await self.open_menu("disputes")
+            if re.search(r"no disputes", await self.page.inner_text("body"), re.I):
+                return []
+            try:
+                g = await self.main_grid(r"dispute")
+            except PageNotUnderstood:
+                return []
+            rows = list(g.rows)
+            while await self._next_page():
+                rows += (await self.main_grid(r"dispute")).rows
+            return rows
+
+        return await self.step("dispute_list", run)
+
+    @staticmethod
+    def disputed_invoices(rows: list[dict[str, str]]) -> set[str]:
+        out = set()
+        for r in rows:
+            for h, v in r.items():
+                if re.search(r"invoice", h, re.I) and v:
+                    out.add(v.strip())
+        return out
+
+    async def submit_dispute(self, invoice_no: str, reasons: list[str], expected_amount) -> str:
+        """Fill and submit the dispute form ONCE. No automatic retry — this is a write.
+
+        Caller must have checked the dispute list first and must check it again afterwards.
+        Returns the portal's message text (not proof by itself).
+        """
+        await self.open_menu("disputes")
+        link = self.page.get_by_role("link", name=re.compile(r"raise|new dispute|create", re.I))
+        if await link.count():
+            await self.limiter.wait()
+            await link.first.click()
+            await self.page.wait_for_load_state("domcontentloaded")
+            await self.settle()
+        if not await self._set_control(r"invoice", "invoice", invoice_no):
+            raise PageNotUnderstood("dispute form: invoice field not found")
+        for r in reasons:
+            box = self.page.get_by_label(r, exact=True)
+            if await box.count() == 0:
+                box = self.page.locator(f"input[type=checkbox][value='{r}']")
+            if await box.count() == 0:
+                raise PageNotUnderstood(f"dispute form: no checkbox for {r}")
+            await box.first.check()
+        if not await self._set_control(r"amount", "amount", f"{expected_amount:.2f}"):
+            raise PageNotUnderstood("dispute form: amount field not found")
+        await self.screenshot(f"dispute_before_submit_{invoice_no}")
+        submit = self.page.get_by_role("button", name=re.compile(r"submit|raise|save", re.I))
+        if await submit.count() == 0:
+            raise PageNotUnderstood("dispute form: no submit button")
+        await self.limiter.wait()
+        await submit.first.click()
+        await self.page.wait_for_load_state("domcontentloaded")
+        await self.screenshot(f"dispute_after_submit_{invoice_no}")
+        msg = (await self.page.inner_text("body"))[:400]
+        self.log.add(f"dispute_submit:{invoice_no}", "submitted", message=msg[:120])
+        return msg
 
     # ------------------------------------------------------------------ evidence
 

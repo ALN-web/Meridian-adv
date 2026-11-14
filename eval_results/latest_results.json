@@ -23,15 +23,15 @@
       }
     ],
     "task_id": "T-01",
-    "steps": 4,
-    "retries": 1,
-    "duration_s": 0.6,
+    "status": "completed",
+    "steps": 5,
+    "retries": 0,
+    "duration_s": 11.2,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp"
-    ],
-    "status": "completed"
+    ]
   },
   "T-02": {
     "invoices": [
@@ -57,15 +57,15 @@
       }
     ],
     "task_id": "T-02",
+    "status": "completed",
     "steps": 4,
-    "retries": 1,
-    "duration_s": 0.6,
+    "retries": 0,
+    "duration_s": 9.3,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp"
-    ],
-    "status": "completed"
+    ]
   },
   "T-03": {
     "invoices": [
@@ -91,28 +91,29 @@
       }
     ],
     "task_id": "T-03",
+    "status": "completed",
     "steps": 4,
-    "retries": 1,
-    "duration_s": 0.6,
+    "retries": 2,
+    "duration_s": 15.7,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp"
-    ],
-    "status": "completed"
+    ]
   },
   "T-04": {
     "invoices": [],
+    "error": "invoice TIR/26-27/10196 not found on portal",
     "task_id": "T-04",
+    "status": "failed",
     "steps": 4,
-    "retries": 1,
-    "duration_s": 0.1,
+    "retries": 0,
+    "duration_s": 8.0,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp"
-    ],
-    "status": "failed"
+    ]
   },
   "T-05": {
     "invoices": [
@@ -139,54 +140,57 @@
     ],
     "disputes": [],
     "task_id": "T-05",
-    "steps": 8,
+    "status": "completed",
+    "steps": 19,
     "retries": 1,
-    "duration_s": 0.6,
+    "duration_s": 41.9,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp"
-    ],
-    "status": "completed"
+    ]
   },
   "T-06": {
     "invoices": [],
+    "error": "invoice TIR/26-27/10183 not found on portal",
     "task_id": "T-06",
+    "status": "failed",
     "steps": 4,
-    "retries": 1,
-    "duration_s": 0.6,
+    "retries": 0,
+    "duration_s": 6.8,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp"
-    ],
-    "status": "failed"
+    ]
   },
   "T-07": {
     "invoices": [],
+    "error": "invoice TIR/26-27/10188 not found on portal",
     "task_id": "T-07",
+    "status": "failed",
     "steps": 4,
     "retries": 1,
-    "duration_s": 0.6,
+    "duration_s": 10.3,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp"
-    ],
-    "status": "failed"
+    ]
   },
   "T-08": {
     "invoices": [],
+    "error": "invoice TIR/26-27/10210 not found on portal",
     "task_id": "T-08",
-    "steps": 4,
-    "retries": 1,
-    "duration_s": 0.1,
+    "status": "failed",
+    "steps": 5,
+    "retries": 0,
+    "duration_s": 8.3,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp"
-    ],
-    "status": "failed"
+    ]
   },
   "T-09": {
     "invoices": [
@@ -255,16 +259,15 @@
     ],
     "disputes": [],
     "task_id": "T-09",
-    "steps": 18,
-    "retries": 1,
-    "duration_s": 0.9,
+    "status": "completed",
+    "steps": 45,
+    "retries": 6,
+    "duration_s": 93.3,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
-      "otp",
       "otp"
-    ],
-    "status": "completed"
+    ]
   },
   "T-10": {
     "invoices": [
@@ -351,16 +354,16 @@
     ],
     "disputes": [],
     "task_id": "T-10",
-    "steps": 20,
-    "retries": 1,
-    "duration_s": 1.4,
+    "status": "completed",
+    "steps": 57,
+    "retries": 2,
+    "duration_s": 103.2,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp",
       "otp"
-    ],
-    "status": "completed"
+    ]
   },
   "T-11": {
     "invoices": [
@@ -431,16 +434,15 @@
     ],
     "disputes": [],
     "task_id": "T-11",
-    "steps": 18,
-    "retries": 1,
-    "duration_s": 1.3,
+    "status": "completed",
+    "steps": 48,
+    "retries": 3,
+    "duration_s": 97.4,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
-      "otp",
       "otp"
-    ],
-    "status": "completed"
+    ]
   },
   "T-12": {
     "invoices": [
@@ -525,16 +527,16 @@
     ],
     "disputes": [],
     "task_id": "T-12",
-    "steps": 18,
-    "retries": 1,
-    "duration_s": 1.3,
+    "status": "completed",
+    "steps": 60,
+    "retries": 3,
+    "duration_s": 152.5,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp",
       "otp"
-    ],
-    "status": "completed"
+    ]
   },
   "T-13": {
     "invoices": [
@@ -622,57 +624,57 @@
     ],
     "disputes": [],
     "task_id": "T-13",
-    "steps": 20,
-    "retries": 1,
-    "duration_s": 0.7,
+    "status": "needs_human",
+    "steps": 59,
+    "retries": 5,
+    "duration_s": 122.2,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp",
       "otp"
-    ],
-    "status": "needs_human"
+    ]
   },
   "T-14": {
     "missing_in_portal": [],
     "task_id": "T-14",
-    "steps": 5,
-    "retries": 1,
-    "duration_s": 0.6,
+    "status": "completed",
+    "steps": 17,
+    "retries": 3,
+    "duration_s": 40.3,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp"
-    ],
-    "status": "completed"
+    ]
   },
   "T-15": {
     "missing_in_portal": [],
     "task_id": "T-15",
-    "steps": 5,
-    "retries": 1,
-    "duration_s": 0.6,
+    "status": "completed",
+    "steps": 22,
+    "retries": 2,
+    "duration_s": 40.3,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp"
-    ],
-    "status": "completed"
+    ]
   },
   "T-16": {
     "missing_in_portal": [
       "SHP-60403"
     ],
     "task_id": "T-16",
-    "steps": 5,
-    "retries": 1,
-    "duration_s": 0.6,
+    "status": "completed",
+    "steps": 23,
+    "retries": 3,
+    "duration_s": 55.3,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp"
-    ],
-    "status": "completed"
+    ]
   },
   "T-17": {
     "pods": [
@@ -697,16 +699,19 @@
         "delivered_on": "2026-10-29"
       }
     ],
+    "needs_human": [
+      "pod_unreadable:SHP-60421"
+    ],
     "task_id": "T-17",
-    "steps": 8,
-    "retries": 1,
-    "duration_s": 0.6,
+    "status": "needs_human",
+    "steps": 10,
+    "retries": 3,
+    "duration_s": 31.9,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp"
-    ],
-    "status": "needs_human"
+    ]
   },
   "T-18": {
     "pods": [
@@ -732,15 +737,15 @@
       }
     ],
     "task_id": "T-18",
-    "steps": 8,
-    "retries": 1,
-    "duration_s": 0.6,
+    "status": "completed",
+    "steps": 9,
+    "retries": 2,
+    "duration_s": 44.5,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp"
-    ],
-    "status": "completed"
+    ]
   },
   "T-19": {
     "invoices": [
@@ -834,7 +839,7 @@
           "detention_unjustified"
         ],
         "expected_inr": 36137.27,
-        "portal_ref": "DSP-47403"
+        "portal_ref": "DSP-00002"
       },
       {
         "invoice_no": "TIR/26-27/10165",
@@ -843,21 +848,21 @@
           "detention_unjustified"
         ],
         "expected_inr": 76067.86,
-        "portal_ref": "DSP-68144"
+        "portal_ref": "DSP-00003"
       }
     ],
     "task_id": "T-19",
-    "steps": 27,
-    "retries": 1,
-    "duration_s": 1.4,
+    "status": "completed",
+    "steps": 65,
+    "retries": 8,
+    "duration_s": 144.5,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp",
       "otp",
       "approval"
-    ],
-    "status": "completed"
+    ]
   },
   "T-20": {
     "invoices": [
@@ -969,7 +974,7 @@
           "weight_over"
         ],
         "expected_inr": 63852.08,
-        "portal_ref": "DSP-97528"
+        "portal_ref": "DSP-00004"
       },
       {
         "invoice_no": "TIR/26-27/10158",
@@ -978,7 +983,7 @@
           "detention_unjustified"
         ],
         "expected_inr": 52664.34,
-        "portal_ref": "DSP-85779"
+        "portal_ref": "DSP-00005"
       },
       {
         "invoice_no": "TIR/26-27/10159",
@@ -987,7 +992,7 @@
           "weight_over"
         ],
         "expected_inr": 56936.84,
-        "portal_ref": "DSP-07704"
+        "portal_ref": "DSP-00006"
       },
       {
         "invoice_no": "TIR/26-27/10160",
@@ -997,20 +1002,20 @@
           "detention_unjustified"
         ],
         "expected_inr": 50048.12,
-        "portal_ref": "DSP-89006"
+        "portal_ref": "DSP-00007"
       }
     ],
     "task_id": "T-20",
-    "steps": 33,
-    "retries": 1,
-    "duration_s": 1.9,
+    "status": "completed",
+    "steps": 94,
+    "retries": 4,
+    "duration_s": 196.1,
     "cost_inr": 0.0,
     "trace_id": null,
     "human_steps": [
       "otp",
       "otp",
       "approval"
-    ],
-    "status": "completed"
+    ]
   }
 }

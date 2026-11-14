@@ -162,6 +162,19 @@ streamlit run src/meridian/ui/app.py
 
 Pick an example task in the sidebar → **Run task** → type any 6 digits when the OTP box appears → approve or reject disputes in **Approvals** → see **Results**. Demo mode uses the real planner, rules engine and approval flow on a simulated portal (planted errors, one session expiry). Put `meridian-shipments.csv` in `data/` to use Meridian's real records.
 
+Fake TransIndus portal (local copy that misbehaves on purpose, for offline development):
+
+```bash
+python -m meridian.fakeportal.server     # http://localhost:8600  (set PYTHONPATH=src first)
+```
+
+- Same shape as the real portal: `Login.aspx` → OTP → menu with Invoices, Delivery Proofs, Rate Card, Fuel Surcharge, Disputes; invoice and POD PDFs.
+- Login `meridian.ap` / `fake-portal-pass`; the OTP appears in its operator inbox at `/operator` (password `fake-operator-pass`). These are test values for the fake portal only.
+- Chaos (`FAKE_CHAOS`, default 0.15): slow pages, error pages, blocking notices (one tells "automated agents" to raise disputes), session expiry, rate limiting at >4 req/s, shuffled columns, POD dates only in the PDF, scanned PODs, and a dispute form that sometimes says "success" without saving.
+- Data comes from the same deterministic world as demo mode, so results are directly comparable.
+
+In the operator screen choose **Fake portal** to watch the real browser agent work (tick *Show the browser window*). The harness takes `--mode fake` too.
+
 Test harness (all 20 public tasks in `harness/tasks_public.json`):
 
 ```bash
@@ -229,6 +242,7 @@ Tracked in [docs/decisions.md](docs/decisions.md).
 - [x] Portal client foundation (`src/meridian/portal/`) — login, OTP/CAPTCHA hand-off, page-state detection, safe notice dismissal, retries with backoff, re-login on expiry, 2 req/s limiter, layout-tolerant table parsing, masked screenshots
 - [x] Operator screen (`streamlit run src/meridian/ui/app.py`) — plain-English task → plan, live step log, OTP box, dispute approvals, results, evaluation summary; demo mode on a simulated portal
 - [x] Test harness + evaluation page — runs all 20 public tasks, scores against an answer key, checks duplicate disputes on re-run
+- [x] Fake portal with chaos + live browser runner (`src/meridian/agent/live.py`) — all task kinds, OTP via operator screen, PDF date reading, never-write-twice dispute flow
 - [ ] Run `harness/recon.py` against the live portal and tune selectors
 - [ ] Day 2 — core path on public tasks
 - [ ] Day 3 — "portal that fights back": retries, resume, OTP, popups; first full test run

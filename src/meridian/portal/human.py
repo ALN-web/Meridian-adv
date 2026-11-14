@@ -18,6 +18,37 @@ class HumanGate(Protocol):
         ...
 
 
+class StoreHumanGate:
+    """Asks the operator screen (via the run store) and waits for the answer."""
+
+    def __init__(self, store, run_id: str, on_wait=None, on_resume=None, timeout_s: float = 900):
+        self.store, self.run_id, self.timeout_s = store, run_id, timeout_s
+        self.on_wait, self.on_resume = on_wait, on_resume
+
+    async def _ask(self, kind: str) -> str:
+        rid = self.store.request_human(self.run_id, kind)
+        if self.on_wait:
+            self.on_wait(kind)
+        waited = 0.0
+        while waited < self.timeout_s:
+            ans = self.store.take_answer(rid)
+            if ans is not None:
+                if self.on_resume:
+                    self.on_resume(kind)
+                return ans
+            await asyncio.sleep(0.5)
+            waited += 0.5
+        from meridian.portal.errors import HumanNeeded
+
+        raise HumanNeeded(kind, "no answer from the operator in time")
+
+    async def request_otp(self) -> str:
+        return await self._ask("otp")
+
+    async def request_captcha(self) -> None:
+        await self._ask("captcha")
+
+
 class ConsoleHumanGate:
     async def _ask(self, prompt: str) -> str:
         try:

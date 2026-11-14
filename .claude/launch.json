@@ -7,6 +7,14 @@
       "runtimeArgs": ["-m", "streamlit", "run", "src/meridian/ui/app.py", "--server.port=8510", "--server.headless=true"],
       "port": 8510,
       "autoPort": false
+    },
+    {
+      "name": "fake-portal",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "meridian.fakeportal.server"],
+      "env": {"PYTHONPATH": "src", "FAKE_PORTAL_PORT": "8600"},
+      "port": 8600,
+      "autoPort": false
     }
   ]
 }

@@ -16,7 +16,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 
-from meridian.agent.demo import DemoRunner, sample_tasks  # noqa: E402
+from meridian.agent.demo import sample_tasks  # noqa: E402
+from meridian.agent.modes import MODES, portal_reachable, start_runner  # noqa: E402
 from meridian.agent.planner import PlanError, plan_task  # noqa: E402
 from meridian.store import RUN_ACTIVE, Store  # noqa: E402
 
@@ -70,14 +71,18 @@ def ago(ts: float | None) -> str:
 with st.sidebar:
     st.header("🚚 Meridian Portal Agent")
     st.caption("TransIndus invoice reconciliation · Team Delta · synthetic data only")
-    mode = st.radio(
-        "Portal",
-        ["Demo (simulated portal)", "Live portal"],
-        help="Live mode is enabled once the Playwright runner is wired to the real portal.",
-    )
-    live = mode.startswith("Live")
-    if live:
-        st.warning("Live runner not wired yet — finish portal recon first. Use Demo for now.")
+    mode = st.radio("Portal", list(MODES), format_func=MODES.get,
+                    help="Demo needs nothing. Fake portal: run `python -m meridian.fakeportal.server` first. "
+                         "Real portal: credentials in .env (and recon done).")
+    reachable, where = portal_reachable(mode) if mode == "fake" else (True, "")
+    if mode == "fake":
+        if reachable:
+            st.caption(f"Fake portal at {where} · its operator inbox is at /operator")
+        else:
+            st.error(where)
+    if mode == "live":
+        st.warning("Real portal: selectors are unconfirmed until recon succeeds. Watch the step log.")
+    show_browser = st.checkbox("Show the browser window", value=False, disabled=mode == "demo")
 
     st.subheader("New task")
     if "task_text" not in st.session_state:
@@ -96,10 +101,10 @@ with st.sidebar:
             st.success(f"Understood as **{plan.kind}** · {json.dumps(plan.params)}")
         except PlanError as exc:
             st.error(str(exc))
-    if st.button("▶ Run task", type="primary", disabled=plan is None or live, width="stretch"):
+    if st.button("▶ Run task", type="primary", disabled=plan is None or not reachable, width="stretch"):
         task_id = f"UI-{int(time.time()) % 100000:05d}"
-        run_id = store.create_run(task_id, text.strip(), plan.kind, plan.params, plan.steps, "demo")
-        DemoRunner(store, run_id, plan, task_id).start()
+        run_id = store.create_run(task_id, text.strip(), plan.kind, plan.params, plan.steps, mode)
+        start_runner(mode, store, run_id, plan, task_id, headless=not show_browser)
         st.session_state.run_id = run_id
         st.rerun()
 

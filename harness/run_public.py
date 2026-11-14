@@ -32,6 +32,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from meridian.agent import demo  # noqa: E402
+from meridian.agent.modes import FAKE_BASE_URL, portal_reachable, start_runner  # noqa: E402
 from meridian.agent.planner import Plan, plan_task  # noqa: E402
 from meridian.evaluation import TARGETS, key_from_results, score_task, summarise, to_dict  # noqa: E402
 from meridian.store import Store  # noqa: E402
@@ -73,28 +74,41 @@ def plan_for(task: dict) -> Plan:
 class AutoHuman(threading.Thread):
     """Demo-only stand-in for the operator: answers OTPs and/or approves disputes."""
 
-    def __init__(self, store: Store, otp: bool, approve: bool):
+    def __init__(self, store: Store, otp: bool, approve: bool, mode: str = "demo"):
         super().__init__(daemon=True)
-        self.store, self.otp, self.approve = store, otp, approve
+        self.store, self.otp, self.approve, self.mode = store, otp, approve, mode
         self.stop = threading.Event()
+
+    def code(self) -> str | None:
+        if self.mode == "demo":
+            return "000000"
+        # fake portal only: the test operator reads the fake inbox (the agent never does)
+        import os
+        import re
+
+        import httpx
+
+        page = httpx.get(f"{FAKE_BASE_URL}/operator", params={"pw": os.environ.get("FAKE_OPERATOR_PASSWORD", "fake-operator-pass")}).text
+        codes = re.findall(r"<td>(\d{6})</td>", page)
+        return codes[0] if codes else None
 
     def run(self):
         while not self.stop.is_set():
             if self.otp:
                 for r in self.store.pending_human():
-                    if r["kind"] == "otp":
-                        self.store.answer_human(r["id"], "000000")
+                    if r["kind"] == "otp" and (c := self.code()):
+                        self.store.answer_human(r["id"], c)
             if self.approve:
                 for d in self.store.disputes(status="pending"):
                     self.store.decide_dispute(d["id"], True, by="harness-auto")
             time.sleep(0.05)
 
 
-def run_one(store: Store, task: dict, timeout_s: float) -> dict:
+def run_one(store: Store, task: dict, timeout_s: float, mode: str = "demo") -> dict:
     plan = plan_for(task)
-    run_id = store.create_run(task["task_id"], task["task"], plan.kind, plan.params, plan.steps, "demo")
+    run_id = store.create_run(task["task_id"], task["task"], plan.kind, plan.params, plan.steps, mode)
     t0 = time.time()
-    demo.DemoRunner(store, run_id, plan, task["task_id"]).start()
+    start_runner(mode, store, run_id, plan, task["task_id"])
     while time.time() - t0 < timeout_s:
         run = store.get_run(run_id)
         if run.status in ("completed", "needs_human", "failed"):
@@ -106,7 +120,8 @@ def run_one(store: Store, task: dict, timeout_s: float) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--mode", choices=["demo", "live"], default="demo")
+    ap.add_argument("--mode", choices=["demo", "fake", "live"], default="demo",
+                    help="demo: simulated; fake: local fake portal in a browser; live: real portal")
     ap.add_argument("--only", help="comma-separated task ids, e.g. T-01,T-19")
     ap.add_argument("--key", help="answer key JSON to score against")
     ap.add_argument("--save-key", help="write this run's results as a regression key")
@@ -122,8 +137,17 @@ def main() -> None:
     if args.fetch_tasks:
         fetch_tasks()
         return
-    if args.mode == "live":
-        sys.exit("Live mode needs the Playwright runner wired to the portal (after recon). Use --mode demo for now.")
+    if args.mode == "live" and (args.auto_otp or args.auto_approve):
+        sys.exit("--auto-otp/--auto-approve are not allowed against the real portal: a person must do these.")
+    if args.mode != "demo":
+        ok, where = portal_reachable(args.mode)
+        if not ok:
+            sys.exit(where)
+    if args.mode == "fake":
+        import httpx
+
+        httpx.post(f"{FAKE_BASE_URL}/__reset", timeout=30)  # clean fake portal, like an instructor reset
+        print(f"Fake portal at {FAKE_BASE_URL} reset.")
     if args.fast:
         demo.STEP_DELAY = 0.0
 
@@ -131,7 +155,7 @@ def main() -> None:
     out_dir = ROOT / "runs" / "eval" / label
     out_dir.mkdir(parents=True, exist_ok=True)
     store = Store(out_dir / "store.sqlite")
-    helper = AutoHuman(store, args.auto_otp, args.auto_approve)
+    helper = AutoHuman(store, args.auto_otp, args.auto_approve, args.mode)
     helper.start()
     if not args.auto_otp:
         print("OTP prompts will wait for you in the operator screen (or pass --auto-otp in demo mode).")
@@ -142,7 +166,7 @@ def main() -> None:
     started = time.time()
     for t in tasks:
         print(f"> {t['task_id']} {t['kind']:<10} {t['task'][:80]}")
-        r = run_one(store, t, args.timeout)
+        r = run_one(store, t, args.timeout, args.mode)
         results[t["task_id"]], kinds[t["task_id"]] = r, t["kind"]
         print(f"  {r.get('status')}  steps={r.get('steps')} retries={r.get('retries')} {r.get('duration_s')}s")
 
@@ -150,7 +174,7 @@ def main() -> None:
     if args.rerun_disputes:
         for t in [t for t in tasks if t["kind"] == "dispute"]:
             print(f"> rerun {t['task_id']} (must raise no new disputes)")
-            rerun[t["task_id"]] = run_one(store, t, args.timeout)
+            rerun[t["task_id"]] = run_one(store, t, args.timeout, args.mode)
             print(f"  new disputes on rerun: {len(rerun[t['task_id']].get('disputes') or [])}")
     helper.stop.set()
 
