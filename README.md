@@ -160,7 +160,20 @@ Operator screen (demo mode works without the portal):
 streamlit run src/meridian/ui/app.py
 ```
 
-Pick an example task in the sidebar → **Run task** → type any 6 digits when the OTP box appears → approve or reject disputes in **Approvals** → see **Results**. Demo mode uses the real planner, rules engine and approval flow on a simulated portal (planted errors, one session expiry). Put `meridian-shipments.csv` in `data/` to use Meridian's real records.
+Pages:
+
+| Page | What it's for |
+|---|---|
+| **Run a task** | Plain-English task (or one of the 20 public tasks) → plan with live progress, OTP box, live step log with a problems filter, Stop / Resume |
+| **Needs you** | Everything waiting on a person: OTPs, CAPTCHAs, disputes to approve (with the line-by-line reason and documents), items to review |
+| **Results** | Graded result, colour-coded invoices, drill-down into each invoice's lines (billed vs actual weight, rate vs card, fuel %, detention vs POD dates) |
+| **Documents** | Invoice PDFs, proofs of delivery (text shown, scans flagged), masked write-action screenshots |
+| **Disputes** | Every proposal and its fate: pending, approved, confirmed on portal, rejected, skipped; receipts and screenshots |
+| **Monthly summary** | For the logistics manager: overcharge by lane, why invoices were wrong, missing invoices, CSV export |
+| **Evaluation** | Start a test run of the public tasks; metrics vs targets, per-task problems, history |
+| **System** | What's configured and reachable (secrets shown only as set / missing) |
+
+Demo mode: pick a task → **Run task** → type any 6 digits when asked for an OTP → approve disputes in **Needs you** → open **Results**. Demo mode uses the real planner, rules engine and approval flow on a simulated portal (planted errors, one session expiry). Put `meridian-shipments.csv` in `data/` to use Meridian's real records.
 
 Fake TransIndus portal (local copy that misbehaves on purpose, for offline development):
 

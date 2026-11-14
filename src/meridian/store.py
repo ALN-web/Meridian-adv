@@ -37,7 +37,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS one_live_dispute ON disputes(invoice_no)
 CREATE TABLE IF NOT EXISTS checkpoints (
   run_id TEXT, item TEXT, state TEXT, data TEXT, PRIMARY KEY (run_id, item)
 );
+-- Per-invoice explanation for the UI (lines, inputs, documents). Not part of the graded result.
+CREATE TABLE IF NOT EXISTS details (
+  run_id TEXT, invoice_no TEXT, data TEXT, PRIMARY KEY (run_id, invoice_no)
+);
+CREATE TABLE IF NOT EXISTS documents (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT, kind TEXT, label TEXT, path TEXT, ts REAL
+);
 """
+
+# Columns added after the first release; applied to existing databases on open.
+MIGRATIONS = (
+    "ALTER TABLE runs ADD COLUMN phase INTEGER DEFAULT 0",
+    "ALTER TABLE runs ADD COLUMN cancel INTEGER DEFAULT 0",
+)
 
 RUN_ACTIVE = ("queued", "running", "waiting_for_human")
 
@@ -56,6 +69,8 @@ class Run:
     finished: float | None
     result: dict | None
     error: str | None
+    phase: int = 0
+    cancel: bool = False
 
 
 class Store:
@@ -65,6 +80,11 @@ class Store:
         self._lock = threading.Lock()
         with self._conn() as c:
             c.executescript(SCHEMA)
+            for m in MIGRATIONS:
+                try:
+                    c.execute(m)
+                except sqlite3.OperationalError:
+                    pass  # already applied
 
     @contextmanager
     def _conn(self):
@@ -82,7 +102,8 @@ class Store:
         run_id = uuid.uuid4().hex[:12]
         with self._lock, self._conn() as c:
             c.execute(
-                "INSERT INTO runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO runs (id, task_id, task_text, kind, params, plan, status, mode, created, finished, result, error, phase, cancel)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,0)",
                 (run_id, task_id, task_text, kind, json.dumps(params), json.dumps(plan), "queued", mode,
                  time.time(), None, None, None),
             )
@@ -114,6 +135,7 @@ class Store:
             params=json.loads(r["params"] or "{}"), plan=json.loads(r["plan"] or "[]"), status=r["status"],
             mode=r["mode"], created=r["created"], finished=r["finished"],
             result=json.loads(r["result"]) if r["result"] else None, error=r["error"],
+            phase=r["phase"] or 0, cancel=bool(r["cancel"]),
         )
 
     # ------------------------------------------------------------------ steps
@@ -220,3 +242,52 @@ class Store:
         with self._conn() as c:
             rows = c.execute("SELECT item, state, data FROM checkpoints WHERE run_id=?", (run_id,)).fetchall()
         return {r["item"]: {"state": r["state"], "data": json.loads(r["data"])} for r in rows}
+
+    # ------------------------------------------------------------------ progress, stop, resume
+
+    def set_phase(self, run_id: str, phase: int) -> None:
+        """Index of the plan step the run is on (for the live plan view)."""
+        with self._lock, self._conn() as c:
+            c.execute("UPDATE runs SET phase=? WHERE id=?", (phase, run_id))
+
+    def request_cancel(self, run_id: str) -> None:
+        with self._lock, self._conn() as c:
+            c.execute("UPDATE runs SET cancel=1 WHERE id=?", (run_id,))
+
+    def cancel_requested(self, run_id: str) -> bool:
+        with self._conn() as c:
+            row = c.execute("SELECT cancel FROM runs WHERE id=?", (run_id,)).fetchone()
+        return bool(row and row["cancel"])
+
+    def prepare_resume(self, run_id: str) -> None:
+        """Re-queue a finished run; checkpoints are kept so finished invoices are skipped."""
+        with self._lock, self._conn() as c:
+            c.execute("UPDATE runs SET status='queued', cancel=0, finished=NULL, error=NULL, phase=0 WHERE id=?", (run_id,))
+            c.execute("UPDATE human_requests SET status='expired' WHERE run_id=? AND status='pending'", (run_id,))
+
+    # ------------------------------------------------------------------ explanations and documents
+
+    def save_detail(self, run_id: str, invoice_no: str, data: dict) -> None:
+        with self._lock, self._conn() as c:
+            c.execute("INSERT OR REPLACE INTO details VALUES (?,?,?)", (run_id, invoice_no, json.dumps(data, default=str)))
+
+    def details(self, run_id: str) -> dict[str, dict]:
+        with self._conn() as c:
+            rows = c.execute("SELECT invoice_no, data FROM details WHERE run_id=?", (run_id,)).fetchall()
+        return {r["invoice_no"]: json.loads(r["data"]) for r in rows}
+
+    def add_document(self, run_id: str, kind: str, label: str, path: str) -> None:
+        with self._lock, self._conn() as c:
+            c.execute("INSERT INTO documents (run_id, kind, label, path, ts) VALUES (?,?,?,?,?)",
+                      (run_id, kind, label, str(path), time.time()))
+
+    def documents(self, run_id: str | None = None, kind: str | None = None) -> list[dict]:
+        q, args = "SELECT * FROM documents WHERE 1=1", []
+        if run_id:
+            q += " AND run_id=?"
+            args.append(run_id)
+        if kind:
+            q += " AND kind=?"
+            args.append(kind)
+        with self._conn() as c:
+            return [dict(r) for r in c.execute(q + " ORDER BY id", args)]

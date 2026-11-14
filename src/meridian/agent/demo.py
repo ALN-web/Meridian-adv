@@ -27,7 +27,12 @@ from meridian.reconcile import (
     propose_dispute,
     reconcile_invoice,
 )
+from meridian.reconcile.explain import explain_invoice
 from meridian.store import Store
+
+
+class Cancelled(Exception):
+    """The operator pressed Stop."""
 
 LANES = ("PUN-BLR", "PUN-HYD", "PUN-CHN", "PUN-DEL", "PUN-AMD")
 BASE_RATE = {"PUN-BLR": Decimal("14.20"), "PUN-HYD": Decimal("13.10"), "PUN-CHN": Decimal("16.40"),
@@ -188,6 +193,7 @@ class DemoRunner:
         return t
 
     def step(self, name: str, outcome: str = "ok", detail: str = "", retries: int = 0):
+        self.check_cancel()
         time.sleep(STEP_DELAY)
         self.steps += 1
         self.retries += retries
@@ -201,10 +207,45 @@ class DemoRunner:
             code = self.store.take_answer(rid)
             if code is not None:
                 break
+            self.check_cancel()
             time.sleep(0.5)
         self.human_steps.append("otp")
         self.store.set_status(self.run_id, "running")
         self.step("login", "ok", "OTP accepted (code not stored)")
+
+    # ---- progress, stop, documents
+
+    def phase(self, i: int) -> None:
+        self.store.set_phase(self.run_id, max(0, min(i, len(self.plan.steps) - 1)))
+
+    def check_cancel(self) -> None:
+        if self.store.cancel_requested(self.run_id):
+            raise Cancelled()
+
+    def doc(self, kind: str, label: str, lines: list[str], *, scanned: bool = False) -> None:
+        from meridian.fakeportal.pdf import make_pdf
+
+        folder = Path("runs/downloads") / self.run_id
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / (label.replace("/", "_") + ".pdf")
+        path.write_bytes(make_pdf(lines, scanned=scanned))
+        self.store.add_document(self.run_id, kind, label, str(path))
+
+    def invoice_doc(self, inv: Invoice) -> None:
+        self.doc("invoice_pdf", f"INV_{inv.invoice_no}", [
+            f"TransIndus Roadways - Tax Invoice {inv.invoice_no} (SIMULATED)",
+            f"Date {inv.invoice_date:%d-%b-%y}  Lane {inv.lane}  Status {inv.status}",
+            *[f"{l.shipment_id}  {l.billed_weight_kg} kg @ {l.rate_per_kg}  line {l.billed_total()}" for l in inv.lines],
+            f"Invoice total {inv.total}",
+        ])
+
+    def pod_doc(self, sid: str) -> None:
+        pod = self.w.pods.get(sid)
+        if pod is None or any(d["label"] == f"POD_{sid}" for d in self.store.documents(self.run_id, "pod_pdf")):
+            return
+        self.doc("pod_pdf", f"POD_{sid}", [f"PROOF OF DELIVERY {sid} (SIMULATED)",
+                                           f"Promised Date: {pod.promised_on:%d-%b-%y}",
+                                           f"Delivered Date: {pod.delivered_on:%d-%b-%y}"], scanned=not pod.confident)
 
     def _safe_run(self):
         try:
@@ -215,7 +256,12 @@ class DemoRunner:
                           human_steps=self.human_steps)
             status = result.pop("_status", "completed")
             result["status"] = status
+            self.phase(len(self.plan.steps) - 1)
             self.store.set_status(self.run_id, status, result=result)
+        except Cancelled:
+            self.store.add_step(self.run_id, "runner", "cancelled", "Stopped by the operator — progress kept, can resume")
+            self.store.set_status(self.run_id, "cancelled", error="stopped by operator",
+                                  result={"task_id": self.task_id, "status": "failed", "error": "stopped by operator"})
         except Exception as exc:  # demo: surface errors in the UI
             self.store.add_step(self.run_id, "runner", "failed", f"{type(exc).__name__}: {exc}")
             self.store.set_status(self.run_id, "failed", error=str(exc),
@@ -223,8 +269,10 @@ class DemoRunner:
 
     def _run(self) -> dict:
         p = self.plan
+        self.phase(0)
         self.step("open_portal", "ok", "Login.aspx (portal was asleep, first load slow)", retries=1)
         self.wait_otp()
+        self.phase(1)
         if p.kind == "list":
             invs = self.w.search(p.params["lane"], p.params["month"])
             self.step("search_invoices", "ok", f"{len(invs)} invoices on {p.params['lane']} {p.params['month']} (2 pages)")
@@ -239,8 +287,10 @@ class DemoRunner:
                     continue
                 if not pod.confident:
                     needs = True
+                    self.pod_doc(sid)
                     self.step(f"pod:{sid}", "needs_human", "Scanned proof unreadable with confidence")
                     continue
+                self.pod_doc(sid)
                 self.step(f"pod:{sid}", "ok", f"Downloaded POD_{sid}.pdf")
                 pods.append({"shipment_id": sid, "promised_on": pod.promised_on.isoformat(),
                              "delivered_on": pod.delivered_on.isoformat()})
@@ -265,6 +315,7 @@ class DemoRunner:
         else:
             invs = self.w.search(p.params["lane"], p.params["month"])
             self.step("search_invoices", "ok", f"{len(invs)} invoices on {p.params['lane']} {p.params['month']}")
+        self.phase(2)
         self.step("rate_card", "ok", "Rate card loaded (incl. mid-month change on PUN-BLR)")
         self.step("fuel_surcharge", "ok", "Fuel surcharge by month loaded")
         self.step("billing_history", "ok", "All invoices indexed for duplicate check")
@@ -278,8 +329,12 @@ class DemoRunner:
             if n == 2 and len(invs) > 3:
                 self.step(f"invoice:{inv.invoice_no}", "session_expired", "Logged out mid-task — logging in again, resuming from checkpoint")
                 self.wait_otp()
+            self.invoice_doc(inv)
+            for line in inv.lines:
+                self.pod_doc(line.shipment_id)
             self.step(f"invoice:{inv.invoice_no}", "ok", f"{len(inv.lines)} lines, {len(inv.credit_notes)} credit notes, PDF saved")
             r = reconcile_invoice(inv, self.w.shipments, ref)
+            self.store.save_detail(self.run_id, inv.invoice_no, explain_invoice(inv, r, self.w.shipments, ref))
             out = r.to_output()
             if r.needs_human:
                 needs = True
@@ -302,8 +357,10 @@ class DemoRunner:
                 elif r.already_disputed:
                     self.step(f"dispute:{inv.invoice_no}", "skipped", "Dispute already exists on the portal")
 
+        self.phase(4)
         disputes_out = []
         if p.kind == "dispute":
+            self.phase(6)
             disputes_out = self._handle_approvals()
         out = {"invoices": results, "disputes": disputes_out}
         if needs:
@@ -317,8 +374,10 @@ class DemoRunner:
             self.step("approvals", "waiting", f"{len(pending)} dispute(s) waiting for approval")
             self.human_steps.append("approval")
         while self.store.disputes(status="pending", run_id=self.run_id):
+            self.check_cancel()
             time.sleep(0.5)
         self.store.set_status(self.run_id, "running")
+        self.phase(7)
         out = []
         for d in self.store.disputes(run_id=self.run_id):
             if d["status"] == "approved":
@@ -326,9 +385,12 @@ class DemoRunner:
                     self.store.mark_dispute(d["id"], "skipped", note="already on portal at submit time")
                     self.step(f"dispute:{d['invoice_no']}", "skipped", "Re-checked list before submit: already exists")
                     continue
-                self.step(f"dispute:{d['invoice_no']}", "submitted", "Form filled and submitted; screenshot saved")
+                self.step(f"dispute:{d['invoice_no']}", "submitted", "Form filled and submitted; receipt saved")
                 self.w.disputed.add(d["invoice_no"])
-                ref = f"DSP-{abs(hash(d['invoice_no'])) % 100000:05d}"
+                ref = f"DSP-{sum(map(ord, d['invoice_no'])) * 37 % 100000:05d}"
+                self.doc("dispute_receipt", f"DISPUTE_{d['invoice_no']}", [
+                    f"Dispute {ref} (SIMULATED)", f"Invoice {d['invoice_no']}", f"Reasons: {', '.join(d['reasons'])}",
+                    f"Correct amount: {d['expected_inr']}", f"Approved by: {d.get('decided_by') or 'operator'}"])
                 self.step(f"dispute:{d['invoice_no']}", "confirmed", f"Found in dispute list as {ref}")
                 self.store.mark_dispute(d["id"], "confirmed", portal_ref=ref)
                 out.append({"invoice_no": d["invoice_no"], "reasons": d["reasons"],
