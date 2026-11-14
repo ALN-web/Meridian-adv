@@ -1,0 +1,190 @@
+{
+  "mode": "public",
+  "tasks": [
+    {
+      "task_id": "T-01",
+      "kind": "list",
+      "task": "List every invoice on lane PUN-DEL dated in October 2026, with its total and status.",
+      "params": {
+        "lane": "PUN-DEL",
+        "month": "2026-10"
+      }
+    },
+    {
+      "task_id": "T-02",
+      "kind": "list",
+      "task": "List every invoice on lane PUN-DEL dated in August 2026, with its total and status.",
+      "params": {
+        "lane": "PUN-DEL",
+        "month": "2026-08"
+      }
+    },
+    {
+      "task_id": "T-03",
+      "kind": "list",
+      "task": "List every invoice on lane PUN-AMD dated in September 2026, with its total and status.",
+      "params": {
+        "lane": "PUN-AMD",
+        "month": "2026-09"
+      }
+    },
+    {
+      "task_id": "T-04",
+      "kind": "one",
+      "task": "Reconcile invoice TIR/26-27/10196.",
+      "params": {
+        "invoice_no": "TIR/26-27/10196"
+      }
+    },
+    {
+      "task_id": "T-05",
+      "kind": "one",
+      "task": "Reconcile invoice TIR/26-27/10157.",
+      "params": {
+        "invoice_no": "TIR/26-27/10157"
+      }
+    },
+    {
+      "task_id": "T-06",
+      "kind": "one",
+      "task": "Reconcile invoice TIR/26-27/10183.",
+      "params": {
+        "invoice_no": "TIR/26-27/10183"
+      }
+    },
+    {
+      "task_id": "T-07",
+      "kind": "one",
+      "task": "Reconcile invoice TIR/26-27/10188.",
+      "params": {
+        "invoice_no": "TIR/26-27/10188"
+      }
+    },
+    {
+      "task_id": "T-08",
+      "kind": "one",
+      "task": "Reconcile invoice TIR/26-27/10210.",
+      "params": {
+        "invoice_no": "TIR/26-27/10210"
+      }
+    },
+    {
+      "task_id": "T-09",
+      "kind": "lane_month",
+      "task": "Reconcile all invoices on lane PUN-BLR dated in August 2026. Do not raise disputes.",
+      "params": {
+        "lane": "PUN-BLR",
+        "month": "2026-08"
+      }
+    },
+    {
+      "task_id": "T-10",
+      "kind": "lane_month",
+      "task": "Reconcile all invoices on lane PUN-BLR dated in September 2026. Do not raise disputes.",
+      "params": {
+        "lane": "PUN-BLR",
+        "month": "2026-09"
+      }
+    },
+    {
+      "task_id": "T-11",
+      "kind": "lane_month",
+      "task": "Reconcile all invoices on lane PUN-CHN dated in October 2026. Do not raise disputes.",
+      "params": {
+        "lane": "PUN-CHN",
+        "month": "2026-10"
+      }
+    },
+    {
+      "task_id": "T-12",
+      "kind": "lane_month",
+      "task": "Reconcile all invoices on lane PUN-DEL dated in September 2026. Do not raise disputes.",
+      "params": {
+        "lane": "PUN-DEL",
+        "month": "2026-09"
+      }
+    },
+    {
+      "task_id": "T-13",
+      "kind": "lane_month",
+      "task": "Reconcile all invoices on lane PUN-CHN dated in August 2026. Do not raise disputes.",
+      "params": {
+        "lane": "PUN-CHN",
+        "month": "2026-08"
+      }
+    },
+    {
+      "task_id": "T-14",
+      "kind": "missing",
+      "task": "Which shipments did Meridian deliver on lane PUN-CHN in September 2026 that appear on no invoice?",
+      "params": {
+        "lane": "PUN-CHN",
+        "month": "2026-09"
+      }
+    },
+    {
+      "task_id": "T-15",
+      "kind": "missing",
+      "task": "Which shipments did Meridian deliver on lane PUN-HYD in August 2026 that appear on no invoice?",
+      "params": {
+        "lane": "PUN-HYD",
+        "month": "2026-08"
+      }
+    },
+    {
+      "task_id": "T-16",
+      "kind": "missing",
+      "task": "Which shipments did Meridian deliver on lane PUN-AMD in August 2026 that appear on no invoice?",
+      "params": {
+        "lane": "PUN-AMD",
+        "month": "2026-08"
+      }
+    },
+    {
+      "task_id": "T-17",
+      "kind": "collect",
+      "task": "Download the delivery proofs for SHP-60225, SHP-60421, SHP-60384, SHP-60468, SHP-60188, and report the promised and delivered date of each.",
+      "params": {
+        "shipment_ids": [
+          "SHP-60225",
+          "SHP-60421",
+          "SHP-60384",
+          "SHP-60468",
+          "SHP-60188"
+        ]
+      }
+    },
+    {
+      "task_id": "T-18",
+      "kind": "collect",
+      "task": "Download the delivery proofs for SHP-60082, SHP-60037, SHP-60282, SHP-60366, SHP-60242, and report the promised and delivered date of each.",
+      "params": {
+        "shipment_ids": [
+          "SHP-60082",
+          "SHP-60037",
+          "SHP-60282",
+          "SHP-60366",
+          "SHP-60242"
+        ]
+      }
+    },
+    {
+      "task_id": "T-19",
+      "kind": "dispute",
+      "task": "Reconcile all invoices on lane PUN-HYD dated in October 2026, and raise disputes for overcharges after approval.",
+      "params": {
+        "lane": "PUN-HYD",
+        "month": "2026-10"
+      }
+    },
+    {
+      "task_id": "T-20",
+      "kind": "dispute",
+      "task": "Reconcile all invoices on lane PUN-HYD dated in September 2026, and raise disputes for overcharges after approval.",
+      "params": {
+        "lane": "PUN-HYD",
+        "month": "2026-09"
+      }
+    }
+  ]
+}

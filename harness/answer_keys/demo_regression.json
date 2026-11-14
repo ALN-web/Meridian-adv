@@ -1,0 +1,465 @@
+{
+  "T-01": {
+    "kind": "list",
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10148",
+        "total_inr": 155655.24,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10149",
+        "total_inr": 168427.03,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10150",
+        "total_inr": 161561.0,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10151",
+        "total_inr": 22737.72,
+        "status": "Open"
+      }
+    ]
+  },
+  "T-02": {
+    "kind": "list",
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10140",
+        "total_inr": 156192.16,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10141",
+        "total_inr": 169979.95,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10142",
+        "total_inr": 113647.78,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10143",
+        "total_inr": 49512.69,
+        "status": "Open"
+      }
+    ]
+  },
+  "T-03": {
+    "kind": "list",
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10105",
+        "total_inr": 74074.91,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10106",
+        "total_inr": 115295.8,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10107",
+        "total_inr": 63331.2,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10108",
+        "total_inr": 41043.25,
+        "status": "Open"
+      }
+    ]
+  },
+  "T-05": {
+    "kind": "one",
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10157",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over"
+        ],
+        "billed_inr": 66194.59,
+        "expected_inr": 63852.08
+      }
+    ]
+  },
+  "T-09": {
+    "kind": "lane_month",
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10114",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 76915.92,
+        "expected_inr": 76915.92
+      },
+      {
+        "invoice_no": "TIR/26-27/10115",
+        "result": "mismatch",
+        "reasons": [
+          "rate_wrong",
+          "detention_unjustified"
+        ],
+        "billed_inr": 98924.74,
+        "expected_inr": 94985.05
+      },
+      {
+        "invoice_no": "TIR/26-27/10116",
+        "result": "mismatch",
+        "reasons": [
+          "no_pod"
+        ],
+        "billed_inr": 79224.0,
+        "expected_inr": 55499.2
+      },
+      {
+        "invoice_no": "TIR/26-27/10117",
+        "result": "cancelled"
+      }
+    ]
+  },
+  "T-10": {
+    "kind": "lane_month",
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10118",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over"
+        ],
+        "billed_inr": 91457.96,
+        "expected_inr": 88829.62
+      },
+      {
+        "invoice_no": "TIR/26-27/10119",
+        "result": "cancelled"
+      },
+      {
+        "invoice_no": "TIR/26-27/10120",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over",
+          "rate_wrong",
+          "detention_unjustified"
+        ],
+        "billed_inr": 54307.22,
+        "expected_inr": 50680.89
+      },
+      {
+        "invoice_no": "TIR/26-27/10121",
+        "result": "mismatch",
+        "reasons": [
+          "shipment_unknown",
+          "no_pod",
+          "weight_over",
+          "rate_wrong"
+        ],
+        "billed_inr": 107001.34,
+        "expected_inr": 79446.71
+      },
+      {
+        "invoice_no": "TIR/26-27/10122",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 17340.72,
+        "expected_inr": 17340.72
+      }
+    ]
+  },
+  "T-11": {
+    "kind": "lane_month",
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10136",
+        "result": "cancelled"
+      },
+      {
+        "invoice_no": "TIR/26-27/10137",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over"
+        ],
+        "billed_inr": 88604.91,
+        "expected_inr": 88049.89
+      },
+      {
+        "invoice_no": "TIR/26-27/10138",
+        "result": "mismatch",
+        "reasons": [
+          "rate_wrong"
+        ],
+        "billed_inr": 101242.79,
+        "expected_inr": 100032.27
+      },
+      {
+        "invoice_no": "TIR/26-27/10139",
+        "result": "mismatch",
+        "reasons": [
+          "detention_unjustified"
+        ],
+        "billed_inr": 115102.12,
+        "expected_inr": 113422.12
+      }
+    ]
+  },
+  "T-12": {
+    "kind": "lane_month",
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10144",
+        "result": "mismatch",
+        "reasons": [
+          "rate_wrong"
+        ],
+        "billed_inr": 134028.18,
+        "expected_inr": 131501.04
+      },
+      {
+        "invoice_no": "TIR/26-27/10145",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 118180.83,
+        "expected_inr": 118180.83
+      },
+      {
+        "invoice_no": "TIR/26-27/10146",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over"
+        ],
+        "billed_inr": 189385.27,
+        "expected_inr": 181944.78
+      },
+      {
+        "invoice_no": "TIR/26-27/10147",
+        "result": "mismatch",
+        "reasons": [
+          "rate_wrong"
+        ],
+        "billed_inr": 115447.33,
+        "expected_inr": 113114.0
+      }
+    ]
+  },
+  "T-13": {
+    "kind": "lane_month",
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10127",
+        "result": "mismatch",
+        "reasons": [
+          "no_pod",
+          "weight_over"
+        ],
+        "billed_inr": 104314.16,
+        "expected_inr": 82405.98,
+        "needs_human": [
+          "pod_unreadable:SHP-60228"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10128",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over"
+        ],
+        "billed_inr": 136091.88,
+        "expected_inr": 135611.65
+      },
+      {
+        "invoice_no": "TIR/26-27/10129",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 92866.11,
+        "expected_inr": 92866.11
+      },
+      {
+        "invoice_no": "TIR/26-27/10130",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 102567.84,
+        "expected_inr": 102567.84
+      },
+      {
+        "invoice_no": "TIR/26-27/10131",
+        "result": "cancelled"
+      }
+    ]
+  },
+  "T-14": {
+    "kind": "missing",
+    "missing_in_portal": []
+  },
+  "T-15": {
+    "kind": "missing",
+    "missing_in_portal": []
+  },
+  "T-16": {
+    "kind": "missing",
+    "missing_in_portal": [
+      "SHP-60403"
+    ]
+  },
+  "T-17": {
+    "kind": "collect",
+    "pods": [
+      {
+        "shipment_id": "SHP-60225",
+        "promised_on": "2026-08-12",
+        "delivered_on": "2026-08-13"
+      },
+      {
+        "shipment_id": "SHP-60384",
+        "promised_on": "2026-10-05",
+        "delivered_on": "2026-10-07"
+      },
+      {
+        "shipment_id": "SHP-60468",
+        "promised_on": "2026-10-18",
+        "delivered_on": "2026-10-17"
+      },
+      {
+        "shipment_id": "SHP-60188",
+        "promised_on": "2026-10-29",
+        "delivered_on": "2026-10-29"
+      }
+    ]
+  },
+  "T-18": {
+    "kind": "collect",
+    "pods": [
+      {
+        "shipment_id": "SHP-60082",
+        "promised_on": "2026-10-26",
+        "delivered_on": "2026-10-28"
+      },
+      {
+        "shipment_id": "SHP-60282",
+        "promised_on": "2026-10-08",
+        "delivered_on": "2026-10-11"
+      },
+      {
+        "shipment_id": "SHP-60366",
+        "promised_on": "2026-09-26",
+        "delivered_on": "2026-09-28"
+      },
+      {
+        "shipment_id": "SHP-60242",
+        "promised_on": "2026-08-09",
+        "delivered_on": "2026-08-10"
+      }
+    ]
+  },
+  "T-19": {
+    "kind": "dispute",
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10161",
+        "result": "mismatch",
+        "reasons": [
+          "no_pod",
+          "detention_unjustified"
+        ],
+        "billed_inr": 73967.98,
+        "expected_inr": 36137.27
+      },
+      {
+        "invoice_no": "TIR/26-27/10162",
+        "result": "mismatch",
+        "reasons": [
+          "surcharge_wrong"
+        ],
+        "billed_inr": 80672.95,
+        "expected_inr": 80491.16
+      },
+      {
+        "invoice_no": "TIR/26-27/10163",
+        "result": "cancelled"
+      },
+      {
+        "invoice_no": "TIR/26-27/10164",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 77552.93,
+        "expected_inr": 77552.93
+      },
+      {
+        "invoice_no": "TIR/26-27/10165",
+        "result": "mismatch",
+        "reasons": [
+          "surcharge_wrong",
+          "detention_unjustified"
+        ],
+        "billed_inr": 77855.25,
+        "expected_inr": 76067.86
+      }
+    ],
+    "disputes": [
+      "TIR/26-27/10161",
+      "TIR/26-27/10165"
+    ]
+  },
+  "T-20": {
+    "kind": "dispute",
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10156",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 98488.04,
+        "expected_inr": 98488.04
+      },
+      {
+        "invoice_no": "TIR/26-27/10157",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over"
+        ],
+        "billed_inr": 66194.59,
+        "expected_inr": 63852.08
+      },
+      {
+        "invoice_no": "TIR/26-27/10158",
+        "result": "mismatch",
+        "reasons": [
+          "surcharge_wrong",
+          "detention_unjustified"
+        ],
+        "billed_inr": 54693.41,
+        "expected_inr": 52664.34
+      },
+      {
+        "invoice_no": "TIR/26-27/10159",
+        "result": "mismatch",
+        "reasons": [
+          "no_pod",
+          "weight_over"
+        ],
+        "billed_inr": 80700.69,
+        "expected_inr": 56936.84
+      },
+      {
+        "invoice_no": "TIR/26-27/10160",
+        "result": "mismatch",
+        "reasons": [
+          "no_pod",
+          "rate_wrong",
+          "detention_unjustified"
+        ],
+        "billed_inr": 87059.85,
+        "expected_inr": 50048.12
+      }
+    ],
+    "disputes": [
+      "TIR/26-27/10157",
+      "TIR/26-27/10158",
+      "TIR/26-27/10159",
+      "TIR/26-27/10160"
+    ]
+  }
+}

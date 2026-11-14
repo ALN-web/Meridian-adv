@@ -1,0 +1,412 @@
+{
+  "label": "check",
+  "mode": "demo",
+  "answer_key": "harness/answer_keys/demo_regression.json",
+  "auto_otp": true,
+  "auto_approve": true,
+  "started": "2026-11-14T22:40:57",
+  "wall_time_s": 19.5,
+  "targets": {
+    "task_success": 0.8,
+    "invoice_accuracy": 0.9,
+    "wrong_disputes": 0,
+    "duplicate_disputes": 0
+  },
+  "metrics": {
+    "tasks": 20,
+    "task_success": 0.7,
+    "invoice_accuracy": 1.0,
+    "wrong_disputes": 0,
+    "duplicate_disputes": 0,
+    "needs_human_tasks": 2,
+    "human_steps_beyond_otp": 0,
+    "failed_tasks": 4,
+    "avg_duration_s": 0.9,
+    "avg_steps": 12.8,
+    "avg_cost_inr": 0.0,
+    "total_retries": 20,
+    "pass": {
+      "task_success": false,
+      "invoice_accuracy": true,
+      "wrong_disputes": true,
+      "duplicate_disputes": true
+    }
+  },
+  "tasks": [
+    {
+      "task_id": "T-01",
+      "kind": "list",
+      "status": "completed",
+      "success": true,
+      "items_correct": 4,
+      "items_total": 4,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 4,
+      "retries": 1,
+      "duration_s": 0.6,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-02",
+      "kind": "list",
+      "status": "completed",
+      "success": true,
+      "items_correct": 4,
+      "items_total": 4,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 4,
+      "retries": 1,
+      "duration_s": 0.6,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-03",
+      "kind": "list",
+      "status": "completed",
+      "success": true,
+      "items_correct": 4,
+      "items_total": 4,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 4,
+      "retries": 1,
+      "duration_s": 0.6,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-04",
+      "kind": "one",
+      "status": "failed",
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "task failed: see step log",
+        "no answer key for this task"
+      ],
+      "wrong_disputes": 0,
+      "steps": 4,
+      "retries": 1,
+      "duration_s": 0.1,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-05",
+      "kind": "one",
+      "status": "completed",
+      "success": true,
+      "items_correct": 1,
+      "items_total": 1,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 8,
+      "retries": 1,
+      "duration_s": 0.6,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-06",
+      "kind": "one",
+      "status": "failed",
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "task failed: see step log",
+        "no answer key for this task"
+      ],
+      "wrong_disputes": 0,
+      "steps": 4,
+      "retries": 1,
+      "duration_s": 0.6,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-07",
+      "kind": "one",
+      "status": "failed",
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "task failed: see step log",
+        "no answer key for this task"
+      ],
+      "wrong_disputes": 0,
+      "steps": 4,
+      "retries": 1,
+      "duration_s": 0.6,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-08",
+      "kind": "one",
+      "status": "failed",
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "task failed: see step log",
+        "no answer key for this task"
+      ],
+      "wrong_disputes": 0,
+      "steps": 4,
+      "retries": 1,
+      "duration_s": 0.1,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-09",
+      "kind": "lane_month",
+      "status": "completed",
+      "success": true,
+      "items_correct": 4,
+      "items_total": 4,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 18,
+      "retries": 1,
+      "duration_s": 0.9,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp",
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-10",
+      "kind": "lane_month",
+      "status": "completed",
+      "success": true,
+      "items_correct": 5,
+      "items_total": 5,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 20,
+      "retries": 1,
+      "duration_s": 1.4,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp",
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-11",
+      "kind": "lane_month",
+      "status": "completed",
+      "success": true,
+      "items_correct": 4,
+      "items_total": 4,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 18,
+      "retries": 1,
+      "duration_s": 1.3,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp",
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-12",
+      "kind": "lane_month",
+      "status": "completed",
+      "success": true,
+      "items_correct": 4,
+      "items_total": 4,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 18,
+      "retries": 1,
+      "duration_s": 1.3,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp",
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-13",
+      "kind": "lane_month",
+      "status": "needs_human",
+      "success": false,
+      "items_correct": 5,
+      "items_total": 5,
+      "problems": [
+        "needs a human (unreadable proof or similar)"
+      ],
+      "wrong_disputes": 0,
+      "steps": 20,
+      "retries": 1,
+      "duration_s": 0.7,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp",
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-14",
+      "kind": "missing",
+      "status": "completed",
+      "success": true,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 5,
+      "retries": 1,
+      "duration_s": 0.6,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-15",
+      "kind": "missing",
+      "status": "completed",
+      "success": true,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 5,
+      "retries": 1,
+      "duration_s": 0.6,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-16",
+      "kind": "missing",
+      "status": "completed",
+      "success": true,
+      "items_correct": 1,
+      "items_total": 1,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 5,
+      "retries": 1,
+      "duration_s": 0.6,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-17",
+      "kind": "collect",
+      "status": "needs_human",
+      "success": false,
+      "items_correct": 4,
+      "items_total": 4,
+      "problems": [
+        "needs a human (unreadable proof or similar)"
+      ],
+      "wrong_disputes": 0,
+      "steps": 8,
+      "retries": 1,
+      "duration_s": 0.6,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-18",
+      "kind": "collect",
+      "status": "completed",
+      "success": true,
+      "items_correct": 4,
+      "items_total": 4,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 8,
+      "retries": 1,
+      "duration_s": 0.6,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp"
+      ]
+    },
+    {
+      "task_id": "T-19",
+      "kind": "dispute",
+      "status": "completed",
+      "success": true,
+      "items_correct": 5,
+      "items_total": 5,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 27,
+      "retries": 1,
+      "duration_s": 1.4,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp",
+        "otp",
+        "approval"
+      ]
+    },
+    {
+      "task_id": "T-20",
+      "kind": "dispute",
+      "status": "completed",
+      "success": true,
+      "items_correct": 5,
+      "items_total": 5,
+      "problems": [],
+      "wrong_disputes": 0,
+      "steps": 33,
+      "retries": 1,
+      "duration_s": 1.9,
+      "cost_inr": 0,
+      "human_steps": [
+        "otp",
+        "otp",
+        "approval"
+      ]
+    }
+  ],
+  "reruns": {
+    "T-19": {
+      "status": "completed",
+      "new_disputes": 0
+    },
+    "T-20": {
+      "status": "completed",
+      "new_disputes": 0
+    }
+  }
+}

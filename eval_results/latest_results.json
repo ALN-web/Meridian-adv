@@ -1,0 +1,1016 @@
+{
+  "T-01": {
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10148",
+        "total_inr": 155655.24,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10149",
+        "total_inr": 168427.03,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10150",
+        "total_inr": 161561.0,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10151",
+        "total_inr": 22737.72,
+        "status": "Open"
+      }
+    ],
+    "task_id": "T-01",
+    "steps": 4,
+    "retries": 1,
+    "duration_s": 0.6,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp"
+    ],
+    "status": "completed"
+  },
+  "T-02": {
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10140",
+        "total_inr": 156192.16,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10141",
+        "total_inr": 169979.95,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10142",
+        "total_inr": 113647.78,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10143",
+        "total_inr": 49512.69,
+        "status": "Open"
+      }
+    ],
+    "task_id": "T-02",
+    "steps": 4,
+    "retries": 1,
+    "duration_s": 0.6,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp"
+    ],
+    "status": "completed"
+  },
+  "T-03": {
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10105",
+        "total_inr": 74074.91,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10106",
+        "total_inr": 115295.8,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10107",
+        "total_inr": 63331.2,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10108",
+        "total_inr": 41043.25,
+        "status": "Open"
+      }
+    ],
+    "task_id": "T-03",
+    "steps": 4,
+    "retries": 1,
+    "duration_s": 0.6,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp"
+    ],
+    "status": "completed"
+  },
+  "T-04": {
+    "invoices": [],
+    "task_id": "T-04",
+    "steps": 4,
+    "retries": 1,
+    "duration_s": 0.1,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp"
+    ],
+    "status": "failed"
+  },
+  "T-05": {
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10157",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over"
+        ],
+        "billed_inr": 66194.59,
+        "expected_inr": 63852.08,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10157",
+          "meridian:SHP-60160",
+          "pod:SHP-60160",
+          "meridian:SHP-60171",
+          "pod:SHP-60171",
+          "meridian:SHP-60153",
+          "pod:SHP-60153",
+          "meridian:SHP-60157",
+          "pod:SHP-60157"
+        ]
+      }
+    ],
+    "disputes": [],
+    "task_id": "T-05",
+    "steps": 8,
+    "retries": 1,
+    "duration_s": 0.6,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp"
+    ],
+    "status": "completed"
+  },
+  "T-06": {
+    "invoices": [],
+    "task_id": "T-06",
+    "steps": 4,
+    "retries": 1,
+    "duration_s": 0.6,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp"
+    ],
+    "status": "failed"
+  },
+  "T-07": {
+    "invoices": [],
+    "task_id": "T-07",
+    "steps": 4,
+    "retries": 1,
+    "duration_s": 0.6,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp"
+    ],
+    "status": "failed"
+  },
+  "T-08": {
+    "invoices": [],
+    "task_id": "T-08",
+    "steps": 4,
+    "retries": 1,
+    "duration_s": 0.1,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp"
+    ],
+    "status": "failed"
+  },
+  "T-09": {
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10114",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 76915.92,
+        "expected_inr": 76915.92,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10114",
+          "meridian:SHP-60013",
+          "pod:SHP-60013",
+          "meridian:SHP-60034",
+          "pod:SHP-60034",
+          "meridian:SHP-60009",
+          "pod:SHP-60009",
+          "meridian:SHP-60031",
+          "pod:SHP-60031"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10115",
+        "result": "mismatch",
+        "reasons": [
+          "rate_wrong",
+          "detention_unjustified"
+        ],
+        "billed_inr": 98924.74,
+        "expected_inr": 94985.05,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10115",
+          "meridian:SHP-60042",
+          "pod:SHP-60042",
+          "meridian:SHP-60006",
+          "pod:SHP-60006",
+          "meridian:SHP-60024",
+          "pod:SHP-60024",
+          "meridian:SHP-60040",
+          "pod:SHP-60040"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10116",
+        "result": "mismatch",
+        "reasons": [
+          "no_pod"
+        ],
+        "billed_inr": 79224.0,
+        "expected_inr": 55499.2,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10116",
+          "meridian:SHP-60037",
+          "meridian:SHP-60018",
+          "pod:SHP-60018",
+          "meridian:SHP-60025",
+          "pod:SHP-60025",
+          "meridian:SHP-60010",
+          "pod:SHP-60010"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10117",
+        "result": "cancelled"
+      }
+    ],
+    "disputes": [],
+    "task_id": "T-09",
+    "steps": 18,
+    "retries": 1,
+    "duration_s": 0.9,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp",
+      "otp"
+    ],
+    "status": "completed"
+  },
+  "T-10": {
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10118",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over"
+        ],
+        "billed_inr": 91457.96,
+        "expected_inr": 88829.62,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10118",
+          "meridian:SHP-60050",
+          "pod:SHP-60050",
+          "meridian:SHP-60065",
+          "pod:SHP-60065",
+          "meridian:SHP-60053",
+          "pod:SHP-60053",
+          "meridian:SHP-60048",
+          "pod:SHP-60048"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10119",
+        "result": "cancelled"
+      },
+      {
+        "invoice_no": "TIR/26-27/10120",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over",
+          "rate_wrong",
+          "detention_unjustified"
+        ],
+        "billed_inr": 54307.22,
+        "expected_inr": 50680.89,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10120",
+          "meridian:SHP-60059",
+          "pod:SHP-60059",
+          "meridian:SHP-60057",
+          "pod:SHP-60057",
+          "meridian:SHP-60043",
+          "pod:SHP-60043",
+          "meridian:SHP-60074",
+          "pod:SHP-60074"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10121",
+        "result": "mismatch",
+        "reasons": [
+          "shipment_unknown",
+          "no_pod",
+          "weight_over",
+          "rate_wrong"
+        ],
+        "billed_inr": 107001.34,
+        "expected_inr": 79446.71,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10121",
+          "meridian:SHP-60046",
+          "pod:SHP-60046",
+          "meridian:SHP-60063",
+          "meridian:SHP-60076",
+          "pod:SHP-60076",
+          "meridian:SHP-60077",
+          "pod:SHP-60077"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10122",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 17340.72,
+        "expected_inr": 17340.72,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10122",
+          "meridian:SHP-60061",
+          "pod:SHP-60061"
+        ]
+      }
+    ],
+    "disputes": [],
+    "task_id": "T-10",
+    "steps": 20,
+    "retries": 1,
+    "duration_s": 1.4,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp",
+      "otp"
+    ],
+    "status": "completed"
+  },
+  "T-11": {
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10136",
+        "result": "cancelled"
+      },
+      {
+        "invoice_no": "TIR/26-27/10137",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over"
+        ],
+        "billed_inr": 88604.91,
+        "expected_inr": 88049.89,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10137",
+          "meridian:SHP-60311",
+          "pod:SHP-60311",
+          "meridian:SHP-60280",
+          "pod:SHP-60280",
+          "meridian:SHP-60284",
+          "pod:SHP-60284",
+          "meridian:SHP-60290",
+          "pod:SHP-60290"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10138",
+        "result": "mismatch",
+        "reasons": [
+          "rate_wrong"
+        ],
+        "billed_inr": 101242.79,
+        "expected_inr": 100032.27,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10138",
+          "meridian:SHP-60300",
+          "pod:SHP-60300",
+          "meridian:SHP-60306",
+          "pod:SHP-60306",
+          "meridian:SHP-60303",
+          "pod:SHP-60303",
+          "meridian:SHP-60301",
+          "pod:SHP-60301"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10139",
+        "result": "mismatch",
+        "reasons": [
+          "detention_unjustified"
+        ],
+        "billed_inr": 115102.12,
+        "expected_inr": 113422.12,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10139",
+          "meridian:SHP-60287",
+          "pod:SHP-60287",
+          "meridian:SHP-60288",
+          "pod:SHP-60288",
+          "meridian:SHP-60308",
+          "pod:SHP-60308",
+          "meridian:SHP-60296",
+          "pod:SHP-60296"
+        ]
+      }
+    ],
+    "disputes": [],
+    "task_id": "T-11",
+    "steps": 18,
+    "retries": 1,
+    "duration_s": 1.3,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp",
+      "otp"
+    ],
+    "status": "completed"
+  },
+  "T-12": {
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10144",
+        "result": "mismatch",
+        "reasons": [
+          "rate_wrong"
+        ],
+        "billed_inr": 134028.18,
+        "expected_inr": 131501.04,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10144",
+          "meridian:SHP-60339",
+          "pod:SHP-60339",
+          "meridian:SHP-60363",
+          "pod:SHP-60363",
+          "meridian:SHP-60358",
+          "pod:SHP-60358",
+          "meridian:SHP-60337",
+          "pod:SHP-60337"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10145",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 118180.83,
+        "expected_inr": 118180.83,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10145",
+          "meridian:SHP-60342",
+          "pod:SHP-60342",
+          "meridian:SHP-60355",
+          "pod:SHP-60355",
+          "meridian:SHP-60369",
+          "pod:SHP-60369",
+          "meridian:SHP-60348",
+          "pod:SHP-60348"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10146",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over"
+        ],
+        "billed_inr": 189385.27,
+        "expected_inr": 181944.78,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10146",
+          "meridian:SHP-60349",
+          "pod:SHP-60349",
+          "meridian:SHP-60346",
+          "pod:SHP-60346",
+          "meridian:SHP-60352",
+          "pod:SHP-60352",
+          "meridian:SHP-60360",
+          "pod:SHP-60360"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10147",
+        "result": "mismatch",
+        "reasons": [
+          "rate_wrong"
+        ],
+        "billed_inr": 115447.33,
+        "expected_inr": 113114.0,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10147",
+          "meridian:SHP-60345",
+          "pod:SHP-60345",
+          "meridian:SHP-60366",
+          "pod:SHP-60366",
+          "meridian:SHP-60347",
+          "pod:SHP-60347",
+          "meridian:SHP-60350",
+          "pod:SHP-60350"
+        ]
+      }
+    ],
+    "disputes": [],
+    "task_id": "T-12",
+    "steps": 18,
+    "retries": 1,
+    "duration_s": 1.3,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp",
+      "otp"
+    ],
+    "status": "completed"
+  },
+  "T-13": {
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10127",
+        "result": "mismatch",
+        "reasons": [
+          "no_pod",
+          "weight_over"
+        ],
+        "billed_inr": 104314.16,
+        "expected_inr": 82405.98,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10127",
+          "meridian:SHP-60228",
+          "pod:SHP-60228",
+          "meridian:SHP-60229",
+          "meridian:SHP-60232",
+          "pod:SHP-60232",
+          "meridian:SHP-60237",
+          "pod:SHP-60237"
+        ],
+        "needs_human": [
+          "pod_unreadable:SHP-60228"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10128",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over"
+        ],
+        "billed_inr": 136091.88,
+        "expected_inr": 135611.65,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10128",
+          "meridian:SHP-60242",
+          "pod:SHP-60242",
+          "meridian:SHP-60222",
+          "pod:SHP-60222",
+          "meridian:SHP-60251",
+          "pod:SHP-60251",
+          "meridian:SHP-60225",
+          "pod:SHP-60225"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10129",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 92866.11,
+        "expected_inr": 92866.11,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10129",
+          "meridian:SHP-60244",
+          "pod:SHP-60244",
+          "meridian:SHP-60247",
+          "pod:SHP-60247",
+          "meridian:SHP-60231",
+          "pod:SHP-60231"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10130",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 102567.84,
+        "expected_inr": 102567.84,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10130",
+          "meridian:SHP-60243",
+          "pod:SHP-60243",
+          "meridian:SHP-60230",
+          "pod:SHP-60230",
+          "meridian:SHP-60224",
+          "pod:SHP-60224",
+          "meridian:SHP-60241",
+          "pod:SHP-60241"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10131",
+        "result": "cancelled"
+      }
+    ],
+    "disputes": [],
+    "task_id": "T-13",
+    "steps": 20,
+    "retries": 1,
+    "duration_s": 0.7,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp",
+      "otp"
+    ],
+    "status": "needs_human"
+  },
+  "T-14": {
+    "missing_in_portal": [],
+    "task_id": "T-14",
+    "steps": 5,
+    "retries": 1,
+    "duration_s": 0.6,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp"
+    ],
+    "status": "completed"
+  },
+  "T-15": {
+    "missing_in_portal": [],
+    "task_id": "T-15",
+    "steps": 5,
+    "retries": 1,
+    "duration_s": 0.6,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp"
+    ],
+    "status": "completed"
+  },
+  "T-16": {
+    "missing_in_portal": [
+      "SHP-60403"
+    ],
+    "task_id": "T-16",
+    "steps": 5,
+    "retries": 1,
+    "duration_s": 0.6,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp"
+    ],
+    "status": "completed"
+  },
+  "T-17": {
+    "pods": [
+      {
+        "shipment_id": "SHP-60225",
+        "promised_on": "2026-08-12",
+        "delivered_on": "2026-08-13"
+      },
+      {
+        "shipment_id": "SHP-60384",
+        "promised_on": "2026-10-05",
+        "delivered_on": "2026-10-07"
+      },
+      {
+        "shipment_id": "SHP-60468",
+        "promised_on": "2026-10-18",
+        "delivered_on": "2026-10-17"
+      },
+      {
+        "shipment_id": "SHP-60188",
+        "promised_on": "2026-10-29",
+        "delivered_on": "2026-10-29"
+      }
+    ],
+    "task_id": "T-17",
+    "steps": 8,
+    "retries": 1,
+    "duration_s": 0.6,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp"
+    ],
+    "status": "needs_human"
+  },
+  "T-18": {
+    "pods": [
+      {
+        "shipment_id": "SHP-60082",
+        "promised_on": "2026-10-26",
+        "delivered_on": "2026-10-28"
+      },
+      {
+        "shipment_id": "SHP-60282",
+        "promised_on": "2026-10-08",
+        "delivered_on": "2026-10-11"
+      },
+      {
+        "shipment_id": "SHP-60366",
+        "promised_on": "2026-09-26",
+        "delivered_on": "2026-09-28"
+      },
+      {
+        "shipment_id": "SHP-60242",
+        "promised_on": "2026-08-09",
+        "delivered_on": "2026-08-10"
+      }
+    ],
+    "task_id": "T-18",
+    "steps": 8,
+    "retries": 1,
+    "duration_s": 0.6,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp"
+    ],
+    "status": "completed"
+  },
+  "T-19": {
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10161",
+        "result": "mismatch",
+        "reasons": [
+          "no_pod",
+          "detention_unjustified"
+        ],
+        "billed_inr": 73967.98,
+        "expected_inr": 36137.27,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10161",
+          "meridian:SHP-60179",
+          "pod:SHP-60179",
+          "meridian:SHP-60191",
+          "meridian:SHP-60183",
+          "pod:SHP-60183",
+          "meridian:SHP-60216",
+          "pod:SHP-60216"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10162",
+        "result": "mismatch",
+        "reasons": [
+          "surcharge_wrong"
+        ],
+        "billed_inr": 80672.95,
+        "expected_inr": 80491.16,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10162",
+          "meridian:SHP-60203",
+          "pod:SHP-60203",
+          "meridian:SHP-60206",
+          "pod:SHP-60206",
+          "meridian:SHP-60213",
+          "pod:SHP-60213"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10163",
+        "result": "cancelled"
+      },
+      {
+        "invoice_no": "TIR/26-27/10164",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 77552.93,
+        "expected_inr": 77552.93,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10164",
+          "meridian:SHP-60194",
+          "pod:SHP-60194",
+          "meridian:SHP-60215",
+          "pod:SHP-60215",
+          "meridian:SHP-60201",
+          "pod:SHP-60201",
+          "meridian:SHP-60202",
+          "pod:SHP-60202"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10165",
+        "result": "mismatch",
+        "reasons": [
+          "surcharge_wrong",
+          "detention_unjustified"
+        ],
+        "billed_inr": 77855.25,
+        "expected_inr": 76067.86,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10165",
+          "meridian:SHP-60181",
+          "pod:SHP-60181",
+          "meridian:SHP-60197",
+          "pod:SHP-60197",
+          "meridian:SHP-60186",
+          "pod:SHP-60186",
+          "meridian:SHP-60188",
+          "pod:SHP-60188"
+        ]
+      }
+    ],
+    "disputes": [
+      {
+        "invoice_no": "TIR/26-27/10161",
+        "reasons": [
+          "no_pod",
+          "detention_unjustified"
+        ],
+        "expected_inr": 36137.27,
+        "portal_ref": "DSP-47403"
+      },
+      {
+        "invoice_no": "TIR/26-27/10165",
+        "reasons": [
+          "surcharge_wrong",
+          "detention_unjustified"
+        ],
+        "expected_inr": 76067.86,
+        "portal_ref": "DSP-68144"
+      }
+    ],
+    "task_id": "T-19",
+    "steps": 27,
+    "retries": 1,
+    "duration_s": 1.4,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp",
+      "otp",
+      "approval"
+    ],
+    "status": "completed"
+  },
+  "T-20": {
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10156",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 98488.04,
+        "expected_inr": 98488.04,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10156",
+          "meridian:SHP-60167",
+          "pod:SHP-60167",
+          "meridian:SHP-60148",
+          "pod:SHP-60148",
+          "meridian:SHP-60150",
+          "pod:SHP-60150",
+          "meridian:SHP-60154",
+          "pod:SHP-60154"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10157",
+        "result": "mismatch",
+        "reasons": [
+          "weight_over"
+        ],
+        "billed_inr": 66194.59,
+        "expected_inr": 63852.08,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10157",
+          "meridian:SHP-60160",
+          "pod:SHP-60160",
+          "meridian:SHP-60171",
+          "pod:SHP-60171",
+          "meridian:SHP-60153",
+          "pod:SHP-60153",
+          "meridian:SHP-60157",
+          "pod:SHP-60157"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10158",
+        "result": "mismatch",
+        "reasons": [
+          "surcharge_wrong",
+          "detention_unjustified"
+        ],
+        "billed_inr": 54693.41,
+        "expected_inr": 52664.34,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10158",
+          "meridian:SHP-60161",
+          "pod:SHP-60161",
+          "meridian:SHP-60169",
+          "pod:SHP-60169",
+          "meridian:SHP-60146",
+          "pod:SHP-60146",
+          "meridian:SHP-60164",
+          "pod:SHP-60164"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10159",
+        "result": "mismatch",
+        "reasons": [
+          "no_pod",
+          "weight_over"
+        ],
+        "billed_inr": 80700.69,
+        "expected_inr": 56936.84,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10159",
+          "meridian:SHP-60170",
+          "pod:SHP-60170",
+          "meridian:SHP-60172",
+          "pod:SHP-60172",
+          "meridian:SHP-60163",
+          "pod:SHP-60163",
+          "meridian:SHP-60166"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10160",
+        "result": "mismatch",
+        "reasons": [
+          "no_pod",
+          "rate_wrong",
+          "detention_unjustified"
+        ],
+        "billed_inr": 87059.85,
+        "expected_inr": 50048.12,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10160",
+          "meridian:SHP-60176",
+          "pod:SHP-60176",
+          "meridian:SHP-60174",
+          "meridian:SHP-60165",
+          "pod:SHP-60165",
+          "meridian:SHP-60159",
+          "pod:SHP-60159"
+        ]
+      }
+    ],
+    "disputes": [
+      {
+        "invoice_no": "TIR/26-27/10157",
+        "reasons": [
+          "weight_over"
+        ],
+        "expected_inr": 63852.08,
+        "portal_ref": "DSP-97528"
+      },
+      {
+        "invoice_no": "TIR/26-27/10158",
+        "reasons": [
+          "surcharge_wrong",
+          "detention_unjustified"
+        ],
+        "expected_inr": 52664.34,
+        "portal_ref": "DSP-85779"
+      },
+      {
+        "invoice_no": "TIR/26-27/10159",
+        "reasons": [
+          "no_pod",
+          "weight_over"
+        ],
+        "expected_inr": 56936.84,
+        "portal_ref": "DSP-07704"
+      },
+      {
+        "invoice_no": "TIR/26-27/10160",
+        "reasons": [
+          "no_pod",
+          "rate_wrong",
+          "detention_unjustified"
+        ],
+        "expected_inr": 50048.12,
+        "portal_ref": "DSP-89006"
+      }
+    ],
+    "task_id": "T-20",
+    "steps": 33,
+    "retries": 1,
+    "duration_s": 1.9,
+    "cost_inr": 0.0,
+    "trace_id": null,
+    "human_steps": [
+      "otp",
+      "otp",
+      "approval"
+    ],
+    "status": "completed"
+  }
+}

@@ -162,6 +162,25 @@ streamlit run src/meridian/ui/app.py
 
 Pick an example task in the sidebar → **Run task** → type any 6 digits when the OTP box appears → approve or reject disputes in **Approvals** → see **Results**. Demo mode uses the real planner, rules engine and approval flow on a simulated portal (planted errors, one session expiry). Put `meridian-shipments.csv` in `data/` to use Meridian's real records.
 
+Test harness (all 20 public tasks in `harness/tasks_public.json`):
+
+```bash
+python harness/run_public.py --mode demo --auto-otp --auto-approve --rerun-disputes
+```
+
+| Flag | Meaning |
+|---|---|
+| `--key FILE` | score against an answer key (format in `src/meridian/evaluation.py`) |
+| `--save-key FILE` | snapshot this run as a regression key |
+| `--rerun-disputes` | run dispute tasks twice; any new dispute on the rerun counts as a duplicate |
+| `--only T-01,T-19` | run a subset |
+| `--fetch-tasks` | refresh the task list from the portal (team key from `.env`) |
+| `--auto-otp`, `--auto-approve` | demo only; live runs wait for a person in the operator screen |
+
+Each run writes `runs/eval/<label>/report.json`; the latest is copied to `eval_results/` and shown on the **Evaluation** tab (metrics vs targets, per-task table with problems, history).
+
+> The demo key `harness/answer_keys/demo_regression.json` is a snapshot of the engine's own output, so it catches regressions but is not ground truth. In demo mode T-04/06/07/08 fail because those invoice numbers don't exist in the simulated portal.
+
 Portal recon (read-only; you type the OTP yourself from the operator inbox):
 
 ```bash
@@ -209,6 +228,7 @@ Tracked in [docs/decisions.md](docs/decisions.md).
 - [x] Reconciliation engine (`src/meridian/reconcile/`) — all rules, expected amounts, dispute proposals, missing-in-portal; unit-tested
 - [x] Portal client foundation (`src/meridian/portal/`) — login, OTP/CAPTCHA hand-off, page-state detection, safe notice dismissal, retries with backoff, re-login on expiry, 2 req/s limiter, layout-tolerant table parsing, masked screenshots
 - [x] Operator screen (`streamlit run src/meridian/ui/app.py`) — plain-English task → plan, live step log, OTP box, dispute approvals, results, evaluation summary; demo mode on a simulated portal
+- [x] Test harness + evaluation page — runs all 20 public tasks, scores against an answer key, checks duplicate disputes on re-run
 - [ ] Run `harness/recon.py` against the live portal and tune selectors
 - [ ] Day 2 — core path on public tasks
 - [ ] Day 3 — "portal that fights back": retries, resume, OTP, popups; first full test run

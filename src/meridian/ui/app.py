@@ -316,11 +316,85 @@ with tab_res:
 
 # ---------------------------------------------------------------- Evaluation tab
 
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def load_reports() -> list[dict]:
+    reps = []
+    for p in sorted((ROOT / "runs" / "eval").glob("*/report.json")):
+        try:
+            reps.append(json.loads(p.read_text(encoding="utf-8")))
+        except (OSError, json.JSONDecodeError):
+            continue
+    latest = ROOT / "eval_results" / "latest_report.json"
+    if not reps and latest.exists():
+        reps.append(json.loads(latest.read_text(encoding="utf-8")))
+    return sorted(reps, key=lambda r: r.get("started", ""))
+
+
+def metric_card(col, label, value, target, ok):
+    icon = "—" if ok is None else ("✅" if ok else "❌")
+    col.markdown(f"<div class='amt-l'>{label}</div><div class='amt'>{value}</div>"
+                 f"<div class='amt-l'>{icon} target {target}</div>", unsafe_allow_html=True)
+
+
 with tab_eval:
+    reports = load_reports()
+    st.markdown("#### Test harness")
+    if not reports:
+        st.info("No harness runs yet. Run `python harness/run_public.py --mode demo --auto-otp --auto-approve "
+                "--rerun-disputes` and refresh.")
+    else:
+        labels = [f"{r['label']} · {r['mode']} · {r['started']}" for r in reports][::-1]
+        pick_r = st.selectbox("Harness run", labels, index=0)
+        rep = reports[::-1][labels.index(pick_r)]
+        m, p = rep["metrics"], rep["metrics"]["pass"]
+        pct = lambda v: "n/a" if v is None else f"{v:.0%}"  # noqa: E731
+        c = st.columns(4)
+        metric_card(c[0], "Task success", pct(m["task_success"]), "≥ 80%", p["task_success"])
+        metric_card(c[1], "Invoice accuracy", pct(m["invoice_accuracy"]), "≥ 90%", p["invoice_accuracy"])
+        metric_card(c[2], "Wrong disputes", m["wrong_disputes"], "0", p["wrong_disputes"])
+        metric_card(c[3], "Duplicate disputes", m["duplicate_disputes"], "0", p["duplicate_disputes"])
+        st.write("")
+        c = st.columns(4)
+        metric_card(c[0], "Needed a human (tasks)", m["needs_human_tasks"], "report it", None)
+        metric_card(c[1], "Avg time / task", f"{m['avg_duration_s']} s", "report it", None)
+        metric_card(c[2], "Avg steps / task", m["avg_steps"], "report it", None)
+        metric_card(c[3], "Avg cost / task", inr(m["avg_cost_inr"]), "report it", None)
+        notes = [f"mode **{rep['mode']}**", f"key: `{rep['answer_key'] or 'none'}`"]
+        if rep.get("auto_otp") or rep.get("auto_approve"):
+            notes.append("OTP/approvals auto-answered (demo only)")
+        if rep.get("reruns"):
+            notes.append("dispute tasks re-run: " + ", ".join(f"{k} → {v['new_disputes']} new" for k, v in rep["reruns"].items()))
+        st.caption(" · ".join(notes))
+
+        tdf = pd.DataFrame(rep["tasks"])
+        tdf["items"] = tdf["items_correct"].astype(str) + "/" + tdf["items_total"].astype(str)
+        tdf["problems"] = tdf["problems"].map(lambda x: "; ".join(x[:3]) + (" …" if len(x) > 3 else ""))
+        tdf["human_steps"] = tdf["human_steps"].map(", ".join)
+        tdf = tdf[["task_id", "kind", "status", "success", "items", "problems", "steps", "retries",
+                   "duration_s", "cost_inr", "human_steps"]]
+
+        def row_color(row):
+            col = "rgba(34,197,94,.12)" if row["success"] else ("rgba(234,179,8,.15)" if row["status"] == "needs_human"
+                                                               else "rgba(239,68,68,.12)")
+            return [f"background-color: {col}"] * len(row)
+
+        st.dataframe(tdf.style.apply(row_color, axis=1), hide_index=True, width="stretch",
+                     column_config={"duration_s": st.column_config.NumberColumn("time (s)", format="%.1f"),
+                                    "cost_inr": st.column_config.NumberColumn("cost", format="₹ %.2f"),
+                                    "problems": st.column_config.TextColumn(width="large")})
+
+        scored = [r for r in reports if r["metrics"].get("task_success") is not None]
+        if len(scored) > 1:
+            hist = pd.DataFrame([{"run": r["label"], "task_success": r["metrics"]["task_success"],
+                                  "invoice_accuracy": r["metrics"]["invoice_accuracy"]} for r in scored]).set_index("run")
+            st.markdown("##### History")
+            st.line_chart(hist)
+
+    st.markdown("#### Runs from this screen")
     runs = store.list_runs(200)
     finished = [r for r in runs if r.status not in RUN_ACTIVE]
-    st.markdown("Scores against the answer key come from the test harness (`harness/run_public.py`). "
-                "Until then this page summarises every run.")
     disputes = store.disputes()
     k = st.columns(6)
     k[0].metric("Runs", len(runs))

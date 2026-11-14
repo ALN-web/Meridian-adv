@@ -260,7 +260,7 @@ class DemoRunner:
             inv = self.w.invoice(p.params["invoice_no"])
             if inv is None:
                 self.step("open_invoice", "not_found", p.params["invoice_no"])
-                return {"invoices": [], "_status": "failed"}
+                return {"invoices": [], "_status": "failed", "error": f"invoice {p.params['invoice_no']} not found on portal"}
             invs = [inv]
         else:
             invs = self.w.search(p.params["lane"], p.params["month"])
