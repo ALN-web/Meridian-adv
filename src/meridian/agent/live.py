@@ -36,6 +36,7 @@ from meridian.reconcile import (
     reconcile_invoice,
 )
 from meridian.reconcile.explain import explain_invoice
+from meridian.telemetry import TaskTracer
 from meridian.store import Store
 
 
@@ -91,8 +92,8 @@ class LiveRunner:
             raise Cancelled()
 
     def _sink(self, step: str, outcome: str, extra: dict) -> None:
-        detail = ", ".join(f"{k}={v}" for k, v in extra.items() if k not in ("path",))[:300]
-        self.store.add_step(self.run_id, step, outcome, detail)
+        detail = ", ".join(f"{k}={v}" for k, v in extra.items() if k not in ("path", "page"))[:300]
+        self.store.add_step(self.run_id, step, outcome, detail, page=extra.get("page"))
 
     def _waiting(self, kind: str) -> None:
         self.human_steps.append(kind)
@@ -106,6 +107,9 @@ class LiveRunner:
         from playwright.async_api import async_playwright
 
         self.store.set_status(self.run_id, "running")
+        tracer = TaskTracer(self.run_id, self.task_id, self.store.get_run(self.run_id).task_text, self.plan.kind,
+                            "live", settings=self.settings)
+        self.store.subscribe(self.run_id, tracer)
         client = None
         try:
             async with async_playwright() as pw:
@@ -135,16 +139,16 @@ class LiveRunner:
             self.store.add_step(self.run_id, "runner", "failed", f"{type(exc).__name__}: {exc}"[:300])
             result, status = {"error": f"{type(exc).__name__}: {exc}"[:300]}, "failed"
         log = client.log if client else None
-        if status == "cancelled":
-            result.update(task_id=self.task_id, status="failed")
-            self.store.set_status(self.run_id, "cancelled", result=result, error=result.get("error"))
-            return
         result.update(
-            task_id=self.task_id, status=status,
+            task_id=self.task_id, status="failed" if status == "cancelled" else status,
             steps=log.steps if log else 0, retries=log.retries.retries if log else 0,
-            duration_s=round(time.time() - self.t0, 1), cost_inr=0.0, trace_id=None,
+            duration_s=round(time.time() - self.t0, 1), cost_inr=0.0, trace_id=tracer.trace_id,
             human_steps=self.human_steps,
         )
+        if tracer.url:
+            result["trace_url"] = tracer.url
+        self.store.unsubscribe(self.run_id)
+        tracer.finish(status, result)
         self.store.set_status(self.run_id, status, result=result, error=result.get("error"))
 
     # ------------------------------------------------------------------ task kinds

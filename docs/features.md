@@ -65,7 +65,7 @@ with status. ✅ done · 🟡 partial · ❌ not started · ⭐ stretch.
 | 5.12 | Run the public test set from the UI | Graders | ✅ |
 | 5.13 | Monthly summary for the logistics manager (overcharges by lane/reason, disputes, amount at stake) | Logistics manager | ✅ |
 | 5.14 | System status: portal reachable, credentials/LLM/Langfuse configured (never values) | Operator | ✅ |
-| 5.15 | Link to the Langfuse trace per run | Demo script | ❌ (after tracing) |
+| 5.15 | Link to the Langfuse trace per run | Demo script | ✅ |
 
 ## 6. Testing & evaluation
 
@@ -80,8 +80,8 @@ with status. ✅ done · 🟡 partial · ❌ not started · ⭐ stretch.
 
 | # | Feature | Status |
 |---|---|---|
-| 7.1 | One Langfuse trace per task, one span per step (page, action, outcome, retries, time) | ❌ |
-| 7.2 | Screenshots attached for write actions, login/password/names/phones masked | ❌ |
+| 7.1 | One Langfuse trace per task, one span per step (page, action, outcome, retries, time) | ✅ (+ local copy) |
+| 7.2 | Screenshots attached for write actions, login/password/names/phones masked | ✅ |
 
 ## 8. Hand-in
 

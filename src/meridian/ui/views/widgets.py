@@ -81,6 +81,40 @@ def invoice_header(detail: dict) -> None:
     st.markdown(chips(reasons, "bad") if reasons else chips(["no rule fired"], "ok"), unsafe_allow_html=True)
 
 
+def trace_view(result: dict, key: str) -> None:
+    """Trace link (Langfuse) and the local copy of the trace: one span per step."""
+    from pathlib import Path
+
+    from meridian.telemetry import read_trace
+
+    tid = result.get("trace_id")
+    if not tid:
+        st.caption("No trace for this run (it ran before tracing was added).")
+        return
+    url = result.get("trace_url")
+    recs = read_trace(tid)
+    spans = [r for r in recs if r["type"] == "span"]
+    end = next((r for r in recs if r["type"] == "end"), {})
+    c = st.columns([3, 1])
+    c[0].markdown(f"Trace `{tid}` · {len(spans)} spans · {end.get('duration_s', '—')} s"
+                  + (f" · [open in Langfuse]({url})" if url else " · local copy only (set LANGFUSE keys to send to Langfuse)"))
+    if spans:
+        df = pd.DataFrame(spans)[["end", "name", "page", "outcome", "retries", "duration_ms", "level", "detail"]]
+        df["end"] = df["end"].str[11:19]
+        colour = {"ERROR": "background-color: rgba(208,59,59,.14)", "WARNING": "background-color: rgba(250,178,25,.16)"}
+        st.dataframe(df.style.apply(lambda r: [colour.get(r["level"], "")] * len(r), axis=1), hide_index=True,
+                     width="stretch", height=320,
+                     column_config={"end": "time", "duration_ms": st.column_config.NumberColumn("ms", format="%d")})
+    for a in [r for r in recs if r["type"] == "attachment"]:
+        p = Path(a["path"])
+        if p.suffix.lower() == ".png" and p.exists():
+            st.image(str(p), caption=f"Attached to trace: {a['label']} (masked)", width="stretch")
+        elif p.exists():
+            st.download_button(f"⬇ Attached: {a['label']}", p.read_bytes(), file_name=p.name, key=f"{key}-{a['label']}")
+    st.caption("Masked before sending: portal user, password, team key, phone numbers, e-mails, receiver names. "
+               "OTP codes are never logged.")
+
+
 def documents_for(store: Store, run_id: str, labels: list[str]) -> list[dict]:
     want = set(labels)
     return [d for d in store.documents(run_id) if d["label"] in want]

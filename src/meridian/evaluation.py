@@ -47,6 +47,7 @@ class TaskScore:
     duration_s: float = 0.0
     cost_inr: float = 0.0
     human_steps: list[str] = field(default_factory=list)
+    trace_id: str | None = None
 
 
 def _invoice_map(items: list[dict]) -> dict[str, dict]:
@@ -81,7 +82,7 @@ def score_task(task_id: str, kind: str, result: dict | None, expected: dict | No
         task_id=task_id, kind=kind, status=result.get("status", "failed"), success=False,
         items_correct=0, items_total=0, steps=result.get("steps", 0) or 0, retries=result.get("retries", 0) or 0,
         duration_s=result.get("duration_s", 0) or 0, cost_inr=result.get("cost_inr", 0) or 0,
-        human_steps=list(result.get("human_steps") or []),
+        human_steps=list(result.get("human_steps") or []), trace_id=result.get("trace_id"),
     )
     if s.status == "failed":
         s.problems.append(f"task failed: {result.get('error') or 'see step log'}")

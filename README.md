@@ -223,6 +223,24 @@ docker compose up
 
 > ⚠️ Never commit `.env`, the team key, portal passwords, the tasks URL with its key, or unmasked screenshots.
 
+## Telemetry (Langfuse)
+
+One trace per task, one span per step. Each span records the **page**, the **action** and its target, the
+**outcome**, **retries** and **time**. Write actions (dispute submissions) get their masked screenshot or receipt attached.
+The root span's output summarises the task: status, steps, retries, time, cost, invoice counts and disputes.
+
+```bash
+# .env
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_HOST=https://cloud.langfuse.com      # or https://us.cloud.langfuse.com / self-hosted
+```
+
+- Without keys, traces are still written to `runs/traces/<trace_id>.jsonl` and shown under **Results → Trace**.
+- With keys, **Run a task** and **Results** link straight to the trace in Langfuse; the trace id is in every task result and on the Evaluation page.
+- **No personal data in traces.** Everything sent passes a mask: portal user, password, team key, phone numbers, e-mails and receiver names become `[redacted]`, `[phone]`, `[email]`, `[person]`. Screenshots are masked in the browser before capture. OTP codes are never logged. Tested against a local stub of the Langfuse endpoint (`tests/test_telemetry.py`).
+- Tracing never breaks a task: export errors are logged and ignored.
+
 ## Evaluation targets
 
 | Metric | Target |
@@ -259,7 +277,8 @@ Tracked in [docs/decisions.md](docs/decisions.md).
 - [ ] Run `harness/recon.py` against the live portal and tune selectors
 - [ ] Day 2 — core path on public tasks
 - [ ] Day 3 — "portal that fights back": retries, resume, OTP, popups; first full test run
-- [ ] Day 4 — safety (dispute gate), failure handling, Langfuse tracing
+- [x] Langfuse tracing (one trace per task, span per step, masked, screenshots attached)
+- [ ] Day 4 — safety (dispute gate), failure handling
 - [ ] Day 5 — evaluation page, README, stretch goal, demo rehearsal
 - [ ] Stretch — whole month in parallel browser contexts within rate limit, scheduled monthly with a summary
 

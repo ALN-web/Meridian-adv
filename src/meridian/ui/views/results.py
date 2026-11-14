@@ -8,7 +8,7 @@ import pandas as pd
 import streamlit as st
 
 from meridian.ui.common import badge, big, get_store, inr, pick_run
-from meridian.ui.views.widgets import documents_for, invoice_header, line_table
+from meridian.ui.views.widgets import documents_for, invoice_header, line_table, trace_view
 
 ROW_BG = {"match": "rgba(12,163,12,.12)", "mismatch": "rgba(208,59,59,.12)", "cancelled": "rgba(127,127,127,.14)"}
 
@@ -82,6 +82,9 @@ def render() -> None:
             st.dataframe(pd.DataFrame(r["disputes"]), hide_index=True, width="stretch")
         else:
             st.caption("None raised in this run.")
+
+    st.subheader("Trace")
+    trace_view(r, f"tr-{run.id}")
 
     with st.expander("Task result JSON (graded format)"):
         st.json(r)

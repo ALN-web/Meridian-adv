@@ -156,7 +156,14 @@ class StepLog:
 
     sink: object = None  # optional callable(step, outcome, extra) — e.g. the run store
 
+    page_fn: object = None  # optional callable() -> current page path
+
     def add(self, step: str, outcome: str, **extra) -> None:
+        if callable(self.page_fn) and "page" not in extra:
+            try:
+                extra["page"] = self.page_fn()
+            except Exception:
+                pass
         self.steps += 1
         self.events.append({"step": step, "outcome": outcome, **extra})
         if callable(self.sink):
@@ -200,6 +207,9 @@ class PortalClient:
         self._ctx.set_default_timeout(ACTION_TIMEOUT_MS)
         self._ctx.set_default_navigation_timeout(NAV_TIMEOUT_MS)
         self.page = await self._ctx.new_page()
+        from urllib.parse import urlparse
+
+        self.log.page_fn = lambda: urlparse(self.page.url).path.lstrip("/") or "(blank)"
 
     async def close(self) -> None:
         if self._ctx is not None:

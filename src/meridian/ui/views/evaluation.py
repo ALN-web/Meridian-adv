@@ -118,7 +118,11 @@ def render() -> None:
     tdf["items"] = tdf["items_correct"].astype(str) + "/" + tdf["items_total"].astype(str)
     tdf["problems"] = tdf["problems"].map(lambda x: "; ".join(x[:3]) + (" …" if len(x) > 3 else ""))
     tdf["human_steps"] = tdf["human_steps"].map(", ".join)
-    tdf = tdf[["task_id", "kind", "status", "success", "items", "problems", "steps", "retries", "duration_s", "cost_inr", "human_steps"]]
+    if "trace_id" not in tdf:
+        tdf["trace_id"] = None
+    tdf["trace_id"] = tdf["trace_id"].map(lambda t: t[:12] + "…" if isinstance(t, str) else "")
+    tdf = tdf[["task_id", "kind", "status", "success", "items", "problems", "steps", "retries", "duration_s", "cost_inr",
+               "human_steps", "trace_id"]]
     bg = lambda row: [("background-color: rgba(12,163,12,.12)" if row["success"] else  # noqa: E731
                        "background-color: rgba(250,178,25,.16)" if row["status"] == "needs_human" else
                        "background-color: rgba(208,59,59,.12)")] * len(row)

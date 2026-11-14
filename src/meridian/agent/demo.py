@@ -247,25 +247,35 @@ class DemoRunner:
                                            f"Promised Date: {pod.promised_on:%d-%b-%y}",
                                            f"Delivered Date: {pod.delivered_on:%d-%b-%y}"], scanned=not pod.confident)
 
+    def _finish(self, status: str, result: dict, error: str | None = None) -> None:
+        result.update(task_id=self.task_id, steps=self.steps, retries=self.retries,
+                      duration_s=round(time.time() - self.t0, 1), cost_inr=0.0,
+                      trace_id=self.tracer.trace_id, human_steps=self.human_steps)
+        if self.tracer.url:
+            result["trace_url"] = self.tracer.url
+        result["status"] = "failed" if status == "cancelled" else status
+        self.store.unsubscribe(self.run_id)
+        self.tracer.finish(status, result)
+        self.store.set_status(self.run_id, status, result=result, error=error)
+
     def _safe_run(self):
+        from meridian.telemetry import TaskTracer
+
+        run = self.store.get_run(self.run_id)
+        self.tracer = TaskTracer(self.run_id, self.task_id, run.task_text if run else "", self.plan.kind, "demo")
+        self.store.subscribe(self.run_id, self.tracer)
         try:
             self.store.set_status(self.run_id, "running")
             result = self._run()
-            result.update(task_id=self.task_id, steps=self.steps, retries=self.retries,
-                          duration_s=round(time.time() - self.t0, 1), cost_inr=0.0, trace_id=None,
-                          human_steps=self.human_steps)
             status = result.pop("_status", "completed")
-            result["status"] = status
             self.phase(len(self.plan.steps) - 1)
-            self.store.set_status(self.run_id, status, result=result)
+            self._finish(status, result, result.get("error"))
         except Cancelled:
             self.store.add_step(self.run_id, "runner", "cancelled", "Stopped by the operator — progress kept, can resume")
-            self.store.set_status(self.run_id, "cancelled", error="stopped by operator",
-                                  result={"task_id": self.task_id, "status": "failed", "error": "stopped by operator"})
+            self._finish("cancelled", {"error": "stopped by operator"}, "stopped by operator")
         except Exception as exc:  # demo: surface errors in the UI
             self.store.add_step(self.run_id, "runner", "failed", f"{type(exc).__name__}: {exc}")
-            self.store.set_status(self.run_id, "failed", error=str(exc),
-                                  result={"task_id": self.task_id, "status": "failed"})
+            self._finish("failed", {"error": f"{type(exc).__name__}: {exc}"}, str(exc))
 
     def _run(self) -> dict:
         p = self.plan

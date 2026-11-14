@@ -94,6 +94,10 @@ def _controls(store, run) -> None:
                 st.rerun()
     if run.result and c[1].button("📋 Results"):
         st.switch_page(st.session_state["pages"]["results"])
+    if run.result and run.result.get("trace_url"):
+        c[2].markdown(f"[🔭 Open trace in Langfuse]({run.result['trace_url']})")
+    elif run.result and run.result.get("trace_id"):
+        c[2].caption(f"Trace {run.result['trace_id'][:12]}… (local copy — see Results)")
 
 
 def render() -> None:

@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS documents (
 MIGRATIONS = (
     "ALTER TABLE runs ADD COLUMN phase INTEGER DEFAULT 0",
     "ALTER TABLE runs ADD COLUMN cancel INTEGER DEFAULT 0",
+    "ALTER TABLE steps ADD COLUMN page TEXT",
 )
 
 RUN_ACTIVE = ("queued", "running", "waiting_for_human")
@@ -78,6 +79,7 @@ class Store:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
+        self._listeners: dict[str, list] = {}
         with self._conn() as c:
             c.executescript(SCHEMA)
             for m in MIGRATIONS:
@@ -140,13 +142,32 @@ class Store:
 
     # ------------------------------------------------------------------ steps
 
+    def subscribe(self, run_id: str, listener) -> None:
+        """Listener gets ``on_step(...)`` and ``on_document(...)`` calls for this run (e.g. a TaskTracer)."""
+        self._listeners.setdefault(run_id, []).append(listener)
+
+    def unsubscribe(self, run_id: str) -> None:
+        self._listeners.pop(run_id, None)
+
+    def _notify(self, run_id: str, method: str, *args, **kwargs) -> None:
+        for listener in list(self._listeners.get(run_id, [])):
+            try:
+                getattr(listener, method)(*args, **kwargs)
+            except Exception:  # telemetry must never break a task
+                pass
+
     def add_step(self, run_id: str, step: str, outcome: str, detail: str = "", retries: int = 0,
-                 duration_ms: int | None = None) -> None:
+                 duration_ms: int | None = None, page: str | None = None) -> None:
+        if page is None:
+            from meridian.telemetry import page_for
+
+            page = page_for(step)
         with self._lock, self._conn() as c:
             c.execute(
-                "INSERT INTO steps (run_id, ts, step, outcome, detail, retries, duration_ms) VALUES (?,?,?,?,?,?,?)",
-                (run_id, time.time(), step, outcome, detail, retries, duration_ms),
+                "INSERT INTO steps (run_id, ts, step, outcome, detail, retries, duration_ms, page) VALUES (?,?,?,?,?,?,?,?)",
+                (run_id, time.time(), step, outcome, detail, retries, duration_ms, page),
             )
+        self._notify(run_id, "on_step", step, outcome, detail, retries=retries, duration_ms=duration_ms, page=page)
 
     def steps(self, run_id: str) -> list[dict]:
         with self._conn() as c:
@@ -280,6 +301,7 @@ class Store:
         with self._lock, self._conn() as c:
             c.execute("INSERT INTO documents (run_id, kind, label, path, ts) VALUES (?,?,?,?,?)",
                       (run_id, kind, label, str(path), time.time()))
+        self._notify(run_id, "on_document", kind, label, str(path))
 
     def documents(self, run_id: str | None = None, kind: str | None = None) -> list[dict]:
         q, args = "SELECT * FROM documents WHERE 1=1", []
