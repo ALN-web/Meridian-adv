@@ -154,13 +154,19 @@ playwright install chromium
 pytest
 ```
 
-Landing page (scroll-driven hero: a reach-stacker loads the truck, then what the agent checks slides in):
+Landing pages:
 
 ```bash
 python -m http.server 8700 --directory web     # http://localhost:8700
 ```
 
-The flagship is **Night Network** at `http://localhost:8700/network.html`: a dark, cinematic WebGL story with bloom, a particle globe with India lit and lanes pulsing out of Pune, then three stations (a glitching legacy portal, the eight-rule ring sorting invoice lines, one approved dispute). Its prompt is in [docs/prompts/3d-night-network.md](docs/prompts/3d-night-network.md). A 3D version, **One invoice's journey** (Three.js, every object modelled in code), is at `http://localhost:8700/3d.html`; its prompt is in [docs/prompts/3d-landing.md](docs/prompts/3d-landing.md). Its buttons open the operator screen on port 8510 (override with `?app=http://host:port`). `?rec=1` turns on a deterministic recorder mode (`window.__recTime(video, t)`) for frame-by-frame capture. The clip is streamed from its CDN URL; fonts come from Google Fonts.
+| URL | Page |
+|---|---|
+| `/` (`index.html`) | **Night Network**, the main landing page: dark, cinematic WebGL with bloom. A particle globe with India lit and lanes pulsing out of Pune, then three stations: a glitching legacy portal, the eight-rule ring sorting invoice lines, one approved dispute. Prompt: [docs/prompts/3d-night-network.md](docs/prompts/3d-night-network.md) |
+| `/3d.html` | **One invoice's journey**: white-studio 3D truck story (Three.js, every object modelled in code). Prompt: [docs/prompts/3d-landing.md](docs/prompts/3d-landing.md) |
+| `/classic.html` | The original scroll hero: a reach-stacker loads the truck, then what the agent checks slides in. `?rec=1` turns on a deterministic recorder mode (`window.__recTime(video, t)`); the clip streams from its CDN URL |
+
+`/network.html` redirects to `/`. All pages link to each other, and their buttons open the operator screen on port 8510 (override with `?app=http://host:port`). Three.js and fonts load from public CDNs (jsDelivr, Google Fonts).
 
 Operator screen (demo mode works without the portal):
 
