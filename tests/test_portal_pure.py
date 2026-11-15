@@ -234,3 +234,21 @@ def test_rate_limiter_penalty():
     lim.back_off(10)
     run(lim.wait())
     assert slept == [10]
+
+
+def test_real_portal_headers_seen_in_recon():
+    """Column wording copied from the real TransIndus portal (recon, Nov 2026)."""
+    from meridian.portal.tables import parse_fuel_surcharge, parse_invoice_list, parse_rate_card
+
+    inv = parse_invoice_list([{"Invoice No": "TIR/26-27/10205", "Invoice Date": "04-Nov-26", "Lane": "PUN-DEL",
+                               "No. of Consignments": "4", "Invoice Value (Rs.)": "131,454.66", "Status": "Open",
+                               "__href": "/Billing/InvoiceView.aspx?InvNo=TIR%2F26-27%2F10205"}])
+    assert inv[0].total == D("131454.66") and inv[0].lane == "PUN-DEL"
+    rates = parse_rate_card([
+        {"Lane": "PUN-BLR", "Rate": "15.24", "Effective From": "01-Apr-26", "Effective To": "18-Sep-26"},
+        {"Lane": "PUN-BLR", "Rate": "15.84", "Effective From": "19-Sep-26", "Effective To": "Till date"},
+    ])
+    assert [(r.rate_per_kg, r.effective_from.isoformat()) for r in rates] == [
+        (D("15.24"), "2026-04-01"), (D("15.84"), "2026-09-19")]
+    assert parse_fuel_surcharge([{"Month": "2026-08", "FSC %": "12.5"}, {"Month": "2026-09", "FSC %": "13.0"}]) == {
+        "2026-08": D("12.5"), "2026-09": D("13.0")}

@@ -32,12 +32,12 @@ _PERSON = re.compile(r"(?i)(received\s*by|receiver|contact\s*person|signed\s*by|
 # Which portal page a step name belongs to (live runs report the real page path instead).
 PAGE_OF = [
     (r"^(open_portal|login|otp|captcha)", "Login.aspx"),
-    (r"^search_invoices|^missing:", "Invoices.aspx"),
-    (r"^(open_invoice|invoice(_pdf)?):", "Invoice.aspx"),
-    (r"^pod(_pdf)?:", "Pods.aspx"),
-    (r"^rate_card", "RateCard.aspx"),
-    (r"^fuel", "Fuel.aspx"),
-    (r"^dispute_list|^dispute_submit|^dispute:", "Disputes.aspx"),
+    (r"^search_invoices|^missing:|^shipment_index", "Billing/InvoiceList.aspx"),
+    (r"^(open_invoice|invoice(_pdf)?):", "Billing/InvoiceView.aspx"),
+    (r"^pod(_pdf)?:", "Ops/PODSearch.aspx"),
+    (r"^rate_card", "Masters/RateCard.aspx"),
+    (r"^fuel", "Masters/FuelSurcharge.aspx"),
+    (r"^dispute_list|^dispute_submit|^dispute:", "Disputes/DisputeList.aspx"),
     (r"^dismiss_notice", "(notice overlay)"),
     (r"^reconcile:|^billing_history|^load_meridian", "(rules engine, no page)"),
     (r"^approvals|^approval", "(operator screen)"),

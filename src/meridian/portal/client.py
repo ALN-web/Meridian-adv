@@ -198,6 +198,12 @@ class PortalClient:
         self._ctx = None
         self._login_failures = 0
         self.notice_wait_s = 15  # how long to wait for a notice that hides itself
+        # Per-session caches. The real portal has no invoice-number or shipment search, so invoice
+        # links are remembered from the list, and "which invoices bill shipment X" is answered by
+        # reading every invoice once (shipment_index).
+        self._inv_href: dict[str, str] = {}
+        self._inv_cache: dict[str, tuple] = {}
+        self._shipment_index: dict[str, list[InvoiceRow]] | None = None
 
     # ------------------------------------------------------------------ lifecycle
 
@@ -387,6 +393,7 @@ class PortalClient:
         form = field_.locator("xpath=ancestor::form[1]")
         scope = form if await form.count() else self.page
         submit = scope.locator("input[type=submit], button[type=submit], button")
+        await self.limiter.wait()
         async with self.page.expect_navigation(wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS):
             if await submit.count():
                 await submit.first.click()
@@ -416,6 +423,7 @@ class PortalClient:
 
     async def goto(self, path_or_url: str) -> None:
         url = path_or_url if path_or_url.startswith("http") else self.url(path_or_url)
+        await self.limiter.wait()  # every page load counts against the 2 requests/second limit
         resp = await self.page.goto(url, wait_until="domcontentloaded")
         await self.settle(resp.status if resp else None)
 
@@ -428,6 +436,7 @@ class PortalClient:
             link = self.page.get_by_role("link", name=pattern).first
         if await link.count() == 0:
             raise PageNotUnderstood(f"menu link for {area!r} not found")
+        await self.limiter.wait()
         await link.click()
         await self.page.wait_for_load_state("domcontentloaded")
         await self.settle()
@@ -443,10 +452,14 @@ class PortalClient:
                 return g
         raise PageNotUnderstood(f"no grid with a column like {must_have!r}")
 
-    async def _next_page(self) -> bool:
-        nxt = self.page.get_by_role("link", name=re.compile(r"^\s*(next|>|»|›)\s*$", re.I))
+    async def _next_page(self, current: int | None = None) -> bool:
+        """Go to the next page of a grid. Handles 'Next', 'Next >', '>' and numbered pagers (1 2 3)."""
+        nxt = self.page.get_by_role("link", name=re.compile(r"^\s*(next\s*(page)?\s*[>»›]*|[>»›]{1,2})\s*$", re.I))
         if await nxt.count() == 0:
             nxt = self.page.locator("input[type=submit][value*=Next i], input[type=button][value*=Next i]")
+        if await nxt.count() == 0 and current is not None:
+            nxt = self.page.locator("table a, .pager a, tr.pager a").filter(
+                has_text=re.compile(rf"^\s*{current + 1}\s*$"))
         if await nxt.count() == 0 or not await nxt.first.is_enabled():
             return False
         before = await self.page.evaluate("() => document.body.innerText.length + location.href")
@@ -460,15 +473,19 @@ class PortalClient:
     # ------------------------------------------------------------------ invoices
 
     async def search_invoices(self, lane: str | None = None, month: str | None = None, status: str | None = None,
-                              *, invoice_no: str | None = None, shipment_id: str | None = None) -> list[InvoiceRow]:
-        """Invoice search with pagination. ``month`` is YYYY-MM (invoice-date month)."""
+                              *, invoice_no: str | None = None) -> list[InvoiceRow]:
+        """Invoice list with pagination. ``month`` is YYYY-MM (invoice-date month).
+
+        Filters the portal doesn't offer (the real one has no invoice-number box) are applied in
+        code, so the answer is the same either way.
+        """
 
         async def run():
             await self.open_menu("invoices")
-            await self._fill_search(lane=lane, month=month, status=status, invoice_no=invoice_no, shipment_id=shipment_id)
+            await self._fill_search(lane=lane, month=month, status=status, invoice_no=invoice_no)
             rows: list[InvoiceRow] = []
             seen: set[str] = set()
-            for _ in range(200):  # hard stop against pagination loops
+            for page_no in range(1, 201):  # hard stop against pagination loops
                 if re.search(r"no records found|no invoices found", await self.page.inner_text("body"), re.I):
                     break
                 grid = await self.main_grid(r"invoice")
@@ -476,11 +493,12 @@ class PortalClient:
                     if r.invoice_no not in seen:
                         seen.add(r.invoice_no)
                         rows.append(r)
-                if not await self._next_page():
+                self._remember_links(grid.rows)
+                if not await self._next_page(page_no):
                     break
             return rows
 
-        rows = await self.step(f"search_invoices:{lane or ''}:{month or ''}:{invoice_no or shipment_id or ''}", run)
+        rows = await self.step(f"search_invoices:{lane or ''}:{month or ''}:{invoice_no or ''}", run)
         # Filter again in code — never trust the portal's filter alone.
         if lane:
             rows = [r for r in rows if r.lane is None or r.lane == lane]
@@ -489,6 +507,13 @@ class PortalClient:
         if invoice_no:
             rows = [r for r in rows if r.invoice_no == invoice_no]
         return rows
+
+    def _remember_links(self, grid_rows: list[dict[str, str]]) -> None:
+        for r in grid_rows:
+            href = r.get("__href")
+            no = next((v.strip() for h, v in r.items() if re.search(r"invoice\s*(no|number|#)", h, re.I) and v), None)
+            if href and no:
+                self._inv_href[no] = href
 
     async def _set_control(self, label_pat: str, name_hint: str, value: str) -> bool:
         pat = re.compile(label_pat, re.I)
@@ -523,24 +548,34 @@ class PortalClient:
             await self.page.wait_for_load_state("domcontentloaded")
             await self.settle()
 
-    async def _fill_search(self, *, lane=None, month=None, status=None, invoice_no=None, shipment_id=None) -> None:
-        """Fill whatever search controls exist (labels first, then name/id hints)."""
-        if lane:
-            await self._set_control(r"\blane\b|route", "lane", lane)
+    async def _fill_search(self, *, lane=None, month=None, status=None, invoice_no=None, shipment_id=None) -> set[str]:
+        """Fill whatever search controls exist (labels first, then name/id hints).
+        Returns the filters that were actually set; results are always re-filtered in code."""
+        applied: set[str] = set()
+        if lane and await self._set_control(r"\blane\b|route", "lane", lane):
+            applied.add("lane")
         if month:
             from datetime import date as _d
 
             y, m = map(int, month.split("-"))
-            label = _d(y, m, 1).strftime("%b-%y")  # e.g. Oct-26; results are re-filtered by date anyway
-            if not await self._set_control(r"month|period", "month", month):
-                await self._set_control(r"month|period", "month", label)
-        if status:
-            await self._set_control(r"status", "status", status)
-        if invoice_no:
-            await self._set_control(r"invoice\s*(no|number|#)", "invoice", invoice_no)
+            first = _d(y, m, 1)
+            # The real portal lists "October 2026"; older builds used "Oct-26".
+            for v in (month, first.strftime("%B %Y"), first.strftime("%b-%y"), first.strftime("%b %Y")):
+                if await self._set_control(r"month|period", "month", v):
+                    applied.add("month")
+                    break
+        if status and await self._set_control(r"status", "status", status):
+            applied.add("status")
+        if invoice_no and await self._set_control(r"invoice\s*(no|number|#)", "invoice", invoice_no):
+            applied.add("invoice_no")
         if shipment_id:
-            await self._set_control(r"shipment|consignment|docket", "shipment", shipment_id)
+            # The real POD page names its box txtCons (consignment).
+            for hint in ("shipment", "cons", "docket"):
+                if await self._set_control(r"shipment|consignment|docket", hint, shipment_id):
+                    applied.add("shipment_id")
+                    break
         await self._click_search()
+        return applied
 
     async def key_values(self) -> dict[str, str]:
         """Label/value pairs from two-cell rows (``<th>Label</th><td>value</td>``)."""
@@ -555,18 +590,18 @@ class PortalClient:
         from meridian.portal.tables import parse_invoice_lines
         from meridian.reconcile.types import Invoice
 
+        if invoice_no in self._inv_cache:
+            return self._inv_cache[invoice_no]
+        if invoice_no not in self._inv_href:
+            await self.search_invoices(invoice_no=invoice_no)  # fills the link cache
+        href = self._inv_href.get(invoice_no)
+        if href is None:
+            return None, None
+
         async def run():
-            await self.open_menu("invoices")
-            await self._fill_search(invoice_no=invoice_no)
-            link = self.page.get_by_role("link", name=invoice_no, exact=True)
-            if await link.count() == 0:
-                if re.search(r"no records found", await self.page.inner_text("body"), re.I):
-                    return None
-                raise PageNotUnderstood(f"invoice {invoice_no} not in search results")
-            await self.limiter.wait()
-            await link.first.click()
-            await self.page.wait_for_load_state("domcontentloaded")
-            await self.settle()
+            await self.goto(href)
+            if re.search(r"invoice .{0,40}not found", await self.page.inner_text("body"), re.I):
+                return None
             kv = {k.lower(): v for k, v in (await self.key_values()).items()}
             grids = await self.grids()
             lines_grid = next((g for g in grids if any(re.search(r"shipment|consignment", h, re.I) for h in g.headers)), None)
@@ -602,7 +637,34 @@ class PortalClient:
                 self.log.add(f"invoice_pdf:{invoice_no}", "ok", path=str(pdf))
             except Exception as exc:  # the PDF is evidence, not required for the numbers
                 self.log.add(f"invoice_pdf:{invoice_no}", "failed", error=type(exc).__name__)
+        self._inv_cache[invoice_no] = (inv, pdf)
         return inv, pdf
+
+    async def shipment_index(self, on_progress=None) -> dict[str, list[InvoiceRow]]:
+        """shipment id -> every invoice row (any status) that bills it.
+
+        The portal can't search invoices by shipment, so this reads each invoice once per session.
+        Invoices are cached, so a reconcile run that follows pays nothing extra for them.
+        """
+        if self._shipment_index is not None:
+            return self._shipment_index
+        rows = await self.search_invoices()
+        index: dict[str, list[InvoiceRow]] = {}
+        for n, row in enumerate(rows, 1):
+            inv, _ = await self.open_invoice(row.invoice_no)
+            if on_progress:
+                on_progress(n, len(rows))
+            if inv is None:
+                raise PageNotUnderstood(f"invoice {row.invoice_no} listed but could not be opened")
+            for line in inv.lines:
+                index.setdefault(line.shipment_id, []).append(row)
+        self.log.add("shipment_index", "ok", invoices=len(rows), shipments=len(index))
+        self._shipment_index = index
+        return index
+
+    async def invoices_billing(self, shipment_id: str) -> list[InvoiceRow]:
+        """Every invoice (any status) with a line for this shipment."""
+        return list((await self.shipment_index()).get(shipment_id, []))
 
     async def get_pod(self, shipment_id: str):
         """Delivery proof for one shipment -> (Pod | None, pdf path | None).
@@ -615,7 +677,8 @@ class PortalClient:
 
         async def run():
             await self.open_menu("pods")
-            await self._fill_search(shipment_id=shipment_id)
+            if "shipment_id" not in await self._fill_search(shipment_id=shipment_id):
+                raise PageNotUnderstood("POD search box not found")
             body = await self.page.inner_text("body")
             if re.search(r"no (delivery proof|pod|records?) found", body, re.I):
                 return None
@@ -715,10 +778,19 @@ class PortalClient:
             await self.settle()
         if not await self._set_control(r"invoice", "invoice", invoice_no):
             raise PageNotUnderstood("dispute form: invoice field not found")
+        from meridian.portal.tables import REASON_HINTS, REASON_LABELS
+
         for r in reasons:
-            box = self.page.get_by_label(r, exact=True)
+            box = self.page.locator(f"input[type=checkbox][value='{r}']")
+            if await box.count() == 0 and r in REASON_LABELS:
+                box = self.page.get_by_label(REASON_LABELS[r], exact=True)
             if await box.count() == 0:
-                box = self.page.locator(f"input[type=checkbox][value='{r}']")
+                box = self.page.get_by_label(r, exact=True)
+            if await box.count() == 0 and r in REASON_HINTS:
+                hinted = self.page.get_by_label(re.compile(REASON_HINTS[r], re.I))
+                # Only use a fuzzy match when exactly one box fits — never guess between two.
+                if await hinted.count() == 1:
+                    box = hinted
             if await box.count() == 0:
                 raise PageNotUnderstood(f"dispute form: no checkbox for {r}")
             await box.first.check()

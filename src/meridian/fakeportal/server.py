@@ -20,14 +20,16 @@ import random
 import secrets
 import time
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
+from urllib.parse import quote
 
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from meridian.agent.demo import FakePortal, load_world_shipments
 from meridian.fakeportal.pdf import make_pdf
+from meridian.portal.tables import REASON_LABELS
 
 USER = os.environ.get("FAKE_PORTAL_USER", "meridian.ap")
 PASSWORD = os.environ.get("FAKE_PORTAL_PASSWORD", "fake-portal-pass")
@@ -40,6 +42,10 @@ LANES = ("PUN-BLR", "PUN-HYD", "PUN-CHN", "PUN-DEL", "PUN-AMD")
 MONTHS = ("2026-08", "2026-09", "2026-10", "2026-11")
 REASONS = ("shipment_unknown", "duplicate_billing", "no_pod", "weight_over", "rate_wrong",
            "surcharge_wrong", "detention_unjustified", "math_error")
+# Paths as seen on the real portal (recon, Nov 2026).
+P_OTP, P_LIST, P_VIEW, P_PDF = "/Login/Otp.aspx", "/Billing/InvoiceList.aspx", "/Billing/InvoiceView.aspx", "/Billing/InvoicePdf.aspx"
+P_POD, P_PODDOC, P_RATES, P_FUEL = "/Ops/PODSearch.aspx", "/Ops/PODDocument.aspx", "/Masters/RateCard.aspx", "/Masters/FuelSurcharge.aspx"
+P_DISPUTES, P_RAISE = "/Disputes/DisputeList.aspx", "/Disputes/RaiseDispute.aspx"
 
 CSS = """
 body{font:11px Verdana,Arial,sans-serif;margin:0;background:#dfe6ee;color:#000}
@@ -85,13 +91,18 @@ def money(v: Decimal) -> str:
     return f"{'-' if neg else ''}Rs. {whole}.{frac}"
 
 
+def plain(v: Decimal) -> str:
+    """Western grouping without a currency mark, as in the real invoice list: 131,454.66"""
+    return f"{Decimal(v).quantize(Decimal('0.01')):,.2f}"
+
+
 def d(x: date | None) -> str:
     return x.strftime("%d-%b-%y") if x else ""
 
 
 def month_label(m: str) -> str:
     y, mm = map(int, m.split("-"))
-    return date(y, mm, 1).strftime("%b-%y")
+    return date(y, mm, 1).strftime("%B %Y")  # real portal: "October 2026"
 
 
 @dataclass
@@ -142,9 +153,9 @@ app = FastAPI(title="Fake TransIndus portal", docs_url=None, redoc_url=None)
 
 
 def page(title: str, body: str, *, menu: bool = True, notice: str | None = None, status: int = 200) -> HTMLResponse:
-    nav = ("<div id='menu'><a href='/Default.aspx'>Home</a><a href='/Invoices.aspx'>Invoices</a>"
-           "<a href='/Pods.aspx'>Delivery Proofs</a><a href='/RateCard.aspx'>Rate Card</a>"
-           "<a href='/Fuel.aspx'>Fuel Surcharge</a><a href='/Disputes.aspx'>Disputes</a>"
+    nav = (f"<div id='menu'><a href='/Default.aspx'>Home</a><a href='{P_LIST}'>Invoices</a>"
+           f"<a href='{P_POD}'>POD Search</a><a href='{P_RATES}'>Rate Card</a>"
+           f"<a href='{P_FUEL}'>Fuel Surcharge</a><a href='{P_DISPUTES}'>Disputes</a>"
            "<a href='/Logout.aspx'>Logout</a></div>") if menu else ""
     ovl = ""
     if notice:
@@ -256,29 +267,29 @@ async def login_post(txtUser: str = Form(""), txtPass: str = Form(""), chkHuman:
                 shuffle=CHAOS > 0 and rng.random() < 0.5, rng=rng)
     S.sessions[sid] = s
     S.otp_log.append((time.time(), s.otp))
-    r = RedirectResponse("/Otp.aspx", 302)
+    r = RedirectResponse(P_OTP, 302)
     r.set_cookie(COOKIE, sid, httponly=True)
     return r
 
 
-@app.get("/Otp.aspx", response_class=HTMLResponse)
+@app.get(P_OTP, response_class=HTMLResponse)
 async def otp_get(request: Request, bad: int = 0):
     if not session_of(request):
         return RedirectResponse("/Login.aspx", 302)
     msg = "<p class='err'>Incorrect one-time password.</p>" if bad else ""
-    return page("Verify", f"<h3>One-Time Password</h3>{msg}<p>A one-time password has been sent to the registered operator.</p>"
-                "<form method='post' action='/Otp.aspx'><p><label for='txtOtp' class='lbl'>Enter OTP:</label>"
-                "<input name='txtOtp' id='txtOtp' autocomplete='one-time-code'></p>"
+    return page("Verify", f"<h3>Additional Verification</h3>{msg}<p>A One Time Password has been sent to the registered "
+                f"mobile number. It is valid for 5 minutes.</p><form method='post' action='{P_OTP}'><p><span class='lbl'>Enter OTP:</span>"
+                "<input name='txtOtp' id='txtOtp'></p>"
                 "<p><input type='submit' class='btn' id='btnVerify' value='Verify'></p></form>", menu=False)
 
 
-@app.post("/Otp.aspx")
+@app.post(P_OTP)
 async def otp_post(request: Request, txtOtp: str = Form("")):
     s = session_of(request)
     if not s:
         return RedirectResponse("/Login.aspx", 302)
     if txtOtp.strip() != s.otp:
-        return RedirectResponse("/Otp.aspx?bad=1", 302)
+        return RedirectResponse(P_OTP + "?bad=1", 302)
     s.authed = True
     return RedirectResponse("/Default.aspx", 302)
 
@@ -321,47 +332,44 @@ def options(values, selected, label=lambda v: v, blank="-- All --"):
     return "".join(out)
 
 
-@app.get("/Invoices.aspx", response_class=HTMLResponse)
-async def invoices(request: Request, lane: str = "", month: str = "", status: str = "", invoice: str = "",
-                   shipment: str = "", page_no: int = 1):
+@app.get(P_LIST, response_class=HTMLResponse)
+async def invoices(request: Request, ddlLane: str = "", ddlMonth: str = "", ddlStatus: str = "", page_no: int = 1):
+    lane, month, status = ddlLane, ddlMonth, ddlStatus
     s = await guard(request)
     if isinstance(s, Response):
         return s
     w = S.world
     rows = [i for i in w.invoices
             if (not lane or i.lane == lane) and (not month or i.invoice_date.strftime("%Y-%m") == month)
-            and (not status or i.status.lower() == status.lower())
-            and (not invoice or invoice.strip().upper() in i.invoice_no.upper())
-            and (not shipment or any(l.shipment_id == shipment.strip().upper() for l in i.lines))]
-    form = ("<form method='get' action='/Invoices.aspx'>"
-            f"<label for='ddlLane' class='lbl'>Lane</label><select id='ddlLane' name='lane'>{options(LANES, lane)}</select><br>"
-            f"<label for='ddlMonth' class='lbl'>Invoice Month</label><select id='ddlMonth' name='month'>{options(MONTHS, month, month_label)}</select><br>"
-            f"<label for='ddlStatus' class='lbl'>Status</label><select id='ddlStatus' name='status'>{options(['Open', 'Cancelled'], status)}</select><br>"
-            f"<label for='txtInvoice' class='lbl'>Invoice No</label><input id='txtInvoice' name='invoice' value='{html.escape(invoice)}'><br>"
-            f"<label for='txtShipment' class='lbl'>Shipment ID</label><input id='txtShipment' name='shipment' value='{html.escape(shipment)}'><br>"
-            "<input type='submit' class='btn' value='Search'></form>")
-    if not any([lane, month, status, invoice, shipment]) and "page_no" not in request.query_params:
-        return page("Invoices", "<h3>Invoice Search</h3>" + form, notice=maybe_notice())
+            and (not status or i.status.lower() == status.lower())]
+    rows.sort(key=lambda i: i.invoice_date, reverse=True)
+    # Like the real page: plain <span> captions, no <label for>, so only the control names help.
+    form = (f"<form method='get' action='{P_LIST}'>"
+            f"<span class='lbl'>Lane</span><select id='ddlLane' name='ddlLane'>{options(LANES, lane)}</select><br>"
+            f"<span class='lbl'>Month</span><select id='ddlMonth' name='ddlMonth'>{options(MONTHS, month, month_label)}</select><br>"
+            f"<span class='lbl'>Status</span><select id='ddlStatus' name='ddlStatus'>{options(['Open', 'Cancelled'], status)}</select><br>"
+            "<input type='submit' class='btn' id='btnSearch' value='Search'></form>")
     total_pages = max(1, (len(rows) + PAGE_SIZE - 1) // PAGE_SIZE)
     page_no = min(max(page_no, 1), total_pages)
     chunk = rows[(page_no - 1) * PAGE_SIZE: page_no * PAGE_SIZE]
-    table = grid(["Invoice No", "Inv. Date", "Lane", "Amount (Rs)", "Status"],
-                 [[f"<a href='/Invoice.aspx?no={i.invoice_no}'>{i.invoice_no}</a>", d(i.invoice_date), i.lane,
-                   money(i.total), i.status] for i in chunk],
+    table = grid(["Invoice No", "Invoice Date", "Lane", "No. of Consignments", "Invoice Value (Rs.)", "Status"],
+                 [[f"<a href='{P_VIEW}?InvNo={quote(i.invoice_no, safe='')}'>{i.invoice_no}</a>", d(i.invoice_date), i.lane,
+                   str(len(i.lines)), plain(i.total), i.status] for i in chunk],
                  shuffle_rng=random.Random(s.sid + "inv") if s.shuffle else None, table_id="gvInvoices")
-    qs = "&".join(f"{k}={v}" for k, v in dict(lane=lane, month=month, status=status, invoice=invoice, shipment=shipment).items())
+    qs = "&".join(f"{k}={v}" for k, v in dict(ddlLane=lane, ddlMonth=month, ddlStatus=status).items())
     pager = f"<p>Page {page_no} of {total_pages} &nbsp; "
     if page_no > 1:
-        pager += f"<a href='/Invoices.aspx?{qs}&page_no={page_no - 1}'>&lt; Prev</a> "
+        pager += f"<a href='{P_LIST}?{qs}&page_no={page_no - 1}'>&lt; Prev</a> "
     if page_no < total_pages:
-        pager += f"<a href='/Invoices.aspx?{qs}&page_no={page_no + 1}'>Next &gt;</a>"
+        pager += f"<a href='{P_LIST}?{qs}&page_no={page_no + 1}'>Next &gt;</a>"
     pager += f" &nbsp; ({len(rows)} records)</p>"
-    body = "<h3>Invoice Search</h3>" + form + (table + pager if rows else "<p>No records found.</p>")
+    body = "<h3>Invoices</h3>" + form + (table + pager if rows else "<p>No records found.</p>")
     return page("Invoices", body, notice=maybe_notice())
 
 
-@app.get("/Invoice.aspx", response_class=HTMLResponse)
-async def invoice_detail(request: Request, no: str):
+@app.get(P_VIEW, response_class=HTMLResponse)
+async def invoice_detail(request: Request, InvNo: str):
+    no = InvNo
     s = await guard(request)
     if isinstance(s, Response):
         return s
@@ -384,12 +392,13 @@ async def invoice_detail(request: Request, no: str):
                                            for k, a in enumerate(inv.credit_notes)], table_id="gvCredit")
           if inv.credit_notes else "<h4>Credit Notes</h4><p>None</p>")
     body = (f"<h3>Invoice {inv.invoice_no}</h3><table class='kv' id='tblHeader'>{kv}</table><h4>Lines</h4>{lines_grid}{cn}"
-            f"<p><a href='/InvoicePdf.aspx?no={inv.invoice_no}'>Download PDF</a></p>")
+            f"<p><a href='{P_PDF}?InvNo={quote(inv.invoice_no, safe='')}'>Download PDF</a></p>")
     return page("Invoice", body, notice=maybe_notice())
 
 
-@app.get("/InvoicePdf.aspx")
-async def invoice_pdf(request: Request, no: str):
+@app.get(P_PDF)
+async def invoice_pdf(request: Request, InvNo: str):
+    no = InvNo
     s = await guard(request)
     if isinstance(s, Response):
         return s
@@ -406,14 +415,15 @@ async def invoice_pdf(request: Request, no: str):
 # ---------------------------------------------------------------- delivery proofs
 
 
-@app.get("/Pods.aspx", response_class=HTMLResponse)
-async def pods(request: Request, shipment: str = ""):
+@app.get(P_POD, response_class=HTMLResponse)
+async def pods(request: Request, txtCons: str = ""):
+    shipment = txtCons
     s = await guard(request)
     if isinstance(s, Response):
         return s
-    form = ("<form method='get' action='/Pods.aspx'><label for='txtShipment' class='lbl'>Shipment ID</label>"
-            f"<input id='txtShipment' name='shipment' value='{html.escape(shipment)}'> "
-            "<input type='submit' class='btn' value='Search'></form>")
+    form = (f"<form method='get' action='{P_POD}'><span class='lbl'>Consignment No</span>"
+            f"<input id='txtCons' name='txtCons' value='{html.escape(shipment)}'> "
+            "<input type='submit' class='btn' id='btnFind' value='Find'></form>")
     if not shipment:
         return page("Delivery Proofs", "<h3>Delivery Proof (POD)</h3>" + form, notice=maybe_notice())
     sid = shipment.strip().upper()
@@ -430,11 +440,11 @@ async def pods(request: Request, shipment: str = ""):
         ("Delivered Date", "See attached document" if attached else d(pod.delivered_on)),
         ("Received By", who), ("Contact", phone)])
     body = (f"<h3>Delivery Proof (POD)</h3>{form}<table class='kv' id='tblPod'>{kv}</table>"
-            f"<p><a href='/PodDoc.aspx?shipment={sid}'>Download POD</a></p>")
+            f"<p><a href='{P_PODDOC}?shipment={sid}'>Download POD</a></p>")
     return page("Delivery Proofs", body, notice=maybe_notice())
 
 
-@app.get("/PodDoc.aspx")
+@app.get(P_PODDOC)
 async def pod_doc(request: Request, shipment: str):
     s = await guard(request)
     if isinstance(s, Response):
@@ -451,50 +461,57 @@ async def pod_doc(request: Request, shipment: str):
 # ---------------------------------------------------------------- reference data
 
 
-@app.get("/RateCard.aspx", response_class=HTMLResponse)
+@app.get(P_RATES, response_class=HTMLResponse)
 async def rate_card(request: Request):
     s = await guard(request)
     if isinstance(s, Response):
         return s
-    rows = [[e.lane, f"{e.rate_per_kg:.2f}", d(e.effective_from)] for e in sorted(S.world.rate_card, key=lambda e: (e.lane, e.effective_from))]
-    return page("Rate Card", "<h3>Rate Card</h3>" + grid(["Lane", "Rate (Rs/kg)", "Effective From"], rows, table_id="gvRates"),
+    entries = sorted(S.world.rate_card, key=lambda e: (e.lane, e.effective_from))
+    rows = []
+    for k, e in enumerate(entries):
+        nxt = entries[k + 1] if k + 1 < len(entries) and entries[k + 1].lane == e.lane else None
+        until = d(nxt.effective_from - timedelta(days=1)) if nxt else "Till date"
+        rows.append([e.lane, f"{e.rate_per_kg:.2f}", d(e.effective_from), until])
+    return page("Rate Card", "<h3>Rate Card</h3>" + grid(["Lane", "Rate", "Effective From", "Effective To"], rows),
                 notice=maybe_notice())
 
 
-@app.get("/Fuel.aspx", response_class=HTMLResponse)
+@app.get(P_FUEL, response_class=HTMLResponse)
 async def fuel(request: Request):
     s = await guard(request)
     if isinstance(s, Response):
         return s
     from meridian.agent.demo import FUEL
 
-    rows = [[month_label(m), f"{p}%"] for m, p in sorted(FUEL.items())]
-    return page("Fuel Surcharge", "<h3>Fuel Surcharge</h3>" + grid(["Month", "Fuel Surcharge %"], rows, table_id="gvFuel"),
+    rows = [[m, f"{Decimal(p).normalize():f}" if Decimal(p) % 1 else f"{Decimal(p):.1f}"] for m, p in sorted(FUEL.items())]
+    return page("Fuel Surcharge", "<h3>Fuel Surcharge</h3>" + grid(["Month", "FSC %"], rows),
                 notice=maybe_notice())
 
 
 # ---------------------------------------------------------------- disputes (the one write action)
 
 
-@app.get("/Disputes.aspx", response_class=HTMLResponse)
+@app.get(P_DISPUTES, response_class=HTMLResponse)
 async def disputes(request: Request):
     s = await guard(request)
     if isinstance(s, Response):
         return s
-    rows = [[x.no, x.invoice_no, ", ".join(x.reasons), money(x.amount), "Under Review", d(x.raised_on)] for x in S.disputes]
-    body = ("<h3>Disputes</h3><p><a href='/RaiseDispute.aspx'>Raise a dispute</a></p>"
-            + (grid(["Dispute No", "Invoice No", "Reasons", "Claimed Amount", "Status", "Raised On"], rows, table_id="gvDisputes")
+    rows = [[x.no, x.invoice_no, d(x.raised_on) + " 11:20", USER, money(x.amount), "Open",
+             ", ".join(REASON_LABELS[r] for r in x.reasons)] for x in S.disputes]
+    body = (f"<h3>Disputes</h3><p><a href='{P_RAISE}'>Raise a dispute</a></p>"
+            + (grid(["Dispute No", "Invoice No", "Raised On", "Raised By", "Correct Amount Claimed", "Status", "Reasons"],
+                    rows, table_id="gvDisputes")
                if rows else "<p>No disputes.</p>"))
     return page("Disputes", body)
 
 
-@app.get("/RaiseDispute.aspx", response_class=HTMLResponse)
+@app.get(P_RAISE, response_class=HTMLResponse)
 async def raise_form(request: Request, no: str = ""):
     s = await guard(request)
     if isinstance(s, Response):
         return s
-    boxes = "".join(f"<label><input type='checkbox' name='reasons' value='{r}'> {r}</label><br>" for r in REASONS)
-    body = ("<h3>Raise a Dispute</h3><form method='post' action='/RaiseDispute.aspx'>"
+    boxes = "".join(f"<label><input type='checkbox' name='reasons' value='{r}'> {REASON_LABELS[r]}</label><br>" for r in REASONS)
+    body = (f"<h3>Raise a Dispute</h3><form method='post' action='{P_RAISE}'>"
             f"<p><label for='txtInvoice' class='lbl'>Invoice No</label><input id='txtInvoice' name='invoice' value='{html.escape(no)}'></p>"
             f"<p><span class='lbl'>Reasons</span><br>{boxes}</p>"
             "<p><label for='txtAmount' class='lbl'>Correct Amount (Rs)</label><input id='txtAmount' name='amount'></p>"
@@ -503,7 +520,7 @@ async def raise_form(request: Request, no: str = ""):
     return page("Raise Dispute", body)
 
 
-@app.post("/RaiseDispute.aspx", response_class=HTMLResponse)
+@app.post(P_RAISE, response_class=HTMLResponse)
 async def raise_post(request: Request):
     s = await guard(request)
     if isinstance(s, Response):
@@ -521,7 +538,7 @@ async def raise_post(request: Request):
     if not S.chaos(0.15):  # sometimes the portal says OK but loses the record
         S.disputes.append(Dispute(dno, no, reasons, amount, date.today()))
         S.world.disputed.add(no)
-    return page("Raise Dispute", f"<p class='ok'>Dispute {dno} submitted successfully.</p><p><a href='/Disputes.aspx'>View disputes</a></p>")
+    return page("Raise Dispute", f"<p class='ok'>Dispute {dno} submitted successfully.</p><p><a href='{P_DISPUTES}'>View disputes</a></p>")
 
 
 # ---------------------------------------------------------------- test helpers (not part of the real portal)

@@ -18,12 +18,13 @@ ALIASES: dict[str, tuple[str, ...]] = {
     "invoice_date": (r"invoice\s*date", r"inv\.?\s*date", r"bill\s*date", r"^date$"),
     "lane": (r"^lane$", r"route", r"origin.*dest"),
     "status": (r"status",),
-    "total": (r"(invoice\s*)?total", r"amount\s*\(?(rs|inr)", r"^amount$", r"net\s*amount", r"grand\s*total"),
+    "total": (r"(invoice\s*)?total", r"invoice\s*value", r"amount\s*\(?(rs|inr)", r"^amount$", r"net\s*amount",
+              r"grand\s*total", r"^value"),
     "shipment_id": (r"shipment|consignment|docket|lr\s*no|cn\s*no",),
     "billed_weight_kg": (r"(billed|charged|chargeable)\s*w(eigh)?t", r"weight", r"^wt"),
     "rate_per_kg": (r"rate", r"per\s*kg"),
     "freight": (r"^freight", r"basic\s*freight"),
-    "fuel_pct": (r"fuel.*%", r"(fsc|fuel).*(pct|percent)"),
+    "fuel_pct": (r"(fuel|fsc).*%", r"(fsc|fuel).*(pct|percent)"),
     "fuel_amount": (r"fuel", r"fsc"),
     "detention": (r"detention|demurrage|waiting"),
     "line_total": (r"line\s*total", r"^total$", r"^amount$"),
@@ -31,9 +32,35 @@ ALIASES: dict[str, tuple[str, ...]] = {
     "delivered_on": (r"delivered|delivery\s*date|pod\s*date|actual"),
     "received_by": (r"received\s*by|receiver|consignee\s*sign",),
     "credit_amount": (r"credit|cn\s*amount"),
-    "effective_from": (r"effective|valid\s*from|w\.?e\.?f"),
+    "effective_from": (r"effective\s*from|valid\s*from|w\.?e\.?f", r"^effective$"),
     "month": (r"^month$", r"period"),
-    "surcharge_pct": (r"surcharge|fuel"),
+    "surcharge_pct": (r"surcharge|fuel|fsc", r"%"),
+}
+
+
+# Rule code -> wording the portal uses for dispute reasons. The first three were seen on the real
+# dispute list; the rest are best guesses until the Raise Dispute form has been seen.
+REASON_LABELS: dict[str, str] = {
+    "shipment_unknown": "Consignment not ours",
+    "duplicate_billing": "Duplicate billing",
+    "rate_wrong": "Incorrect rate applied",
+    "no_pod": "No proof of delivery",
+    "weight_over": "Weight overcharged",
+    "surcharge_wrong": "Incorrect fuel surcharge",
+    "detention_unjustified": "Detention not justified",
+    "math_error": "Calculation error",
+}
+
+# Key words to find a reason's checkbox when the exact wording differs.
+REASON_HINTS: dict[str, str] = {
+    "shipment_unknown": r"not ours|unknown|not (our|meridian)",
+    "duplicate_billing": r"duplicate",
+    "rate_wrong": r"rate",
+    "no_pod": r"proof|pod",
+    "weight_over": r"weight",
+    "surcharge_wrong": r"fuel|surcharge|fsc",
+    "detention_unjustified": r"detention",
+    "math_error": r"calculation|arithmetic|math|total",
 }
 
 

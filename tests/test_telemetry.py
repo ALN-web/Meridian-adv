@@ -30,8 +30,8 @@ def test_scrubber_masks_secrets_and_personal_data():
 
 
 def test_page_for_steps():
-    assert page_for("search_invoices:PUN-BLR") == "Invoices.aspx"
-    assert page_for("pod:SHP-1") == "Pods.aspx"
+    assert page_for("search_invoices:PUN-BLR") == "Billing/InvoiceList.aspx"
+    assert page_for("pod:SHP-1") == "Ops/PODSearch.aspx"
     assert page_for("reconcile:TIR/1").startswith("(rules")
 
 

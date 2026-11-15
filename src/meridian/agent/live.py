@@ -194,7 +194,7 @@ class LiveRunner:
             if key in done:
                 billed = done[key]["data"]["billed"]
             else:
-                billed = bool(await c.search_invoices(shipment_id=sid))
+                billed = bool(await c.invoices_billing(sid))
                 self.store.checkpoint(self.run_id, key, "done", {"billed": billed})
             if not billed:
                 missing.append(sid)
@@ -244,7 +244,7 @@ class LiveRunner:
                     pod_cache[sid], pod_pdf = await c.get_pod(sid)
                     self.doc("pod_pdf", f"POD_{sid}", pod_pdf)
                 if sid not in history_cache:
-                    found = await c.search_invoices(shipment_id=sid)
+                    found = await c.invoices_billing(sid)
                     history_cache[sid] = [BillingRecord(r.invoice_no, r.invoice_date, r.status, (sid,))
                                           for r in found if r.invoice_date is not None]
                 history += [h for h in history_cache[sid] if h.invoice_no != inv.invoice_no]
