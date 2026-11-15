@@ -520,7 +520,9 @@ class PortalClient:
                     break
                 if stated is None and (m := re.search(r"\bof\s+(\d+)\s+(records|invoices|entries)", body, re.I)):
                     stated = int(m.group(1))
-                grid = await self.main_grid(r"invoice")
+                from meridian.portal.tables import ALIASES
+
+                grid = await self.main_grid("|".join(ALIASES["invoice_no"]))
                 for r in parse_invoice_list(grid.rows):
                     self._listed[r.invoice_no] = (str(r.total), r.status.lower())
                     if r.invoice_no not in seen:
@@ -547,7 +549,10 @@ class PortalClient:
     def _remember_links(self, grid_rows: list[dict[str, str]]) -> None:
         for r in grid_rows:
             href = r.get("__href")
-            no = next((v.strip() for h, v in r.items() if re.search(r"invoice\s*(no|number|#)", h, re.I) and v), None)
+            from meridian.portal.tables import ALIASES
+
+            pat = "|".join(ALIASES["invoice_no"])
+            no = next((v.strip() for h, v in r.items() if h != "__href" and re.search(pat, h, re.I) and v), None)
             if href and no:
                 self._inv_href[no] = href
 
@@ -900,12 +905,12 @@ class PortalClient:
             if re.search(r"no disputes", await self.page.inner_text("body"), re.I):
                 return []
             try:
-                g = await self.main_grid(r"dispute")
+                g = await self.main_grid(r"dispute|claim|ticket")
             except PageNotUnderstood:
                 return []
             rows = list(g.rows)
             while await self._next_page():
-                rows += (await self.main_grid(r"dispute")).rows
+                rows += (await self.main_grid(r"dispute|claim|ticket")).rows
             return rows
 
         return await self.step("dispute_list", run)

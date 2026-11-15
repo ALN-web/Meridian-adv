@@ -252,3 +252,20 @@ def test_real_portal_headers_seen_in_recon():
         (D("15.24"), "2026-04-01"), (D("15.84"), "2026-09-19")]
     assert parse_fuel_surcharge([{"Month": "2026-08", "FSC %": "12.5"}, {"Month": "2026-09", "FSC %": "13.0"}]) == {
         "2026-08": D("12.5"), "2026-09": D("13.0")}
+
+
+def test_real_portal_alternate_layouts():
+    """Layouts seen on the real portal (16 Nov 2026): renamed/reordered list and line columns."""
+    from meridian.portal.tables import parse_invoice_lines, parse_invoice_list
+
+    rows = parse_invoice_list([{"Date": "11-Aug-26", "Inv #": "TIR/26-27/10155", "Status": "Open",
+                                "Route": "PUN-BLR", "Total Amt": "Rs. 54,481.76", "Lines": "2"}])
+    assert rows[0].invoice_no == "TIR/26-27/10155" and rows[0].lane == "PUN-BLR"
+    assert str(rows[0].total) == "54481.76"
+
+    lines = parse_invoice_lines([{"CN No.": "SHP-60265", "Amount": "Rs. 21,018.90", "Chargeable Wt": "1125.3",
+                                  "Booking Dt": "21-Sep-26", "Rate": "15.35", "FSC %": "13.0", "FSC": "Rs. 2,245.54",
+                                  "Detention Chgs": "Rs. 1,500.00", "Basic Freight": "Rs. 17,273.36"}])
+    ln = lines[0]
+    assert (ln.shipment_id, str(ln.billed_weight_kg), str(ln.freight), str(ln.fuel_amount), str(ln.line_total)) == \
+        ("SHP-60265", "1125.3", "17273.36", "2245.54", "21018.90")

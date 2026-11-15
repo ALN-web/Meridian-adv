@@ -14,7 +14,7 @@ from meridian.portal.errors import PageNotUnderstood
 
 # canonical field -> header patterns seen (or likely) on the portal
 ALIASES: dict[str, tuple[str, ...]] = {
-    "invoice_no": (r"invoice\s*(no|number|#)", r"^inv\.?\s*(no|#)", r"bill\s*no"),
+    "invoice_no": (r"invoice\s*(no|number|#|num|ref)", r"^inv\.?\s*(no|#|num|ref)", r"bill\s*(no|#)", r"^invoice$"),
     "invoice_date": (r"invoice\s*date", r"inv\.?\s*date", r"bill\s*date", r"^date$"),
     "lane": (r"^lane$", r"route", r"origin.*dest"),
     "status": (r"status",),
