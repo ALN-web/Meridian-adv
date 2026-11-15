@@ -256,6 +256,27 @@ LANGFUSE_HOST=https://cloud.langfuse.com      # or https://us.cloud.langfuse.com
 - **No personal data in traces.** Everything sent passes a mask: portal user, password, team key, phone numbers, e-mails and receiver names become `[redacted]`, `[phone]`, `[email]`, `[person]`. Screenshots are masked in the browser before capture. OTP codes are never logged. Tested against a local stub of the Langfuse endpoint (`tests/test_telemetry.py`).
 - Tracing never breaks a task: export errors are logged and ignored.
 
+## The real portal (from recon)
+
+What `harness/recon.py` found on the TransIndus portal (read-only runs, 15 Nov 2026). The fake
+portal copies this layout, so local tests exercise the same paths.
+
+| Page | Path | What matters |
+|---|---|---|
+| Login → OTP | `/Login.aspx` → `/Login/Otp.aspx` | `#txtUser` `#txtPass` `#btnLogin`; OTP box `#txtOtp`, button **Verify**, code valid 5 minutes |
+| Notice | (overlay on any page) | "Portal maintenance notice" with one button, **I Acknowledge** |
+| Invoices | `/Billing/InvoiceList.aspx` | Filters `ddlLane`, `ddlMonth` ("October 2026"), `ddlStatus`; **no invoice-number or shipment search**; columns Invoice No · Invoice Date · Lane · No. of Consignments · Invoice Value (Rs.) · Status |
+| Invoice | `/Billing/InvoiceView.aspx?InvNo=…` | Lines: Consignment · Booked On · Weight (kg) · Rate/kg · Freight · Fuel % · Fuel Amt · Detention · Amount; Sub Total, IGST @ 12 %, Invoice Total; **Raise Dispute** link; PDF via button |
+| POD | `/Ops/PODSearch.aspx?txtCons=…` | Consignment · Status · Promised · Delivered; **View POD** document link |
+| Rate card | `/Masters/RateCard.aspx` | Lane · Rate · Effective From · Effective To ("Till date") |
+| Fuel | `/Masters/FuelSurcharge.aspx` | Month (`2026-08`) · FSC % |
+| Disputes | `/Disputes/DisputeList.aspx` | Dispute No · Invoice No · Raised On · Raised By · Correct Amount Claimed · Status · Reasons |
+| Raise dispute | `/Disputes/NewDispute.aspx?InvNo=…` | `txtInvNo`, reason checkboxes `chk_<rule code>`, `txtClaimed`, `txtRemarks`, **Submit Dispute** |
+
+Because there is no search by shipment, the agent reads every invoice once per session to know
+which invoices bill each shipment (needed for duplicate billing and "missing" tasks). The run
+screen shows "Read n of 64 invoices" while it does this.
+
 ## Evaluation targets
 
 | Metric | Target |
@@ -275,7 +296,14 @@ Budget ₹6,000 for the week; suggested cap ₹3,000 for this project. Spend lim
 
 | Item | Provider / model | Cost | Cost per task |
 |---|---|---|---|
-| _TBD_ | | | |
+| Browser automation | Playwright + Chromium (local) | ₹0 | ₹0 |
+| Reconciliation | Python rules engine (no LLM) | ₹0 | ₹0 |
+| Tracing | Langfuse Cloud, free tier | ₹0 | ₹0 |
+| LLM / vision fallback | not enabled (`LLM_MODEL` unset) | ₹0 | ₹0 |
+| **Total so far** | | **₹0** | **₹0** |
+
+The scripted path needs no model calls. If the optional vision fallback is switched on, its
+calls are traced in Langfuse and this table gets a real per-task figure.
 
 ## Decisions & thresholds
 
@@ -289,7 +317,7 @@ Tracked in [docs/decisions.md](docs/decisions.md).
 - [x] Operator screen (`streamlit run src/meridian/ui/app.py`) — plain-English task → plan, live step log, OTP box, dispute approvals, results, evaluation summary; demo mode on a simulated portal
 - [x] Test harness + evaluation page — runs all 20 public tasks, scores against an answer key, checks duplicate disputes on re-run
 - [x] Fake portal with chaos + live browser runner (`src/meridian/agent/live.py`) — all task kinds, OTP via operator screen, PDF date reading, never-write-twice dispute flow
-- [ ] Run `harness/recon.py` against the live portal and tune selectors
+- [x] Run `harness/recon.py` against the live portal and tune selectors (all pages incl. invoice view, POD result, raise-dispute form)
 - [ ] Day 2 — core path on public tasks
 - [ ] Day 3 — "portal that fights back": retries, resume, OTP, popups; first full test run
 - [x] Langfuse tracing (one trace per task, span per step, masked, screenshots attached)

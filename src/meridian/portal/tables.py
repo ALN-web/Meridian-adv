@@ -38,16 +38,16 @@ ALIASES: dict[str, tuple[str, ...]] = {
 }
 
 
-# Rule code -> wording the portal uses for dispute reasons. The first three were seen on the real
-# dispute list; the rest are best guesses until the Raise Dispute form has been seen.
+# Rule code -> wording on the real Raise Billing Dispute form (recon, 15 Nov 2026). The form's
+# checkbox ids are chk_<code>, which the client tries first; these labels are the fallback.
 REASON_LABELS: dict[str, str] = {
-    "shipment_unknown": "Consignment not ours",
-    "duplicate_billing": "Duplicate billing",
+    "weight_over": "Excess weight billed",
     "rate_wrong": "Incorrect rate applied",
-    "no_pod": "No proof of delivery",
-    "weight_over": "Weight overcharged",
     "surcharge_wrong": "Incorrect fuel surcharge",
-    "detention_unjustified": "Detention not justified",
+    "detention_unjustified": "Detention not applicable",
+    "duplicate_billing": "Duplicate billing",
+    "shipment_unknown": "Consignment not ours",
+    "no_pod": "POD not available",
     "math_error": "Calculation error",
 }
 
@@ -62,6 +62,16 @@ REASON_HINTS: dict[str, str] = {
     "detention_unjustified": r"detention",
     "math_error": r"calculation|arithmetic|math|total",
 }
+
+
+def text_value(text: str, label_pat: str) -> str | None:
+    """Value printed after a label on its own line, e.g. 'Invoice Total\tRs. 1,31,454.66' or
+    'Invoice Date04-Nov-26' (some pages glue label and value together)."""
+    for line in text.splitlines():
+        m = re.match(rf"^\s*(?:{label_pat})\s*:?\s*(?P<v>.*\S)\s*$", line, re.I)
+        if m:
+            return m.group("v").strip()
+    return None
 
 
 def _norm(h: str) -> str:

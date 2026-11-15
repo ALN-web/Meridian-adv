@@ -203,6 +203,7 @@ class PortalClient:
         # reading every invoice once (shipment_index).
         self._inv_href: dict[str, str] = {}
         self._inv_cache: dict[str, tuple] = {}
+        self._dispute_href: dict[str, str] = {}
         self._shipment_index: dict[str, list[InvoiceRow]] | None = None
 
     # ------------------------------------------------------------------ lifecycle
@@ -578,12 +579,23 @@ class PortalClient:
         return applied
 
     async def key_values(self) -> dict[str, str]:
-        """Label/value pairs from two-cell rows (``<th>Label</th><td>value</td>``)."""
+        """Label/value pairs from two-cell rows outside data grids (``<th|td>Label</th|td><td>value</td>``)."""
         return await self.page.evaluate(
             """() => { const o = {}; document.querySelectorAll('tr').forEach(tr => {
-                 const c = tr.children; if (c.length === 2 && c[0].tagName === 'TH' && c[1].tagName === 'TD')
-                   o[c[0].innerText.trim().replace(/:$/, '')] = c[1].innerText.trim(); }); return o; }"""
+                 if (tr.closest('table.grid') || tr.closest('table[id^=gv]')) return;
+                 const c = tr.children; if (c.length === 2 && c[1].tagName === 'TD') {
+                   const k = c[0].innerText.trim().replace(/:$/, ''); if (k) o[k] = c[1].innerText.trim(); } });
+               return o; }"""
         )
+
+    async def labelled(self, label_pat: str) -> str | None:
+        """Value next to a label, from key/value rows or else from the page text."""
+        from meridian.portal.tables import text_value
+
+        pat = re.compile(label_pat, re.I)
+        kv = await self.key_values()
+        hit = next((v for k, v in kv.items() if pat.fullmatch(k.strip()) or pat.match(k.strip())), None)
+        return hit if hit else text_value(await self.page.inner_text("body"), label_pat)
 
     async def open_invoice(self, invoice_no: str):
         """Invoice header, lines and credit notes (and its PDF) as an engine ``Invoice``."""
@@ -602,7 +614,6 @@ class PortalClient:
             await self.goto(href)
             if re.search(r"invoice .{0,40}not found", await self.page.inner_text("body"), re.I):
                 return None
-            kv = {k.lower(): v for k, v in (await self.key_values()).items()}
             grids = await self.grids()
             lines_grid = next((g for g in grids if any(re.search(r"shipment|consignment", h, re.I) for h in g.headers)), None)
             credit_grid = next((g for g in grids if any(re.search(r"credit", h, re.I) for h in g.headers)), None)
@@ -613,14 +624,18 @@ class PortalClient:
             if credit_grid is not None:
                 amt_col = next((h for h in credit_grid.headers if re.search(r"amount", h, re.I)), None)
                 credits = [parse_amount(r[amt_col]) for r in credit_grid.rows if amt_col and r.get(amt_col)]
-            total_txt = next((v for k, v in kv.items() if re.search(r"invoice total|grand total|net amount", k)), None)
-            if total_txt is None:
-                raise PageNotUnderstood(f"no invoice total on {invoice_no}")
+            total_txt = await self.labelled(r"invoice total|grand total|net amount")
+            date_txt = await self.labelled(r"invoice date|inv\.? date|date")
+            if total_txt is None or date_txt is None:
+                raise PageNotUnderstood(f"no invoice total/date on {invoice_no}")
+            raise_link = self.page.get_by_role("link", name=re.compile(r"raise\s*dispute|new dispute", re.I))
+            if await raise_link.count():
+                self._dispute_href[invoice_no] = await raise_link.first.get_attribute("href")
             return Invoice(
                 invoice_no=invoice_no,
-                invoice_date=parse_date(next(v for k, v in kv.items() if "date" in k)),
-                lane=next((v for k, v in kv.items() if k in ("lane", "route")), ""),
-                status=next((v for k, v in kv.items() if "status" in k), "Open").title(),
+                invoice_date=parse_date(date_txt),
+                lane=(await self.labelled(r"lane|route")) or "",
+                status=((await self.labelled(r"status")) or "Open").title(),
                 total=parse_amount(total_txt),
                 lines=tuple(lines),
                 credit_notes=tuple(credits),
@@ -630,13 +645,13 @@ class PortalClient:
         if inv is None:
             return None, None
         pdf = None
-        link = self.page.get_by_role("link", name=re.compile(r"download.*pdf|pdf|print", re.I))
-        if await link.count():
-            try:
-                pdf = await self.download(link.first, f"INV_{invoice_no}")
+        try:  # the PDF is evidence, not required for the numbers
+            url = await self._document_url(r"download.*(invoice|pdf)|invoice.*pdf|^pdf$|print")
+            if url:
+                pdf = await self.fetch_file(url, f"INV_{invoice_no}")
                 self.log.add(f"invoice_pdf:{invoice_no}", "ok", path=str(pdf))
-            except Exception as exc:  # the PDF is evidence, not required for the numbers
-                self.log.add(f"invoice_pdf:{invoice_no}", "failed", error=type(exc).__name__)
+        except Exception as exc:
+            self.log.add(f"invoice_pdf:{invoice_no}", "failed", error=type(exc).__name__)
         self._inv_cache[invoice_no] = (inv, pdf)
         return inv, pdf
 
@@ -682,24 +697,23 @@ class PortalClient:
             body = await self.page.inner_text("body")
             if re.search(r"no (delivery proof|pod|records?) found", body, re.I):
                 return None
-            kv = {k.lower(): v for k, v in (await self.key_values()).items()}
-            if not kv:
+            prom = await self.labelled(r"promised( date| on)?|due date|expected( date)?")
+            deliv = await self.labelled(r"delivered( date| on)?|delivery date|actual( date)?")
+            if prom is None and deliv is None and not re.search(re.escape(shipment_id), body, re.I):
                 raise PageNotUnderstood(f"POD page for {shipment_id} has no details")
-            prom = next((v for k, v in kv.items() if re.search(r"promised|due|expected", k)), "")
-            deliv = next((v for k, v in kv.items() if re.search(r"delivered|delivery date|actual", k)), "")
-            return prom, deliv
+            return prom or "", deliv or ""
 
         found = await self.step(f"pod:{shipment_id}", run)
         if found is None:
             return None, None
         prom, deliv = found
         pdf = None
-        link = self.page.get_by_role("link", name=re.compile(r"download|document|attachment", re.I))
-        if await link.count():
-            try:
-                pdf = await self.download(link.first, f"POD_{shipment_id}")
-            except Exception as exc:
-                self.log.add(f"pod_pdf:{shipment_id}", "failed", error=type(exc).__name__)
+        try:
+            url = await self._document_url(r"view\s*pod|download|document|attachment|^pod$")
+            if url:
+                pdf = await self.fetch_file(url, f"POD_{shipment_id}")
+        except Exception as exc:
+            self.log.add(f"pod_pdf:{shipment_id}", "failed", error=type(exc).__name__)
 
         def to_date(t):
             try:
@@ -769,19 +783,29 @@ class PortalClient:
         Caller must have checked the dispute list first and must check it again afterwards.
         Returns the portal's message text (not proof by itself).
         """
-        await self.open_menu("disputes")
-        link = self.page.get_by_role("link", name=re.compile(r"raise|new dispute|create", re.I))
-        if await link.count():
+        if invoice_no not in self._dispute_href:
+            self._inv_cache.pop(invoice_no, None)
+            await self.open_invoice(invoice_no)  # records the invoice page's Raise Dispute link
+        href = self._dispute_href.get(invoice_no)
+        if href:
+            await self.goto(href)
+        else:  # older layout: a raise link on the dispute list
+            await self.open_menu("disputes")
+            link = self.page.get_by_role("link", name=re.compile(r"raise|new dispute|create", re.I))
+            if await link.count() == 0:
+                raise PageNotUnderstood("dispute form: no way to open it")
             await self.limiter.wait()
             await link.first.click()
             await self.page.wait_for_load_state("domcontentloaded")
             await self.settle()
-        if not await self._set_control(r"invoice", "invoice", invoice_no):
+        if not await self._set_control(r"invoice", "inv", invoice_no):
             raise PageNotUnderstood("dispute form: invoice field not found")
         from meridian.portal.tables import REASON_HINTS, REASON_LABELS
 
         for r in reasons:
-            box = self.page.locator(f"input[type=checkbox][value='{r}']")
+            box = self.page.locator(f"input[type=checkbox]#chk_{r}")  # real portal: id="chk_rate_wrong"
+            if await box.count() == 0:
+                box = self.page.locator(f"input[type=checkbox][value='{r}']")
             if await box.count() == 0 and r in REASON_LABELS:
                 box = self.page.get_by_label(REASON_LABELS[r], exact=True)
             if await box.count() == 0:
@@ -794,7 +818,8 @@ class PortalClient:
             if await box.count() == 0:
                 raise PageNotUnderstood(f"dispute form: no checkbox for {r}")
             await box.first.check()
-        if not await self._set_control(r"amount", "amount", f"{expected_amount:.2f}"):
+        if not (await self._set_control(r"amount", "claimed", f"{expected_amount:.2f}")
+                or await self._set_control(r"amount", "amount", f"{expected_amount:.2f}")):
             raise PageNotUnderstood("dispute form: amount field not found")
         await self.screenshot(f"dispute_before_submit_{invoice_no}")
         submit = self.page.get_by_role("button", name=re.compile(r"submit|raise|save", re.I))
@@ -821,6 +846,36 @@ class PortalClient:
         ]
         await self.page.screenshot(path=str(path), full_page=True, mask=masks)
         return path
+
+    async def _document_url(self, label_pat: str) -> str | None:
+        """URL behind a document link or a button like onclick="window.location='...'+encodeURIComponent('X')"."""
+        from urllib.parse import quote, urljoin
+
+        pat = re.compile(label_pat, re.I)
+        link = self.page.get_by_role("link", name=pat)
+        if await link.count():
+            href = await link.first.get_attribute("href")
+            if href and not href.lower().startswith("javascript"):
+                return urljoin(self.page.url, href)
+        btn = self.page.get_by_role("button", name=pat)
+        if await btn.count():
+            js = await btn.first.get_attribute("onclick") or ""
+            m = re.search(r"location(?:\.href)?\s*=\s*'([^']*)'(?:\s*\+\s*encodeURIComponent\('([^']*)'\))?(?:\s*\+\s*'([^']*)')?", js)
+            if m:
+                return urljoin(self.page.url, m.group(1) + quote(m.group(2) or "", safe="") + (m.group(3) or ""))
+        return None
+
+    async def fetch_file(self, url: str, name: str) -> Path:
+        """Fetch a document with the browser session's cookies; only real PDFs are kept."""
+        await self.limiter.wait()
+        resp = await self._ctx.request.get(url)
+        body = await resp.body()
+        if not resp.ok or not body.startswith(b"%PDF"):
+            raise PageNotUnderstood(f"document fetch gave {resp.status} {resp.headers.get('content-type', '')}")
+        self.download_dir.mkdir(parents=True, exist_ok=True)
+        target = self.download_dir / (re.sub(r"[^A-Za-z0-9_.-]", "_", name) + ".pdf")
+        target.write_bytes(body)
+        return target
 
     async def download(self, trigger_locator, name: str) -> Path:
         async with self.page.expect_download() as info:

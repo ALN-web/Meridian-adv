@@ -91,6 +91,19 @@ class LiveRunner:
         if self.store.cancel_requested(self.run_id):
             raise Cancelled()
 
+    async def _read_all_invoices(self, c: PortalClient) -> None:
+        """The portal can't search invoices by shipment, so billing history needs every invoice read
+        once. Shows progress on the run screen and lets the operator stop it between invoices."""
+        self.store.add_step(self.run_id, "billing_history", "started",
+                            "Reading every invoice once — the portal has no search by shipment")
+
+        def progress(n: int, total: int) -> None:
+            if n == total or n % 10 == 0:
+                self.store.add_step(self.run_id, "billing_history", "progress", f"Read {n} of {total} invoices")
+            self.check_cancel()
+
+        await c.shipment_index(on_progress=progress)
+
     def _sink(self, step: str, outcome: str, extra: dict) -> None:
         detail = ", ".join(f"{k}={v}" for k, v in extra.items() if k not in ("path", "page"))[:300]
         self.store.add_step(self.run_id, step, outcome, detail, page=extra.get("page"))
@@ -187,6 +200,8 @@ class LiveRunner:
         delivered = sorted(s.shipment_id for s in shipments.values()
                            if s.lane == lane and s.delivered_on.strftime("%Y-%m") == month)
         done = self.store.checkpoints(self.run_id)
+        if any(f"missing:{sid}" not in done for sid in delivered):
+            await self._read_all_invoices(c)
         missing = []
         for sid in delivered:
             self.check_cancel()
@@ -213,6 +228,7 @@ class LiveRunner:
         rate_card = await c.rate_card()
         fuel = await c.fuel_surcharge()
         disputed = c.disputed_invoices(await c.dispute_list())
+        await self._read_all_invoices(c)
 
         pod_cache: dict = {}
         history_cache: dict[str, list[BillingRecord]] = {}
@@ -314,6 +330,18 @@ class LiveRunner:
                 raised.append(raised_one)
         return raised
 
+    confirm_checks = 3       # how many times to look for a new dispute before calling it lost
+    confirm_pause_s = 4.0
+
+    async def _appears_in_list(self, c: PortalClient, no: str) -> bool:
+        """A slow list must never look like a lost dispute — a resubmit then would be a duplicate."""
+        for n in range(self.confirm_checks):
+            if n:
+                await asyncio.sleep(self.confirm_pause_s)
+            if no in c.disputed_invoices(await c.dispute_list()):
+                return True
+        return False
+
     async def _raise_one(self, c: PortalClient, d: dict) -> dict | None:
         """Never write twice: check list -> submit once -> confirm in list. One careful retry if lost."""
         no = d["invoice_no"]
@@ -330,7 +358,7 @@ class LiveRunner:
                 await c.submit_dispute(no, d["reasons"], expected)
             except PortalError as exc:
                 self.store.add_step(self.run_id, f"dispute:{no}", "submit_error", str(exc)[:200])
-            if no in c.disputed_invoices(await c.dispute_list()):
+            if await self._appears_in_list(c, no):
                 break
             self.store.add_step(self.run_id, f"dispute:{no}", "not_confirmed",
                                 "success message but not in dispute list" + (" — retrying once" if attempt == 1 else ""))

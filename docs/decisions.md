@@ -17,3 +17,9 @@ Every threshold or rule we had to choose, and why. (Required in the README hand-
 | 11 | Mismatch can have empty `reasons` when totals differ but no listed rule fires (e.g. carrier mis-multiplied freight) | Brief only allows the listed codes; result still reported as mismatch |
 | 12 | `missing_in_portal` counts a shipment as billed if it's on **any** invoice, including cancelled (switchable via `ignore_cancelled`) | Brief: "appears on no invoice". Revisit after first scored run |
 | 13 | Dispute only when `billed − expected > ₹500` (strictly), mismatch, no existing dispute, nothing pending a human | Brief rule + safety first |
+| 14 | Billing history is built by reading **every** invoice once per session (shipment → invoices index) | The real portal has no search by shipment or invoice number; searching "all invoices" and trusting it would make every invoice look like history → false duplicates |
+| 15 | Invoices open straight from the link remembered from the list (`InvoiceView.aspx?InvNo=…`) and are cached for the session | No invoice-number search on the real portal; caching keeps the 64-invoice read to one pass |
+| 16 | Dispute reasons are ticked by checkbox id `chk_<code>` first, then the portal's exact wording, then a key-word match **only if exactly one** box fits | Seen on the real form; never guess between two boxes |
+| 17 | After submitting, the dispute list is checked 3 times, 4 s apart, before the one allowed resubmit | A slow list must not look like a lost dispute — resubmitting then would be a duplicate (safety score → 0) |
+| 18 | Documents (invoice PDF, POD) are fetched with the session's cookies and kept only if they really are PDFs | The real portal serves them from `GetDoc.ashx` behind a button / link; an HTML error page must never be stored as evidence |
+| 19 | Every page load, menu click, OTP submit and document fetch goes through the 2 req/s limiter | Brief rule; found and fixed when the fake portal rate-limited recon |

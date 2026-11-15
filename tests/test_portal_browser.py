@@ -161,3 +161,41 @@ def test_otp_skipped_when_page_already_moved_on():
 
     outcomes = asyncio.run(go())
     assert outcomes[-1] == "not_needed"
+
+
+REAL_INVOICE = """<h3>Invoice TIR/26-27/10205</h3><div><b>Invoice Date</b>04-Nov-26</div>
+<table class='kv'><tr><td>Lane</td><td>PUN-DEL</td></tr><tr><td>Status</td><td>Open</td></tr><tr><td>Remarks</td><td>-</td></tr></table>
+<table class='grid' id='gvLines'><tr><th>Consignment</th><th>Amount</th></tr><tr><td>SHP-60383</td><td>21,345.09</td></tr></table>
+<div><b>Sub Total</b>Rs. 1,17,370.23</div><table class='kv'><tr><td>Invoice Total</td><td>Rs. 1,31,454.66</td></tr></table>
+<input type='button' id='btnDownload' value='Download Invoice (PDF)'
+ onclick="window.location='/Billing/GetDoc.ashx?t=inv&id='+encodeURIComponent('TIR/26-27/10205')">
+<a href='/Disputes/NewDispute.aspx?InvNo=TIR%2F26-27%2F10205'>Raise Dispute</a>"""
+
+
+def test_real_invoice_page_labels_and_pdf_button():
+    """Layout copied from the real InvoiceView page (recon, 15 Nov 2026)."""
+
+    async def fn(c):
+        return (await c.labelled(r"invoice total|grand total|net amount"), await c.labelled(r"invoice date|inv\.? date|date"),
+                await c.labelled(r"lane|route"), await c.labelled(r"status"),
+                await c._document_url(r"download.*(invoice|pdf)|invoice.*pdf|^pdf$|print"))
+
+    total, when, lane, status, url = run(page_html(REAL_INVOICE), fn)
+    assert (total, when, lane, status) == ("Rs. 1,31,454.66", "04-Nov-26", "PUN-DEL", "Open")
+    assert url.endswith("/Billing/GetDoc.ashx?t=inv&id=TIR%2F26-27%2F10205")
+
+
+def test_real_pod_page_dates_and_view_link():
+    html = page_html("<h3>Proof of Delivery</h3><table class='kv'><tr><td>Consignment</td><td>SHP-60383</td></tr>"
+                     "<tr><td>Status</td><td>Delivered</td></tr><tr><td>Promised</td><td>26-Oct-26</td></tr>"
+                     "<tr><td>Delivered</td><td>27-Oct-26</td></tr></table>"
+                     "<a href='/Billing/GetDoc.ashx?t=pod&id=SHP-60383&k=6ad3'>View POD</a>")
+
+    async def fn(c):
+        return (await c.labelled(r"promised( date| on)?|due date|expected( date)?"),
+                await c.labelled(r"delivered( date| on)?|delivery date|actual( date)?"),
+                await c._document_url(r"view\s*pod|download|document|attachment|^pod$"))
+
+    prom, deliv, url = run(html, fn)
+    assert (prom, deliv) == ("26-Oct-26", "27-Oct-26")
+    assert "GetDoc.ashx?t=pod&id=SHP-60383&k=6ad3" in url

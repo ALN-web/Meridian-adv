@@ -45,7 +45,8 @@ REASONS = ("shipment_unknown", "duplicate_billing", "no_pod", "weight_over", "ra
 # Paths as seen on the real portal (recon, Nov 2026).
 P_OTP, P_LIST, P_VIEW, P_PDF = "/Login/Otp.aspx", "/Billing/InvoiceList.aspx", "/Billing/InvoiceView.aspx", "/Billing/InvoicePdf.aspx"
 P_POD, P_PODDOC, P_RATES, P_FUEL = "/Ops/PODSearch.aspx", "/Ops/PODDocument.aspx", "/Masters/RateCard.aspx", "/Masters/FuelSurcharge.aspx"
-P_DISPUTES, P_RAISE = "/Disputes/DisputeList.aspx", "/Disputes/RaiseDispute.aspx"
+P_DISPUTES, P_RAISE = "/Disputes/DisputeList.aspx", "/Disputes/NewDispute.aspx"
+P_DOC = "/Billing/GetDoc.ashx"  # real portal serves invoice and POD documents from here
 
 CSS = """
 body{font:11px Verdana,Arial,sans-serif;margin:0;background:#dfe6ee;color:#000}
@@ -377,23 +378,39 @@ async def invoice_detail(request: Request, InvNo: str):
     if inv is None:
         return page("Invoice", f"<p class='err'>Invoice {html.escape(no)} not found.</p>")
     subtotal = sum((l.billed_total() for l in inv.lines), Decimal("0"))
-    kv = "".join(f"<tr><th>{k}</th><td>{v}</td></tr>" for k, v in [
-        ("Invoice No", inv.invoice_no), ("Invoice Date", d(inv.invoice_date)), ("Lane", inv.lane), ("Status", inv.status),
-        ("Sub Total", money(subtotal)), ("GST @ 12%", money(inv.total - subtotal)), ("Invoice Total", money(inv.total))])
+    # Real layout: the date label is glued to its value; other header rows are <td>Label</td><td>value</td>.
+    head = (f"<div><b>Invoice Date</b>{d(inv.invoice_date)}</div><table class='kv' id='tblHeader'>"
+            + "".join(f"<tr><td>{k}</td><td>{v}</td></tr>" for k, v in [("Lane", inv.lane), ("Status", inv.status), ("Remarks", "-")])
+            + "</table>")
     lines = []
     for l in inv.lines:
-        lines.append([l.shipment_id, f"{l.billed_weight_kg:,.1f}", f"{l.rate_per_kg:.2f}", money(l.billed_freight()),
-                      f"{l.fuel_pct}%" if l.fuel_pct is not None else "", money(l.billed_fuel()),
-                      money(l.detention) if l.detention else "-", money(l.billed_total())])
-    lines_grid = grid(["Shipment ID", "Billed Wt (kg)", "Rate/kg", "Freight", "Fuel %", "Fuel Surcharge", "Detention", "Line Total"],
+        shp = S.world.shipments.get(l.shipment_id)
+        booked = d(shp.booked_on) if shp else d(inv.invoice_date)
+        lines.append([l.shipment_id, booked, f"{l.billed_weight_kg:.1f}", f"{l.rate_per_kg:.2f}", plain(l.billed_freight()),
+                      f"{Decimal(l.fuel_pct).normalize():f}" if l.fuel_pct is not None else "", plain(l.billed_fuel()),
+                      plain(l.detention or 0), plain(l.billed_total())])
+    lines_grid = grid(["Consignment", "Booked On", "Weight (kg)", "Rate/kg", "Freight", "Fuel %", "Fuel Amt", "Detention", "Amount"],
                       lines, shuffle_rng=random.Random(s.sid + "lines") if s.shuffle else None, table_id="gvLines")
+    totals = (f"<div><b>Sub Total</b>{money(subtotal)}</div><table class='kv'>"
+              f"<tr><td>IGST @ 12%</td><td>{money(inv.total - subtotal)}</td></tr>"
+              f"<tr><td>Invoice Total</td><td>{money(inv.total)}</td></tr></table>")
     cn = ("<h4>Credit Notes</h4>" + grid(["Credit Note No", "Date", "Credit Amount"],
                                           [[f"CN-{inv.invoice_no[-5:]}-{k + 1}", d(inv.invoice_date), money(a)]
                                            for k, a in enumerate(inv.credit_notes)], table_id="gvCredit")
           if inv.credit_notes else "<h4>Credit Notes</h4><p>None</p>")
-    body = (f"<h3>Invoice {inv.invoice_no}</h3><table class='kv' id='tblHeader'>{kv}</table><h4>Lines</h4>{lines_grid}{cn}"
-            f"<p><a href='{P_PDF}?InvNo={quote(inv.invoice_no, safe='')}'>Download PDF</a></p>")
+    enc = quote(inv.invoice_no, safe="")
+    body = (f"<h3>Invoice {inv.invoice_no}</h3>{head}{lines_grid}{totals}{cn}"
+            f"<p><input type='button' class='btn' id='btnDownload' value='Download Invoice (PDF)' "
+            f"onclick=\"window.location='{P_DOC}?t=inv&id='+encodeURIComponent('{inv.invoice_no}')\"> "
+            f"<a href='{P_RAISE}?InvNo={enc}'>Raise Dispute</a></p>")
     return page("Invoice", body, notice=maybe_notice())
+
+
+@app.get(P_DOC)
+async def get_doc(request: Request, t: str, id: str, k: str = ""):
+    if t == "pod":
+        return await pod_doc(request, id)
+    return await invoice_pdf(request, id)
 
 
 @app.get(P_PDF)
@@ -434,18 +451,19 @@ async def pods(request: Request, txtCons: str = ""):
     rng = random.Random(sid)
     who = rng.choice(["R. Kulkarni", "S. Iyer", "A. Deshpande", "M. Reddy", "P. Nair"])
     phone = f"9{rng.randint(100000000, 999999999)}"
-    kv = "".join(f"<tr><th>{k}</th><td>{v}</td></tr>" for k, v in [
-        ("Shipment ID", sid),
-        ("Promised Date", "See attached document" if attached else d(pod.promised_on)),
-        ("Delivered Date", "See attached document" if attached else d(pod.delivered_on)),
+    kv = "".join(f"<tr><td>{k}</td><td>{v}</td></tr>" for k, v in [
+        ("Consignment", sid), ("Status", "Delivered"),
+        ("Promised", "See attached document" if attached else d(pod.promised_on)),
+        ("Delivered", "See attached document" if attached else d(pod.delivered_on)),
         ("Received By", who), ("Contact", phone)])
-    body = (f"<h3>Delivery Proof (POD)</h3>{form}<table class='kv' id='tblPod'>{kv}</table>"
-            f"<p><a href='{P_PODDOC}?shipment={sid}'>Download POD</a></p>")
+    key = f"{abs(hash((SEED, sid))) % 16**16:016x}"
+    body = (f"<h3>Proof of Delivery</h3>{form}<table class='kv' id='tblPod'>{kv}</table>"
+            f"<p><a href='{P_DOC}?t=pod&id={sid}&k={key}'>View POD</a></p>")
     return page("Delivery Proofs", body, notice=maybe_notice())
 
 
 @app.get(P_PODDOC)
-async def pod_doc(request: Request, shipment: str):
+async def pod_doc(request: Request, shipment: str):  # also reached through GetDoc.ashx?t=pod
     s = await guard(request)
     if isinstance(s, Response):
         return s
@@ -498,26 +516,34 @@ async def disputes(request: Request):
         return s
     rows = [[x.no, x.invoice_no, d(x.raised_on) + " 11:20", USER, money(x.amount), "Open",
              ", ".join(REASON_LABELS[r] for r in x.reasons)] for x in S.disputes]
-    body = (f"<h3>Disputes</h3><p><a href='{P_RAISE}'>Raise a dispute</a></p>"
+    body = ("<h3>Disputes</h3>"
             + (grid(["Dispute No", "Invoice No", "Raised On", "Raised By", "Correct Amount Claimed", "Status", "Reasons"],
                     rows, table_id="gvDisputes")
-               if rows else "<p>No disputes.</p>"))
+               if rows else "<p>No disputes.</p>") + "<p>Page: 1</p>")
     return page("Disputes", body)
 
 
 @app.get(P_RAISE, response_class=HTMLResponse)
-async def raise_form(request: Request, no: str = ""):
+async def raise_form(request: Request, InvNo: str = ""):
     s = await guard(request)
     if isinstance(s, Response):
         return s
-    boxes = "".join(f"<label><input type='checkbox' name='reasons' value='{r}'> {REASON_LABELS[r]}</label><br>" for r in REASONS)
-    body = (f"<h3>Raise a Dispute</h3><form method='post' action='{P_RAISE}'>"
-            f"<p><label for='txtInvoice' class='lbl'>Invoice No</label><input id='txtInvoice' name='invoice' value='{html.escape(no)}'></p>"
-            f"<p><span class='lbl'>Reasons</span><br>{boxes}</p>"
-            "<p><label for='txtAmount' class='lbl'>Correct Amount (Rs)</label><input id='txtAmount' name='amount'></p>"
-            "<p><label for='txtRemarks' class='lbl'>Remarks</label><input id='txtRemarks' name='remarks'></p>"
-            "<p><input type='submit' class='btn' id='btnSubmitDispute' value='Submit Dispute'></p></form>")
+    # Real form: checkbox ids chk_<code>, all named "reason"; the value is not the code (index here).
+    order = ["weight_over", "rate_wrong", "surcharge_wrong", "detention_unjustified", "duplicate_billing",
+             "shipment_unknown", "no_pod", "math_error"]
+    boxes = "".join(f"<input type='checkbox' name='reason' id='chk_{r}' value='{n}'><label for='chk_{r}'>{REASON_LABELS[r]}</label><br>"
+                    for n, r in enumerate(order))
+    body = (f"<h3>Raise Billing Dispute</h3><form method='post' action='{P_RAISE}'>"
+            f"<p><label for='txtInvNo' class='lbl'>Invoice No:</label><input id='txtInvNo' name='txtInvNo' value='{html.escape(InvNo)}'></p>"
+            f"<p>Dispute reason(s):<br>{boxes}</p>"
+            "<p><label for='txtClaimed' class='lbl'>Correct amount (Rs.):</label><input id='txtClaimed' name='txtClaimed'></p>"
+            "<p><label for='txtRemarks' class='lbl'>Remarks:</label><textarea id='txtRemarks' name='txtRemarks'></textarea></p>"
+            "<p><input type='submit' class='btn' id='btnSubmit' value='Submit Dispute'></p></form>")
     return page("Raise Dispute", body)
+
+
+REASON_ORDER = ["weight_over", "rate_wrong", "surcharge_wrong", "detention_unjustified", "duplicate_billing",
+                "shipment_unknown", "no_pod", "math_error"]
 
 
 @app.post(P_RAISE, response_class=HTMLResponse)
@@ -526,10 +552,10 @@ async def raise_post(request: Request):
     if isinstance(s, Response):
         return s
     form = await request.form()
-    no = (form.get("invoice") or "").strip()
-    reasons = [r for r in form.getlist("reasons") if r in REASONS]
+    no = (form.get("txtInvNo") or "").strip()
+    reasons = [REASON_ORDER[int(v)] for v in form.getlist("reason") if str(v).isdigit() and int(v) < len(REASON_ORDER)]
     try:
-        amount = Decimal(str(form.get("amount") or "").replace(",", ""))
+        amount = Decimal(str(form.get("txtClaimed") or "").replace(",", ""))
     except Exception:
         return page("Raise Dispute", "<p class='err'>Enter a valid amount.</p>")
     if S.world.invoice(no) is None or not reasons:

@@ -116,3 +116,46 @@ def test_collect_reads_page_and_pdf_dates(portal, tmp_path):
     got = {p["shipment_id"]: (p["promised_on"], p["delivered_on"]) for p in run.result["pods"]}
     for s in sids:
         assert got[s] == (w.pods[s].promised_on.isoformat(), w.pods[s].delivered_on.isoformat())
+
+
+def test_dispute_flow_matches_engine_and_never_duplicates(portal, tmp_path):
+    """Full write path on the real form layout: approve -> submit once -> confirm in list; rerun adds nothing."""
+    from collections import defaultdict
+    from datetime import date
+
+    from meridian.reconcile import propose_dispute
+
+    w = fake.S.world
+    groups = defaultdict(list)
+    for i in w.invoices:
+        groups[(i.lane, i.invoice_date.strftime("%Y-%m"))].append(i)
+    candidates = []
+    for (lane, month), invs in groups.items():
+        props = {}
+        for i in invs:
+            if i.invoice_no in w.disputed:
+                continue
+            d = propose_dispute(reconcile_invoice(i, w.shipments, w.reference()))
+            if d:
+                props[i.invoice_no] = d
+        if props:
+            candidates.append((len(invs), lane, month, props))
+    assert candidates, "fake world has no disputable lane-month"
+    _, lane, month, props = min(candidates)
+    month_name = date(int(month[:4]), int(month[5:]), 1).strftime("%B %Y")
+    text = f"Reconcile all invoices on lane {lane} dated in {month_name}, and raise disputes for overcharges after approval."
+
+    before = len(fake.S.disputes)
+    store = Store(tmp_path / "s.sqlite")
+    run = run_task(portal, store, text)
+    assert run.status in ("completed", "needs_human"), run.error
+    new = fake.S.disputes[before:]
+    assert sorted(x.invoice_no for x in new) == sorted(props)          # exactly the right invoices, once each
+    for x in new:
+        d = props[x.invoice_no]
+        assert set(x.reasons) == set(d.reasons)
+        assert abs(x.amount - d.expected_inr) <= 1
+
+    again = run_task(portal, store, text)                               # same task again: nothing new
+    assert again.status in ("completed", "needs_human"), again.error
+    assert len(fake.S.disputes) == before + len(props)
