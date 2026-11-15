@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian Features</title>
+<meta name="description" content="Everything in the Meridian operator screen: run a task, approvals, results, documents, disputes, evaluation, summary and traces.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+  .intro { padding: 168px 0 var(--s5); }
+  .intro .head { margin-bottom: 0; }
+  .toc { display: flex; flex-wrap: wrap; gap: var(--s1); margin-top: var(--s4); }
+  .toc a { height: 36px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 999px; background: var(--paper); font-size: 13px; font-weight: 600; color: var(--ink2); }
+  .toc a:hover { background: var(--ink); color: var(--white); }
+
+  .feature { padding: var(--s5) 0; border-top: 1px solid var(--line); scroll-margin-top: 80px; }
+  .feature .wrap { align-items: center; }
+  .f-text { grid-column: 1 / span 4; display: grid; gap: var(--s2); align-content: center; }
+  .f-text .num { font-size: 12px; color: var(--muted); }
+  .f-text p { color: var(--ink2); }
+  .f-text a.go { font-weight: 600; font-size: 14px; display: inline-flex; gap: 8px; align-items: center; }
+  .f-text a.go:hover { text-decoration: underline; }
+  .f-mock { grid-column: 6 / span 7; }
+  .feature:nth-of-type(odd) .f-text { grid-column: 9 / span 4; order: 2; }
+  .feature:nth-of-type(odd) .f-mock { grid-column: 1 / span 7; order: 1; }
+
+  /* mock window */
+  .mock { border-radius: 14px; background: var(--paper); padding: 10px; }
+  .win { border-radius: 10px; background: var(--white); border: 1px solid var(--line); overflow: hidden; box-shadow: 0 20px 50px -30px rgba(0,0,0,.25); }
+  .bar { height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 14px; border-bottom: 1px solid var(--line); }
+  .bar i { width: 9px; height: 9px; border-radius: 50%; background: #dcdcd7; }
+  .bar span { margin-left: 10px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); }
+  .body { padding: 20px; display: grid; gap: 14px; font-size: 13px; }
+  .input { height: 40px; border-radius: 8px; border: 1px solid var(--line); display: flex; align-items: center; padding: 0 12px; color: var(--ink2); }
+  .pill { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .p-ok { background: rgba(47,191,113,.14); color: #1d8a51; } .p-bad { background: rgba(229,72,77,.12); color: #c23338; }
+  .p-wait { background: rgba(245,196,0,.2); color: #7a6200; } .p-grey { background: #efefec; color: var(--ink2); }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .two { display: grid; grid-template-columns: 1fr 1.2fr; gap: 14px; }
+  .plan div { display: flex; gap: 10px; align-items: center; padding: 6px 0; color: var(--ink2); }
+  .plan b { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; background: var(--ink); color: var(--white); }
+  .plan .now b { background: var(--yellow); color: var(--yellow-ink); } .plan .todo b { background: #e8e8e4; color: var(--muted); }
+  .progress { height: 6px; border-radius: 6px; background: #eeeeea; overflow: hidden; } .progress i { display: block; height: 100%; width: 62%; background: var(--ink); }
+  .log { border-radius: 8px; background: #fafaf8; border: 1px solid var(--line); padding: 10px 12px; font-family: "IBM Plex Mono", monospace; font-size: 11px; display: grid; gap: 6px; color: var(--ink2); }
+  .tbl { display: grid; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .tbl .tr { display: grid; grid-template-columns: 1.4fr .9fr 1.2fr 1fr; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line); align-items: center; }
+  .tbl .tr:first-child { border-top: 0; background: #fafaf8; font-size: 11px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+  .mono { font-family: "IBM Plex Mono", monospace; }
+  .card-ap { border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; }
+  .amts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .amts small { display: block; font-size: 11px; color: var(--muted); }
+  .amts b { font-size: 16px; }
+  .b-mini { height: 32px; padding: 0 14px; border-radius: 999px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; border: 1px solid var(--ink); }
+  .b-mini.solid { background: var(--ink); color: var(--white); }
+  .otp { display: flex; gap: 6px; } .otp i { width: 34px; height: 40px; border-radius: 8px; border: 1px solid var(--line); display: grid; place-items: center; font-style: normal; font-weight: 700; }
+  .files div { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .files div:first-child { border-top: 0; }
+  .doc { width: 26px; height: 32px; border-radius: 4px; background: #f1f1ee; border: 1px solid var(--line); display: grid; place-items: end center; font-size: 8px; font-weight: 700; color: var(--muted); padding-bottom: 3px; }
+  .flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .flow .pill { height: 26px; }
+  .flow em { font-style: normal; color: var(--muted); }
+  .bars { display: flex; align-items: flex-end; gap: 12px; height: 140px; padding-top: 6px; }
+  .bars div { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; }
+  .bars i { width: 100%; border-radius: 6px 6px 2px 2px; background: var(--ink); }
+  .bars div:first-child i { background: var(--yellow); }
+  .bars span { font-size: 11px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .kpis div { border-radius: 8px; background: #fafaf8; border: 1px solid var(--line); padding: 12px; display: grid; gap: 2px; }
+  .kpis b { font-size: 22px; letter-spacing: -.02em; } .kpis small { font-size: 11px; color: var(--muted); }
+  .spans div { display: grid; grid-template-columns: 90px 1fr 60px; gap: 10px; align-items: center; padding: 5px 0; font-size: 12px; }
+  .spans .lane { height: 10px; border-radius: 4px; background: #eeeeea; position: relative; }
+  .spans .lane i { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--ink); }
+  .spans .lane i.w { background: var(--yellow); } .spans .lane i.e { background: var(--bad); }
+
+  .more { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); }
+  .more div { border-radius: var(--r); background: #1a1a18; padding: var(--s3); display: grid; gap: var(--s1); }
+  .more p { font-size: 14px; color: #b9b9b3; }
+  .cta { background: var(--yellow); color: var(--yellow-ink); }
+  .cta .wrap { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+
+  @media (max-width: 900px) {
+    .f-text, .f-mock, .feature:nth-of-type(odd) .f-text, .feature:nth-of-type(odd) .f-mock { grid-column: 1 / -1; order: 0; }
+    .more { grid-template-columns: 1fr 1fr; }
+    .intro { padding-top: 132px; }
+  }
+  @media (max-width: 640px) {
+    .two { grid-template-columns: 1fr; }
+    .kpis { grid-template-columns: 1fr 1fr; }
+    .more { grid-template-columns: 1fr; }
+    .tbl .tr { grid-template-columns: 1.3fr .9fr 1fr; } .tbl .tr > :nth-child(3) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="top" aria-label="Main">
+  <div class="wrap">
+    <a class="brand" href="index.html"><span class="mark"><i></i><i></i></span>MERIDIAN</a>
+    <div class="links"><a href="index.html#how">How it works</a><a href="index.html#checks">Rules</a><a href="index.html#results">Results</a><a class="on" href="features.html">Features</a></div>
+    <a class="btn solid" data-app="/" href="http://localhost:8510/"><span class="txt">Open operator</span> <span class="arr">→</span></a>
+  </div>
+</nav>
+
+<section class="intro">
+  <div class="wrap">
+    <div class="head reveal"><span class="label">Features</span><h1>One screen for the whole job.</h1><p class="lead">Run tasks, answer the agent, approve disputes and check the score.</p></div>
+    <div class="toc reveal">
+      <a href="#run">Run a task</a><a href="#needs">Needs you</a><a href="#results">Results</a><a href="#documents">Documents</a>
+      <a href="#disputes">Disputes</a><a href="#summary">Monthly summary</a><a href="#eval">Evaluation</a><a href="#traces">Traces</a>
+    </div>
+  </div>
+</section>
+
+<section class="feature" id="run">
+  <div class="wrap grid">
+    <div class="f-text reveal"><span class="num">01</span><h2>Run a task</h2><p>Type it in plain English. Watch the plan and log live. Stop and resume any time.</p><a class="go" data-app="/" href="http://localhost:8510/">Open <span class="mono">→</span></a></div>
+    <div class="f-mock reveal"><div class="mock"><div class="win">
+      <div class="bar"><i></i><i></i><i></i><span>Run a task</span></div>
+      <div class="body">
+        <div class="input">Reconcile October on PUN-HYD and raise disputes</div>
+        <div class="row"><span class="pill p-wait">running</span><span class="muted mono">step 5 of 9</span></div>
+        <div class="progress"><i></i></div>
+        <div class="two">
+          <div class="plan">
+            <div><b>✓</b>Log in</div><div><b>✓</b>Search invoices</div><div><b>✓</b>Collect proofs</div>
+            <div class="now"><b>4</b>Apply rules</div><div class="todo"><b>5</b>Approvals</div>
+          </div>
+          <div class="log"><span>23:42 search_invoices · ok</span><span>23:42 open_invoice 10162 · ok</span><span>23:43 pod SHP-60203 · <b style="color:#c23338">unreadable</b></span><span>23:43 reconcile 10162 · mismatch</span></div>
+        </div>
+      </div>
+    </div></div></div>
+  </div>
+</section>
+
+<section class="feature" id="needs">
+  <div class="wrap grid">
+    <div class="f-text reveal"><span class="num">02</span><h2>Needs you</h2><p>One inbox for passwords, CAPTCHAs and dispute approvals. Nothing happens without you.</p><a class="go" data-app="/needs-you" href="http://localhost:8510/needs-you">Open <span class="mono">→</span></a></div>
+    <div class="f-mock reveal"><div class="mock"><div class="win">
+      <div class="bar"><i></i><i></i><i></i><span>Needs you · 2</span></div>
+      <div class="body">
+        <div class="row"><strong>One-time password</strong><div class="otp"><i>4</i><i>8</i><i>1</i><i>9</i><i></i><i></i></div></div>
+        <div class="card-ap">
+          <div class="row"><strong class="mono">TIR/26-27/10118</strong><span class="pill p-bad">weight_over</span></div>
+          <div class="amts"><div><small>Billed</small><b>₹91,457.96</b></div><div><small>Correct</small><b>₹88,829.62</b></div><div><small>Over</small><b style="color:#c23338">₹2,628.34</b></div></div>
+          <div class="row" style="justify-content:flex-start;gap:8px"><span class="b-mini solid">Approve</span><span class="b-mini">Reject</span></div>
+        </div>
+      </div>
+    </div></div></div>
+  </div>
+</section>
+
+<section class="feature" id="results">
+  <div class="wrap grid">
+    <div class="f-text reveal"><span class="num">03</span><h2>Results</h2><p>Every invoice, billed against expected. Open any line to see why.</p><a class="go" data-app="/results" href="http://localhost:8510/results">Open <span class="mono">→</span></a></div>
+    <div class="f-mock reveal"><div class="mock"><div class="win">
+      <div class="bar"><i></i><i></i><i></i><span>Results · lane-month</span></div>
+      <div class="body">
+        <div class="tbl">
+          <div class="tr"><span>INVOICE</span><span>RESULT</span><span>REASON</span><span>BILLED</span></div>
+          <div class="tr"><span class="mono">10118</span><span class="pill p-bad">mismatch</span><span class="muted">weight_over</span><span class="mono">₹91,457</span></div>
+          <div class="tr"><span class="mono">10119</span><span class="pill p-grey">cancelled</span><span class="muted">—</span><span class="mono">—</span></div>
+          <div class="tr"><span class="mono">10120</span><span class="pill p-bad">mismatch</span><span class="muted">rate_wrong</span><span class="mono">₹54,307</span></div>
+          <div class="tr"><span class="mono">10122</span><span class="pill p-ok">match</span><span class="muted">—</span><span class="mono">₹17,340</span></div>
+        </div>
+      </div>
+    </div></div></div>
+  </div>
+</section>
+
+<section class="feature" id="documents">
+  <div class="wrap grid">
+    <div class="f-text reveal"><span class="num">04</span><h2>Documents</h2><p>Every invoice PDF and delivery proof the agent collected. Scans it can't read are flagged.</p><a class="go" data-app="/documents" href="http://localhost:8510/documents">Open <span class="mono">→</span></a></div>
+    <div class="f-mock reveal"><div class="mock"><div class="win">
+      <div class="bar"><i></i><i></i><i></i><span>Documents</span></div>
+      <div class="body files">
+        <div><span class="doc">PDF</span><span class="mono" style="flex:1">INV_TIR-26-27-10118</span><span class="pill p-grey">invoice</span></div>
+        <div><span class="doc">PDF</span><span class="mono" style="flex:1">POD_SHP-60065</span><span class="pill p-ok">dates read</span></div>
+        <div><span class="doc">PDF</span><span class="mono" style="flex:1">POD_SHP-60203</span><span class="pill p-wait">scan · check</span></div>
+        <div><span class="doc">PNG</span><span class="mono" style="flex:1">dispute_after_submit</span><span class="pill p-grey">masked</span></div>
+      </div>
+    </div></div></div>
+  </div>
+</section>
+
+<section class="feature" id="disputes">
+  <div class="wrap grid">
+    <div class="f-text reveal"><span class="num">05</span><h2>Disputes</h2><p>Every dispute and where it stands. Confirmed in the portal's own list, never twice.</p><a class="go" data-app="/disputes" href="http://localhost:8510/disputes">Open <span class="mono">→</span></a></div>
+    <div class="f-mock reveal"><div class="mock"><div class="win">
+      <div class="bar"><i></i><i></i><i></i><span>Disputes</span></div>
+      <div class="body">
+        <div class="flow"><span class="pill p-grey">Proposed</span><em>→</em><span class="pill p-wait">Approved</span><em>→</em><span class="pill p-grey">List checked</span><em>→</em><span class="pill p-grey">Submitted</span><em>→</em><span class="pill p-ok">Confirmed</span></div>
+        <div class="tbl">
+          <div class="tr"><span>INVOICE</span><span>STATUS</span><span>PORTAL REF</span><span>OVER</span></div>
+          <div class="tr"><span class="mono">10118</span><span class="pill p-ok">confirmed</span><span class="mono muted">DSP-31006</span><span class="mono">₹2,628</span></div>
+          <div class="tr"><span class="mono">10120</span><span class="pill p-ok">confirmed</span><span class="mono muted">DSP-30747</span><span class="mono">₹3,626</span></div>
+          <div class="tr"><span class="mono">10133</span><span class="pill p-grey">rejected</span><span class="mono muted">—</span><span class="mono">₹612</span></div>
+        </div>
+      </div>
+    </div></div></div>
+  </div>
+</section>
+
+<section class="feature" id="summary">
+  <div class="wrap grid">
+    <div class="f-text reveal"><span class="num">06</span><h2>Monthly summary</h2><p>For the logistics manager: overcharges by lane, and why.</p><a class="go" data-app="/summary" href="http://localhost:8510/summary">Open <span class="mono">→</span></a></div>
+    <div class="f-mock reveal"><div class="mock"><div class="win">
+      <div class="bar"><i></i><i></i><i></i><span>Monthly summary · Oct-26</span></div>
+      <div class="body">
+        <div class="row"><strong>Overcharge by lane</strong><span class="muted mono">₹33,809</span></div>
+        <div class="bars">
+          <div><i style="height:82%"></i><span>BLR</span></div><div><i style="height:46%"></i><span>HYD</span></div>
+          <div><i style="height:64%"></i><span>CHN</span></div><div><i style="height:28%"></i><span>DEL</span></div><div><i style="height:38%"></i><span>AMD</span></div>
+        </div>
+      </div>
+    </div></div></div>
+  </div>
+</section>
+
+<section class="feature" id="eval">
+  <div class="wrap grid">
+    <div class="f-text reveal"><span class="num">07</span><h2>Evaluation</h2><p>Run all public tasks in one click. See the score against every target.</p><a class="go" data-app="/evaluation" href="http://localhost:8510/evaluation">Open <span class="mono">→</span></a></div>
+    <div class="f-mock reveal"><div class="mock"><div class="win">
+      <div class="bar"><i></i><i></i><i></i><span>Evaluation</span></div>
+      <div class="body">
+        <div class="kpis">
+          <div><small>Task success</small><b>—</b><small>target ≥ 80%</small></div>
+          <div><small>Invoice accuracy</small><b>100%</b><small>target ≥ 90%</small></div>
+          <div><small>Wrong disputes</small><b>0</b><small>target 0</small></div>
+          <div><small>Duplicates</small><b>0</b><small>target 0</small></div>
+        </div>
+        <div class="row"><span class="b-mini solid">Start test run</span><span class="muted mono">20 public tasks</span></div>
+      </div>
+    </div></div></div>
+  </div>
+</section>
+
+<section class="feature" id="traces">
+  <div class="wrap grid">
+    <div class="f-text reveal"><span class="num">08</span><h2>Traces</h2><p>One trace per task, one span per step. Personal data masked.</p><a class="go" data-app="/results" href="http://localhost:8510/results">Open <span class="mono">→</span></a></div>
+    <div class="f-mock reveal"><div class="mock"><div class="win">
+      <div class="bar"><i></i><i></i><i></i><span>Trace · 27 spans</span></div>
+      <div class="body spans">
+        <div><span class="mono">login</span><span class="lane"><i class="w" style="left:0;width:18%"></i></span><span class="muted mono">otp</span></div>
+        <div><span class="mono">search</span><span class="lane"><i style="left:18%;width:10%"></i></span><span class="muted mono">ok</span></div>
+        <div><span class="mono">invoice</span><span class="lane"><i style="left:28%;width:16%"></i></span><span class="muted mono">ok</span></div>
+        <div><span class="mono">pod</span><span class="lane"><i class="e" style="left:44%;width:8%"></i></span><span class="muted mono">retry</span></div>
+        <div><span class="mono">reconcile</span><span class="lane"><i style="left:52%;width:12%"></i></span><span class="muted mono">ok</span></div>
+        <div><span class="mono">dispute</span><span class="lane"><i class="w" style="left:64%;width:26%"></i></span><span class="muted mono">approved</span></div>
+      </div>
+    </div></div></div>
+  </div>
+</section>
+
+<section class="sec dark">
+  <div class="wrap">
+    <div class="head reveal"><span class="label">Also built in</span><h2>Made for a portal that fights back.</h2></div>
+    <div class="more reveal">
+      <div><h3>Stop and resume</h3><p>Finished invoices are never redone.</p></div>
+      <div><h3>Fake portal</h3><p>Test offline against errors and pop-ups.</p></div>
+      <div><h3>Test harness</h3><p>All 20 public tasks, scored.</p></div>
+      <div><h3>Safe by design</h3><p>Secrets stay in .env. Text on pages is data.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec tight cta">
+  <div class="wrap">
+    <h2>Try it on a task.</h2>
+    <a class="btn solid" data-app="/" href="http://localhost:8510/">Open the operator screen <span class="arr">→</span></a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <a class="brand" href="index.html"><span class="mark"><i></i><i></i></span>MERIDIAN</a>
+    <span>Fictional companies · Synthetic data · FDE Fellowship, Team Delta</span>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+</body>
+</html>

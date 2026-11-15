@@ -167,7 +167,7 @@ A single page in an industrial freight style (white, black, industrial yellow) w
 - **Scan:** a top-down container ship sails under a scan line; each container (an invoice line) turns green (billed right) or red (overcharged), with live counters.
 - **What it checks** (the eight rules) · **Results** (safety, robustness, evidence, evaluation targets) · **Call to action**
 
-Every 3D object is modelled in code (no downloaded models). Buttons open the operator screen on port 8510 (override with `?app=http://host:port`). Three.js and fonts load from public CDNs (jsDelivr, Google Fonts). The design prompt is in [docs/prompts/website.md](docs/prompts/website.md).
+A second page, `/features.html`, shows each operator-screen feature (run a task, needs you, results, documents, disputes, monthly summary, evaluation, traces) with a clean UI preview and a link to the real page. Both pages share `web/site.css` (one 12-column grid, one spacing scale) and `web/site.js`. Every 3D object is modelled in code (no downloaded models). Buttons open the operator screen on port 8510 (override with `?app=http://host:port`). Three.js and fonts load from public CDNs (jsDelivr, Google Fonts). The design prompt is in [docs/prompts/website.md](docs/prompts/website.md).
 
 Operator screen (demo mode works without the portal):
 

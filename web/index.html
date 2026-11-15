@@ -4,186 +4,111 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Meridian Portal Agent</title>
-<meta name="description" content="Meridian's portal agent checks every carrier invoice against what was actually delivered, and raises a dispute only after a person approves it. Fictional company, synthetic data.">
+<meta name="description" content="An agent that checks every carrier invoice against what was delivered. Fictional company, synthetic data.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
 <style>
-  :root {
-    --white: #ffffff; --paper: #f3f3f1; --line: #e3e3df; --ink: #0e0e0e; --ink2: #3c3c39; --muted: #7a7a75;
-    --yellow: #f5c400; --yellow-ink: #1a1500; --pass: #2fbf71; --bad: #e5484d;
-    --pad: clamp(18px, 4vw, 56px); --max: 1320px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  html, body { background: var(--white); color: var(--ink); }
-  body { font-family: "Manrope", system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: clip; }
-  a { color: inherit; text-decoration: none; }
-  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
-  .cap { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
-  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--pad); }
-  .label { display: inline-flex; align-items: center; gap: 8px; font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-  .label::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-  .btn { display: inline-flex; align-items: center; gap: 10px; border-radius: 6px; padding: 12px 18px; font-weight: 700; font-size: 12px;
-         letter-spacing: .06em; text-transform: uppercase; border: 1px solid var(--ink); transition: transform .2s, background .2s; }
-  .btn:hover { transform: translateY(-1px); }
-  .btn.dark { background: var(--ink); color: var(--white); }
-  .btn.yellow { background: var(--yellow); border-color: var(--yellow); color: var(--yellow-ink); }
-  .btn.ghost { background: transparent; }
-  .btn .arr { font-family: "IBM Plex Mono", monospace; }
-
-  /* ---------------------------------------------------------------- nav */
-  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 50; padding: 12px 0; background: rgba(255,255,255,.86);
-        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid transparent; transition: background .3s, color .3s, border-color .3s; }
-  nav.scrolled { border-bottom-color: var(--line); }
-  nav.on-dark { background: rgba(14,14,14,.86); color: var(--white); border-bottom-color: #222; }
-  nav.on-dark .mark i:last-child { background: var(--white); }
-  nav.on-dark .menu { background: rgba(30,30,28,.8); border-color: #2c2c29; }
-  nav.on-dark .menu a { color: #c9c9c3; } nav.on-dark .menu a:hover { background: #2a2a27; color: var(--white); }
-  nav.on-dark .btn.dark { background: var(--yellow); border-color: var(--yellow); color: var(--yellow-ink); }
-  .nav-in { max-width: var(--max); margin: 0 auto; padding: 0 var(--pad); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 15px; letter-spacing: .02em; }
-  .mark { display: inline-flex; gap: 3px; transform: skewX(-20deg); }
-  .mark i { width: 6px; height: 18px; background: var(--yellow); display: block; }
-  .mark i:last-child { background: var(--ink); }
-  .menu { display: flex; gap: 2px; padding: 4px; border-radius: 8px; background: rgba(243,243,241,.85); backdrop-filter: blur(10px); border: 1px solid var(--line); }
-  .menu a { padding: 8px 14px; border-radius: 6px; font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink2); }
-  .menu a:hover { background: var(--white); color: var(--ink); }
-  nav .btn { padding: 10px 14px; }
-
-  /* ---------------------------------------------------------------- hero */
-  .hero { position: relative; height: 230vh; }
+  /* hero */
+  .hero { position: relative; height: 220vh; }
   .stick { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
-  #hero3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .hero-ui { position: absolute; inset: 0; pointer-events: none; }
-  .hero-ui > * { pointer-events: auto; }
-  .hero-copy { position: absolute; left: var(--pad); top: 17vh; max-width: 560px; will-change: opacity, transform; }
-  .hero-fade { will-change: opacity, transform; }
-  .hero-copy h1 { font-size: clamp(38px, 5vw, 72px); font-weight: 600; letter-spacing: -.035em; line-height: 1.02; }
-  .hero-copy h1 span { color: var(--muted); }
-  .proof { display: flex; align-items: center; gap: 14px; margin-top: 26px; }
-  .faces { display: flex; }
-  .faces i { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--white); margin-left: -8px; display: grid; place-items: center;
-             font-style: normal; font-weight: 700; font-size: 11px; color: var(--white); }
-  .faces i:first-child { margin-left: 0; background: #2b2b28; } .faces i:nth-child(2) { background: #6d6a5f; } .faces i:nth-child(3) { background: var(--yellow); color: var(--yellow-ink); }
-  .proof b { font-size: 20px; font-weight: 800; letter-spacing: -.02em; display: block; }
-  .proof small { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
-  .hero-side { position: absolute; right: var(--pad); top: 52vh; width: 300px; }
-  .hero-side p { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; line-height: 1.7; color: var(--ink2); text-transform: uppercase; letter-spacing: .02em; }
-  .hero-side .row { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
-  .hero-meta { position: absolute; left: var(--pad); bottom: 26px; display: flex; gap: 26px; }
-  .hero-meta div { display: grid; gap: 3px; }
-  .hero-meta b { font-weight: 800; font-size: 15px; }
-  .hero-meta small { font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
-  .readout { position: absolute; right: var(--pad); bottom: 26px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); letter-spacing: .08em; text-align: right; }
+  #hero3d, #ship3d { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hero-ui { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 120px 0 32px; }
+  .hero-ui .wrap { width: 100%; }
+  .hero-ui a, .hero-ui .btns { pointer-events: auto; }
+  .hero-copy { grid-column: 1 / span 5; display: grid; gap: var(--s3); align-content: start; }
+  .hero-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--s3); }
+  .stats { display: flex; gap: var(--s4); }
+  .stat b { display: block; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .stat span { font-size: 13px; color: var(--muted); }
+  .readout { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
   .readout b { color: var(--ink); font-weight: 500; }
 
-  /* ---------------------------------------------------------------- sections */
-  section.s { position: relative; padding: clamp(80px, 11vw, 150px) 0; }
-  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.7,.2,1); }
-  .reveal.in { opacity: 1; transform: none; }
-  .dark { background: var(--ink); color: var(--white); }
-  .dark .label { color: #a6a6a0; }
+  /* about */
+  .about h2 { grid-column: 1 / span 6; }
+  .about-side { grid-column: 8 / span 5; display: grid; gap: var(--s4); align-content: end; }
+  .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap); border-top: 1px solid #2c2c29; padding-top: var(--s3); }
+  .facts b { display: block; font-size: 32px; font-weight: 700; letter-spacing: -.03em; color: var(--yellow); }
+  .facts span { font-size: 13px; color: #9a9a94; }
 
-  .about-grid { display: grid; grid-template-columns: 220px 1fr; gap: 40px; }
-  .about h2 { font-size: clamp(28px, 3.3vw, 46px); font-weight: 600; letter-spacing: -.03em; line-height: 1.15; max-width: 900px; }
-  .about h2 em { font-style: normal; color: var(--yellow); }
-  .about-low { display: grid; grid-template-columns: 220px 1fr 1fr; gap: 40px; margin-top: 56px; align-items: start; }
-  .about-low p { font-family: "IBM Plex Mono", monospace; font-size: 12px; line-height: 1.75; color: #c9c9c3; text-transform: uppercase; }
-  .tiny-yard { height: 120px; border-radius: 6px; overflow: hidden; background: linear-gradient(180deg, #1c1c1a, #262623); position: relative; }
-  .tiny-yard i { position: absolute; bottom: 0; height: 28px; border-radius: 2px; }
-
-  .how-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: clamp(30px, 6vw, 90px); align-items: start; }
-  .how h2, .checks h2, .results h2, .cta h2 { font-size: clamp(30px, 3.6vw, 52px); font-weight: 600; letter-spacing: -.035em; line-height: 1.04; margin-top: 16px; }
-  .steps { margin-top: 36px; border-top: 1px solid var(--line); }
-  .step { display: grid; grid-template-columns: 60px 1fr; gap: 18px; padding: 20px 0; border-bottom: 1px solid var(--line); }
-  .step .n { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); padding-top: 4px; }
-  .step h3 { font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
-  .step p { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; line-height: 1.7; color: var(--ink2); text-transform: uppercase; margin-top: 6px; }
-  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; position: sticky; top: 110px; }
-  .tile { border-radius: 8px; padding: 22px 22px 20px; min-height: 180px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid var(--line); background: var(--paper); }
-  .tile b { font-size: clamp(40px, 4.4vw, 64px); font-weight: 700; letter-spacing: -.04em; line-height: 1; }
-  .tile b sup { font-size: .45em; vertical-align: top; margin-left: 2px; }
-  .tile span { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink2); line-height: 1.5; }
-  .tile.k { background: var(--ink); color: var(--white); border-color: var(--ink); } .tile.k span { color: #bdbdb7; }
-  .tile.y { background: var(--yellow); border-color: var(--yellow); } .tile.y span { color: var(--yellow-ink); }
-  .tile.wide { grid-column: span 2; min-height: 130px; flex-direction: row; align-items: flex-end; }
+  /* steps + tiles */
+  .steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--gap); }
+  .step { border-top: 2px solid var(--ink); padding-top: var(--s2); display: grid; gap: 6px; }
+  .step .n { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
+  .step p { font-size: 14px; color: var(--ink2); }
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); margin-top: var(--s5); }
+  .tile { border-radius: var(--r); padding: var(--s3); min-height: 160px; display: flex; flex-direction: column; justify-content: space-between; background: var(--paper); }
+  .tile b { font-size: clamp(40px, 4vw, 56px); font-weight: 700; letter-spacing: -.04em; line-height: 1; }
+  .tile span { font-size: 14px; color: var(--ink2); }
+  .tile.k { background: var(--ink); color: var(--white); } .tile.k span { color: #b9b9b3; }
+  .tile.y { background: var(--yellow); } .tile.y span { color: var(--yellow-ink); }
 
   /* ship */
-  .ship { position: relative; height: 280vh; background: #111110; color: var(--white); }
-  .ship .stick { position: sticky; top: 0; }
-  #ship3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .ship-ui { position: absolute; inset: 0; pointer-events: none; }
-  .ship-copy { position: absolute; left: var(--pad); top: 16vh; max-width: 380px; }
-  .ship-copy h2 { font-size: clamp(30px, 3.4vw, 50px); font-weight: 600; letter-spacing: -.035em; line-height: 1.04; margin-top: 16px; }
-  .ship-copy p { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; line-height: 1.75; color: #bdbdb7; text-transform: uppercase; margin-top: 18px; }
-  .counters { position: absolute; right: var(--pad); top: 16vh; display: grid; gap: 8px; width: 210px; }
-  .ctr { border-radius: 8px; padding: 16px 16px 14px; background: var(--white); color: var(--ink); }
-  .ctr b { display: block; font-size: 40px; font-weight: 700; letter-spacing: -.04em; line-height: 1; }
-  .ctr span { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink2); }
-  .ctr.y { background: var(--yellow); } .ctr.k { background: #1d1d1b; color: var(--white); border: 1px solid #333; } .ctr.k span { color: #bdbdb7; }
-  .ship-legend { position: absolute; left: var(--pad); bottom: 28px; display: flex; gap: 16px; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: #bdbdb7; }
-  .ship-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .ship { position: relative; height: 260vh; background: #111110; color: var(--white); }
+  .ship-ui { position: absolute; inset: 0; pointer-events: none; padding: 120px 0 32px; display: flex; flex-direction: column; justify-content: space-between; }
+  .ship-ui .wrap { width: 100%; }
+  .ship-head { grid-column: 1 / span 4; display: grid; gap: var(--s2); }
+  .counters { grid-column: 10 / span 3; display: grid; gap: var(--s1); }
+  .ctr { border-radius: var(--r); padding: var(--s2) var(--s3); background: var(--white); color: var(--ink); }
+  .ctr b { display: block; font-size: 36px; font-weight: 700; letter-spacing: -.04em; line-height: 1.1; }
+  .ctr span { font-size: 13px; color: var(--ink2); }
+  .ctr.y { background: var(--yellow); } .ctr.k { background: #1e1e1c; color: var(--white); } .ctr.k span { color: #b9b9b3; }
+  .legend { display: flex; gap: var(--s3); font-size: 13px; color: #b9b9b3; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
 
-  /* checks */
-  .checks-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; flex-wrap: wrap; }
-  .checks-head p { max-width: 420px; font-family: "IBM Plex Mono", monospace; font-size: 11.5px; line-height: 1.75; color: #bdbdb7; text-transform: uppercase; }
-  .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 46px; }
-  .card { border-radius: 8px; background: #1a1a18; border: 1px solid #2a2a27; padding: 18px; min-height: 230px; display: flex; flex-direction: column; gap: 12px; transition: border-color .25s, transform .25s; }
-  .card:hover { border-color: var(--yellow); transform: translateY(-2px); }
-  .card .code { align-self: flex-start; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; padding: 4px 8px; border-radius: 4px; background: var(--yellow); color: var(--yellow-ink); }
-  .card h3 { font-size: 19px; font-weight: 700; letter-spacing: -.015em; }
-  .card p { font-family: "IBM Plex Mono", monospace; font-size: 11px; line-height: 1.65; color: #bdbdb7; text-transform: uppercase; }
-  .card .ex { margin-top: auto; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--white); padding-top: 12px; border-top: 1px dashed #333; }
+  /* rule cards */
+  .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); }
+  .card { border-radius: var(--r); background: #1a1a18; padding: var(--s3); min-height: 168px; display: flex; flex-direction: column; gap: var(--s2); transition: background .25s, transform .25s; }
+  .card:hover { background: #222220; transform: translateY(-2px); }
+  .card .code { align-self: flex-start; font-family: "IBM Plex Mono", monospace; font-size: 11px; padding: 4px 8px; border-radius: 6px; background: rgba(245,196,0,.14); color: var(--yellow); }
+  .card .ex { margin-top: auto; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #9a9a94; }
   .card .ex em { font-style: normal; color: var(--bad); }
 
   /* results */
-  .res-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 46px; }
-  .res { border-top: 2px solid var(--ink); padding-top: 18px; }
-  .res h3 { font-size: 20px; font-weight: 700; letter-spacing: -.015em; }
-  .res p { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; line-height: 1.75; color: var(--ink2); text-transform: uppercase; margin-top: 10px; }
-  .targets { margin-top: 50px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-  .targets div { padding: 20px; border-right: 1px solid var(--line); }
-  .targets div:last-child { border-right: 0; }
-  .targets b { display: block; font-size: 34px; font-weight: 700; letter-spacing: -.035em; }
-  .targets span { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .res { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap); }
+  .res > div { border-top: 2px solid var(--ink); padding-top: var(--s2); display: grid; gap: 6px; }
+  .res p { font-size: 14px; color: var(--ink2); }
+  .targets { margin-top: var(--s5); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); }
+  .targets div { border-radius: var(--r); background: var(--paper); padding: var(--s3); }
+  .targets b { display: block; font-size: 32px; font-weight: 700; letter-spacing: -.03em; }
+  .targets span { font-size: 13px; color: var(--muted); }
 
-  /* cta + footer */
+  /* features teaser + cta */
+  .teaser { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); }
+  .feat { border-radius: var(--r); border: 1px solid var(--line); padding: var(--s3); display: grid; gap: var(--s1); transition: border-color .2s, transform .2s; }
+  .feat:hover { border-color: var(--ink); transform: translateY(-2px); }
+  .feat .ic { width: 36px; height: 36px; border-radius: 10px; background: var(--paper); display: grid; place-items: center; font-size: 17px; }
+  .feat p { font-size: 14px; color: var(--ink2); }
+  .row-end { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--s3); flex-wrap: wrap; margin-bottom: var(--s5); }
+  .row-end .head { margin-bottom: 0; }
   .cta { background: var(--yellow); color: var(--yellow-ink); }
-  .cta-in { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; flex-wrap: wrap; }
-  .cta .btn.dark { border-color: var(--ink); }
-  footer { background: var(--ink); color: #a6a6a0; padding: 34px 0; }
-  .foot { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
-  .foot .brand { color: var(--white); }
-  .foot .mark i:last-child { background: var(--white); }
+  .cta .wrap { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); flex-wrap: wrap; }
 
   .nogl #hero3d, .nogl #ship3d { display: none; }
 
-  @media (max-width: 980px) {
-    .menu { display: none; }
-    .how-grid, .about-grid, .about-low { grid-template-columns: 1fr; }
-    .tiles { position: static; }
-    .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .res-grid { grid-template-columns: 1fr; gap: 30px; }
-    .targets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .targets div:nth-child(2) { border-right: 0; } .targets div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+  @media (max-width: 900px) {
+    .hero-copy { grid-column: 1 / -1; }
+    .about h2, .about-side { grid-column: 1 / -1; }
+    .steps { grid-template-columns: 1fr 1fr; }
+    .tiles, .targets, .teaser { grid-template-columns: 1fr 1fr; }
+    .cards { grid-template-columns: 1fr 1fr; }
+    .res { grid-template-columns: 1fr; }
+    .ship-head { grid-column: 1 / -1; }
+    .counters { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
-  @media (max-width: 680px), (orientation: portrait) {
-    .hero-copy { top: 96px; right: var(--pad); }
-    .hero-copy h1 { font-size: clamp(34px, 9.5vw, 46px); }
-    .hero-side { top: auto; bottom: 74px; left: var(--pad); right: var(--pad); width: auto; }
-    .hero-side p { display: none; }
-    .hero-meta { display: none; }
-    .readout { bottom: 26px; left: var(--pad); right: auto; text-align: left; }
-    .ship-copy { top: 84px; right: var(--pad); background: rgba(17,17,16,.86); padding: 16px; border-radius: 8px; border: 1px solid #2a2a27; }
-    .ship-copy h2 { margin-top: 10px; }
-    .counters { top: auto; bottom: 64px; left: var(--pad); right: var(--pad); width: auto; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .ctr { padding: 12px 10px 10px; } .ctr b { font-size: 26px; }
-    .ship-legend { bottom: 18px; flex-wrap: wrap; gap: 10px; }
+  @media (max-width: 640px), (orientation: portrait) {
+    .hero-ui { padding-top: 96px; }
+    .hero-copy h1 { font-size: clamp(36px, 10vw, 46px); }
+    .hero-copy { position: relative; z-index: 1; background: rgba(255,255,255,.92); border-radius: var(--r); padding: var(--s2) 0; box-shadow: 0 0 0 12px rgba(255,255,255,.92); }
+    .hero-copy .lead { font-size: 16px; }
+    .stats { gap: var(--s3); } .readout { display: none; }
+    .ship-ui { padding-top: 92px; }
+    .ship-head { background: rgba(17,17,16,.85); padding: var(--s2); border-radius: var(--r); }
+    .ctr { padding: 12px; } .ctr b { font-size: 24px; }
     .cards { grid-template-columns: 1fr; }
-    nav .btn .txt { display: none; }
+    .steps { grid-template-columns: 1fr; }
   }
-  @media (prefers-reduced-motion: reduce) { .reveal { transition: none; opacity: 1; transform: none; } html { scroll-behavior: auto; } }
 </style>
 <script type="importmap">
 { "imports": {
@@ -194,179 +119,150 @@
 </head>
 <body>
 
-<nav aria-label="Main">
-  <div class="nav-in">
+<nav class="top" aria-label="Main">
+  <div class="wrap">
     <a class="brand" href="#top"><span class="mark"><i></i><i></i></span>MERIDIAN</a>
-    <div class="menu">
-      <a href="#about">About</a><a href="#how">How it works</a><a href="#checks">What it checks</a><a href="#results">Results</a>
-    </div>
-    <a class="btn dark" data-app="/" href="http://localhost:8510/"><span class="txt">Open operator</span> <span class="arr">→</span></a>
+    <div class="links"><a href="#how">How it works</a><a href="#checks">Rules</a><a href="#results">Results</a><a href="features.html">Features</a></div>
+    <a class="btn solid" data-app="/" href="http://localhost:8510/"><span class="txt">Open operator</span> <span class="arr">→</span></a>
   </div>
 </nav>
 
 <header class="hero" id="top">
   <div class="stick">
-    <canvas id="hero3d" aria-label="A branded container hangs from a crane hook above a stack of containers and is lowered onto it as you scroll"></canvas>
+    <canvas id="hero3d" aria-label="A branded container hangs from a crane hook and lands on a container stack as you scroll"></canvas>
     <div class="hero-ui">
-      <div class="hero-copy hero-fade">
-        <h1>Checking freight bills.<br><span>One invoice at a time.</span></h1>
-        <div class="proof">
-          <div class="faces" aria-hidden="true"><i>AP</i><i>OP</i><i>✓</i></div>
-          <div><b>600+</b><small>invoices a month, one carrier</small></div>
+      <div class="wrap grid">
+        <div class="hero-copy hero-fade">
+          <span class="label">Freight invoice audit</span>
+          <h1>Every freight bill, checked.</h1>
+          <p class="lead">An agent that reads the carrier's portal and flags every overcharge.</p>
+          <div class="btns">
+            <a class="btn solid" data-app="/" href="http://localhost:8510/">Run a task <span class="arr">→</span></a>
+            <a class="btn line" href="features.html">See features</a>
+          </div>
         </div>
       </div>
-      <div class="hero-side hero-fade">
-        <p>A browser agent that works the carrier's 2009 portal, checks every line against what was actually delivered, and raises a dispute only after a person approves it.</p>
-        <div class="row">
-          <a class="btn dark" data-app="/" href="http://localhost:8510/">Run a task <span class="arr">→</span></a>
-          <a class="btn ghost" href="#how">How it works</a>
-        </div>
+      <div class="wrap hero-foot">
+        <span></span>
+        <div class="readout" aria-hidden="true">MRDU 204871 · load <b id="loadPct">0%</b></div>
       </div>
-      <div class="hero-meta hero-fade">
-        <div><b>8</b><small>rules in code</small></div>
-        <div><b>₹1</b><small>tolerance</small></div>
-        <div><b>0</b><small>duplicate disputes</small></div>
-      </div>
-      <div class="readout" aria-hidden="true">CTR <b>MRDU 204871</b> · LOAD <b id="loadPct">0%</b></div>
     </div>
   </div>
 </header>
 
-<section class="s dark about" id="about">
-  <div class="wrap">
-    <div class="about-grid reveal">
-      <div class="label">About Meridian</div>
-      <h2>Built on one question: <em>did the carrier bill us for what it actually delivered?</em> TransIndus sends around 600 invoices a month through a portal with no API. Our agent reads every one.</h2>
-    </div>
-    <div class="about-low reveal">
-      <div class="tiny-yard" aria-hidden="true">
-        <i style="left:6%;width:30%;background:#f5c400"></i><i style="left:38%;width:26%;background:#e9e9e6"></i>
-        <i style="left:66%;width:28%;background:#3a3a37"></i><i style="left:20%;width:28%;bottom:30px;background:#2a2a27"></i>
-        <i style="left:50%;width:30%;bottom:30px;background:#f5c400"></i>
-      </div>
-      <p>Two people used to spend three days a month clicking through the carrier portal: opening invoices, downloading delivery proofs, checking weights and rates, and raising disputes for overcharges.</p>
-      <div>
-        <p>Now the agent does the clicking and the checking. The rules run in code, a person approves every dispute, and every step leaves a trace.</p>
-        <a class="btn yellow" style="margin-top:22px" href="#how">See how it works <span class="arr">→</span></a>
+<section class="sec dark about" id="about">
+  <div class="wrap grid reveal">
+    <h2>Did the carrier bill us for what it delivered?</h2>
+    <div class="about-side">
+      <p class="lead">One carrier. One 2009 portal. No API. The agent does the clicking and the checking.</p>
+      <div class="facts">
+        <div><b>600+</b><span>invoices a month</span></div>
+        <div><b>5</b><span>lanes from Pune</span></div>
+        <div><b>1</b><span>person approves</span></div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="s how" id="how">
-  <div class="wrap how-grid">
-    <div class="reveal">
-      <div class="label">How it works</div>
-      <h2>A portal that fights back. An agent that doesn't give up.</h2>
-      <div class="steps">
-        <div class="step"><span class="n">01</span><div><h3>Operate</h3><p>Logs in, hands every one-time password and CAPTCHA to a person, and rides out slow pages, error pages, pop-ups and expired sessions, at no more than 2 requests a second.</p></div></div>
-        <div class="step"><span class="n">02</span><div><h3>Collect</h3><p>Downloads every invoice and delivery proof. Dates come from the page or the PDF; a scan it can't read goes to a person.</p></div></div>
-        <div class="step"><span class="n">03</span><div><h3>Reconcile</h3><p>Checks every line in code against the rate card, the month's fuel surcharge and the delivery proof. The model never does arithmetic.</p></div></div>
-        <div class="step"><span class="n">04</span><div><h3>Dispute</h3><p>Overcharges above ₹500 are queued for a person to approve. The dispute list is checked before submitting and after. Never twice.</p></div></div>
-        <div class="step"><span class="n">05</span><div><h3>Report</h3><p>Returns a result per invoice with evidence, saves a screenshot of every write and closes one trace per task.</p></div></div>
-      </div>
+<section class="sec" id="how">
+  <div class="wrap">
+    <div class="head reveal"><span class="label">How it works</span><h2>Five steps. No guesswork.</h2></div>
+    <div class="steps reveal">
+      <div class="step"><span class="n">01</span><h3>Operate</h3><p>Logs in and survives the portal.</p></div>
+      <div class="step"><span class="n">02</span><h3>Collect</h3><p>Invoices and delivery proofs.</p></div>
+      <div class="step"><span class="n">03</span><h3>Reconcile</h3><p>Eight rules, in code.</p></div>
+      <div class="step"><span class="n">04</span><h3>Dispute</h3><p>Only after a person approves.</p></div>
+      <div class="step"><span class="n">05</span><h3>Report</h3><p>Evidence and a trace.</p></div>
     </div>
     <div class="tiles reveal">
-      <div class="tile k"><b>600<sup>+</sup></b><span>Invoices a month from one carrier</span></div>
-      <div class="tile y"><b>8</b><span>Rules checked in code on every line</span></div>
-      <div class="tile"><b>₹1</b><span>Tolerance on every amount</span></div>
-      <div class="tile k"><b>0</b><span>Wrong or duplicate disputes. The safety bar</span></div>
-      <div class="tile wide"><b style="font-size:clamp(28px,3vw,42px)">Resume, not restart</b><span style="max-width:200px;text-align:right;margin-left:auto">Logged out mid-task? It logs in again and carries on from the next invoice.</span></div>
+      <div class="tile k"><b>600+</b><span>Invoices a month</span></div>
+      <div class="tile y"><b>8</b><span>Rules per line</span></div>
+      <div class="tile"><b>₹1</b><span>Tolerance</span></div>
+      <div class="tile k"><b>0</b><span>Duplicate disputes</span></div>
     </div>
   </div>
 </section>
 
-<section class="ship" id="scan" aria-label="Top-down container ship being scanned bay by bay">
+<section class="ship" id="scan" aria-label="Top-down container ship being scanned">
   <div class="stick">
     <canvas id="ship3d" aria-hidden="true"></canvas>
     <div class="ship-ui">
-      <div class="ship-copy">
-        <div class="label" style="color:#a6a6a0">Every line, scanned</div>
-        <h2>Bay by bay. Line by line.</h2>
-        <p>Each container is one invoice line. As it passes the scan line, the rules decide: billed right, or overcharged. No sampling, no guessing.</p>
+      <div class="wrap grid">
+        <div class="ship-head"><span class="label" style="color:#9a9a94">Live scan</span><h2>Every line, scanned.</h2></div>
+        <div class="counters">
+          <div class="ctr"><b id="cLines">0</b><span>Lines checked</span></div>
+          <div class="ctr y"><b id="cPass">0</b><span>Billed right</span></div>
+          <div class="ctr k"><b id="cBad">0</b><span>Overcharged</span></div>
+        </div>
       </div>
-      <div class="counters">
-        <div class="ctr"><b id="cLines">0</b><span>Lines checked</span></div>
-        <div class="ctr y"><b id="cPass">0</b><span>Billed right</span></div>
-        <div class="ctr k"><b id="cBad">0</b><span>Overcharged</span></div>
-      </div>
-      <div class="ship-legend"><span><i style="background:#f5c400"></i>Waiting</span><span><i style="background:#2fbf71"></i>Billed right</span><span><i style="background:#e5484d"></i>Overcharged</span></div>
+      <div class="wrap legend"><span><i style="background:#f5c400"></i>Waiting</span><span><i style="background:#2fbf71"></i>Billed right</span><span><i style="background:#e5484d"></i>Overcharged</span></div>
     </div>
   </div>
 </section>
 
-<section class="s dark checks" id="checks">
+<section class="sec dark" id="checks">
   <div class="wrap">
-    <div class="checks-head reveal">
-      <div><div class="label">What it checks</div><h2>Eight rules. Every line.</h2></div>
-      <p>The first three short-circuit: if one fires, the line is worth ₹0. Otherwise weight, rate, surcharge and detention are all checked, and any number can fire.</p>
-    </div>
+    <div class="head reveal"><span class="label">Rules</span><h2>Eight rules on every line.</h2></div>
     <div class="cards reveal">
-      <article class="card"><span class="code">shipment_unknown</span><h3>Not our shipment</h3><p>The shipment isn't in Meridian's records.</p><div class="ex">SHP-99812 → <em>₹0 expected</em></div></article>
-      <article class="card"><span class="code">duplicate_billing</span><h3>Billed twice</h3><p>Already on an earlier invoice that wasn't cancelled.</p><div class="ex">10100 then 10200 → <em>later one</em></div></article>
-      <article class="card"><span class="code">no_pod</span><h3>No delivery proof</h3><p>The portal has no proof of delivery for it.</p><div class="ex">POD missing → <em>₹0 expected</em></div></article>
-      <article class="card"><span class="code">weight_over</span><h3>Weight over +2%</h3><p>Billed weight above actual weight + 2%.</p><div class="ex">1,974.4 vs 1,828.1 kg → <em>+8.0%</em></div></article>
-      <article class="card"><span class="code">rate_wrong</span><h3>Wrong rate</h3><p>Rate per kg isn't the rate card's on the booking date.</p><div class="ex">₹15.70 vs ₹14.20 → <em>rate_wrong</em></div></article>
-      <article class="card"><span class="code">surcharge_wrong</span><h3>Wrong fuel %</h3><p>Fuel surcharge isn't the percentage for the booking month.</p><div class="ex">15% vs 13% → <em>surcharge_wrong</em></div></article>
-      <article class="card"><span class="code">detention_unjustified</span><h3>Detention not due</h3><p>Charged, but delivered less than 2 days after the promised date.</p><div class="ex">1 day late → <em>₹1,500 not due</em></div></article>
-      <article class="card"><span class="code">math_error</span><h3>Totals don't add up</h3><p>Lines plus 12% GST don't match the invoice total.</p><div class="ex">off by ₹1,180 → <em>math_error</em></div></article>
+      <article class="card"><span class="code">shipment_unknown</span><h3>Not our shipment</h3><div class="ex">SHP-99812 → <em>₹0</em></div></article>
+      <article class="card"><span class="code">duplicate_billing</span><h3>Billed twice</h3><div class="ex">second invoice → <em>₹0</em></div></article>
+      <article class="card"><span class="code">no_pod</span><h3>No delivery proof</h3><div class="ex">POD missing → <em>₹0</em></div></article>
+      <article class="card"><span class="code">weight_over</span><h3>Weight over 2%</h3><div class="ex">1,974 vs 1,828 kg → <em>+8%</em></div></article>
+      <article class="card"><span class="code">rate_wrong</span><h3>Wrong rate</h3><div class="ex">₹15.70 vs ₹14.20 /kg</div></article>
+      <article class="card"><span class="code">surcharge_wrong</span><h3>Wrong fuel %</h3><div class="ex">15% vs 13%</div></article>
+      <article class="card"><span class="code">detention_unjustified</span><h3>Detention not due</h3><div class="ex">1 day late → <em>₹0</em></div></article>
+      <article class="card"><span class="code">math_error</span><h3>Totals don't add up</h3><div class="ex">lines + 12% GST ≠ total</div></article>
     </div>
   </div>
 </section>
 
-<section class="s results" id="results">
+<section class="sec" id="results">
   <div class="wrap">
-    <div class="reveal"><div class="label">Results</div><h2>Safe by default. Built to finish.</h2></div>
-    <div class="res-grid reveal">
-      <div class="res"><h3>Never a wrong dispute</h3><p>A person approves every dispute. The portal's dispute list is checked before and after; a success message alone is never proof. A second run raises nothing new.</p></div>
-      <div class="res"><h3>Finishes the job</h3><p>Timeouts, retries with backoff, re-login on expiry and progress saved outside the browser: a failure costs one step, not the whole task.</p></div>
-      <div class="res"><h3>Evidence for every line</h3><p>Results carry evidence. Every write gets a masked screenshot, every task one trace, and an evaluation page scores runs against the answer key.</p></div>
+    <div class="head reveal"><span class="label">Results</span><h2>Safe by default.</h2></div>
+    <div class="res reveal">
+      <div><h3>Never a wrong dispute</h3><p>A person approves. The list is checked twice.</p></div>
+      <div><h3>Finishes the job</h3><p>Retries, re-logins and resumes. Never restarts.</p></div>
+      <div><h3>Evidence for every line</h3><p>Screenshots, traces and a scored evaluation.</p></div>
     </div>
     <div class="targets reveal">
-      <div><b>≥ 80%</b><span>Task success target</span></div>
-      <div><b>≥ 90%</b><span>Invoice accuracy target</span></div>
+      <div><b>≥ 80%</b><span>Task success</span></div>
+      <div><b>≥ 90%</b><span>Invoice accuracy</span></div>
       <div><b>0</b><span>Wrong disputes</span></div>
       <div><b>0</b><span>Duplicate disputes</span></div>
     </div>
   </div>
 </section>
 
-<section class="s cta">
-  <div class="wrap cta-in reveal">
-    <div><div class="label" style="color:var(--yellow-ink)">Get started</div><h2>Ready when the next<br>600 invoices land.</h2></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <a class="btn dark" data-app="/" href="http://localhost:8510/">Open the operator screen <span class="arr">→</span></a>
-      <a class="btn ghost" data-app="/evaluation" href="http://localhost:8510/evaluation">See the evaluation</a>
+<section class="sec" style="padding-top:0">
+  <div class="wrap">
+    <div class="row-end reveal">
+      <div class="head"><span class="label">Operator screen</span><h2>One screen for the whole job.</h2></div>
+      <a class="btn line" href="features.html">All features <span class="arr">→</span></a>
+    </div>
+    <div class="teaser reveal">
+      <a class="feat" href="features.html#run"><span class="ic">▶</span><h3>Run a task</h3><p>Plain English in, live plan out.</p></a>
+      <a class="feat" href="features.html#needs"><span class="ic">✋</span><h3>Needs you</h3><p>OTPs and approvals in one inbox.</p></a>
+      <a class="feat" href="features.html#results"><span class="ic">▤</span><h3>Results</h3><p>Every line, billed vs expected.</p></a>
+      <a class="feat" href="features.html#eval"><span class="ic">◎</span><h3>Evaluation</h3><p>Scored against the answer key.</p></a>
     </div>
   </div>
 </section>
 
+<section class="sec tight cta">
+  <div class="wrap">
+    <h2>Ready for the next 600 invoices.</h2>
+    <a class="btn solid" data-app="/" href="http://localhost:8510/">Open the operator screen <span class="arr">→</span></a>
+  </div>
+</section>
+
 <footer>
-  <div class="wrap foot">
+  <div class="wrap">
     <a class="brand" href="#top"><span class="mark"><i></i><i></i></span>MERIDIAN</a>
-    <span>Meridian Freight and TransIndus Roadways are fictional · Synthetic data only</span>
-    <span>FDE Fellowship · Week 3 · Team Delta</span>
+    <span>Fictional companies · Synthetic data · FDE Fellowship, Team Delta</span>
   </div>
 </footer>
 
-<script>
-  (() => {
-    const base = new URLSearchParams(location.search).get("app") ||
-      (location.hostname ? `${location.protocol}//${location.hostname}:8510` : "http://localhost:8510");
-    document.querySelectorAll("[data-app]").forEach(a => { a.href = base.replace(/\/$/, "") + a.dataset.app; });
-    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add("in"); }), { threshold: 0.15 });
-    document.querySelectorAll(".reveal").forEach(el => io.observe(el));
-    const nav = document.querySelector("nav");
-    const darks = [...document.querySelectorAll("section.dark, .ship, footer")];
-    const onScroll = () => {
-      const y = 34;
-      nav.classList.toggle("on-dark", darks.some(d => { const r = d.getBoundingClientRect(); return r.top <= y && r.bottom > y; }));
-      nav.classList.toggle("scrolled", scrollY > 10);
-    };
-    addEventListener("scroll", onScroll, { passive: true }); onScroll();
-  })();
-</script>
-
+<script src="site.js"></script>
 <script type="module">
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
