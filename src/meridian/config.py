@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     portal_base_url: str = "https://transindus-portal.onrender.com"
+    website_url: str = "http://localhost:8700/"  # the Meridian landing page (web/); the logo links here
     portal_user: str = ""
     portal_password: SecretStr = SecretStr("")
     team_key: SecretStr = SecretStr("")

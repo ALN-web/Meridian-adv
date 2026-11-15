@@ -20,7 +20,7 @@ from meridian.ui.views import disputes, documents, evaluation, needs, results, r
 st.set_page_config(page_title="Meridian Portal Agent", page_icon=":material/local_shipping:", layout="wide")
 st.markdown(CSS, unsafe_allow_html=True)
 st.logo(str(Path(__file__).with_name("logo.svg")), size="large",
-        icon_image=str(Path(__file__).with_name("logo_dark.svg")))
+        icon_image=str(Path(__file__).with_name("logo_dark.svg")), link=get_settings().website_url)
 store = get_store()
 
 waiting = len(store.pending_human()) + len(store.disputes(status="pending"))
