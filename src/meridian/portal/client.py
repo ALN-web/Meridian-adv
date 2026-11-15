@@ -205,6 +205,7 @@ class PortalClient:
         self._inv_cache: dict[str, tuple] = {}
         self._dispute_href: dict[str, str] = {}
         self._shipment_index: dict[str, list[InvoiceRow]] | None = None
+        self._listed: dict[str, tuple[str, str]] = {}  # invoice no -> (total, status) as on the list page
         self.unreadable: dict[str, str] = {}  # invoice no -> why its scanned lines could not be trusted
 
     # ------------------------------------------------------------------ lifecycle
@@ -521,6 +522,7 @@ class PortalClient:
                     stated = int(m.group(1))
                 grid = await self.main_grid(r"invoice")
                 for r in parse_invoice_list(grid.rows):
+                    self._listed[r.invoice_no] = (str(r.total), r.status.lower())
                     if r.invoice_no not in seen:
                         seen.add(r.invoice_no)
                         rows.append(r)
@@ -655,13 +657,16 @@ class PortalClient:
         hit = next((v for k, v in kv.items() if pat.fullmatch(k.strip()) or pat.match(k.strip())), None)
         return hit if hit else text_value(await self.page.inner_text("body"), label_pat)
 
-    async def open_invoice(self, invoice_no: str):
+    async def open_invoice(self, invoice_no: str, *, fresh: bool = False):
         """Invoice header, lines and credit notes (and its PDF) as an engine ``Invoice``."""
         from meridian.portal.tables import parse_invoice_lines
         from meridian.reconcile.types import Invoice
 
         if invoice_no in self._inv_cache:
             return self._inv_cache[invoice_no]
+        if not fresh and (hit := self._disk_invoice(invoice_no)) is not None:
+            self._inv_cache[invoice_no] = hit
+            return hit
         if invoice_no not in self._inv_href:
             await self.search_invoices(invoice_no=invoice_no)  # fills the link cache
         href = self._inv_href.get(invoice_no)
@@ -718,7 +723,57 @@ class PortalClient:
         except Exception as exc:
             self.log.add(f"invoice_pdf:{invoice_no}", "failed", error=type(exc).__name__)
         self._inv_cache[invoice_no] = (inv, pdf)
+        if invoice_no not in self.unreadable:
+            self._save_disk_invoice(invoice_no, inv, pdf)
         return inv, pdf
+
+    # Invoices already read are kept on disk (runs/cache, git-ignored) and reused only while the
+    # invoice list still shows the same total and status — a changed invoice is read again.
+    def _cache_file(self) -> Path:
+        from urllib.parse import urlparse
+
+        host = urlparse(self.settings.portal_base_url).netloc.replace(":", "_") or "portal"
+        return Path("runs") / "cache" / f"invoices_{host}.pkl"
+
+    def _load_disk(self) -> dict:
+        if getattr(self, "_disk", None) is None:
+            import pickle
+
+            try:
+                self._disk = pickle.loads(self._cache_file().read_bytes())
+            except Exception:
+                self._disk = {}
+        return self._disk
+
+    def _disk_cache_on(self) -> bool:
+        # The local fake portal regenerates its data on every reset, so its invoices are never cached.
+        return not re.search(r"//(127\.0\.0\.1|localhost|fakeportal)\b", self.settings.portal_base_url)
+
+    def _disk_invoice(self, invoice_no: str):
+        if not self._disk_cache_on():
+            return None
+        listed = self._listed.get(invoice_no)
+        hit = self._load_disk().get(invoice_no)
+        if listed is None or hit is None or hit[0] != listed:
+            return None
+        pdf = Path(hit[2]) if hit[2] and Path(hit[2]).exists() else None
+        self.log.add(f"open_invoice:{invoice_no}", "cached", detail="unchanged on the list since last read")
+        return hit[1], pdf
+
+    def _save_disk_invoice(self, invoice_no: str, inv, pdf) -> None:
+        import pickle
+
+        listed = self._listed.get(invoice_no)
+        if listed is None or not self._disk_cache_on():
+            return
+        try:
+            d = self._load_disk()
+            d[invoice_no] = (listed, inv, str(pdf) if pdf else None)
+            f = self._cache_file()
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(pickle.dumps(d))
+        except Exception as exc:
+            log.warning("invoice cache not saved: %s", exc)
 
     async def _scanned_lines(self, invoice_no: str):
         """Legacy invoice: lines only in a scanned PDF. OCR + arithmetic cross-checks; if any check
@@ -872,7 +927,7 @@ class PortalClient:
         """
         if invoice_no not in self._dispute_href:
             self._inv_cache.pop(invoice_no, None)
-            await self.open_invoice(invoice_no)  # records the invoice page's Raise Dispute link
+            await self.open_invoice(invoice_no, fresh=True)  # records the page's Raise Dispute link
         href = self._dispute_href.get(invoice_no)
         if href:
             await self.goto(href)

@@ -38,6 +38,8 @@ class StoreHumanGate:
                 return ans
             await asyncio.sleep(0.5)
             waited += 0.5
+        self.store.answer_human(rid, "")   # close the stale request so the screen stops asking
+        self.store.take_answer(rid)
         from meridian.portal.errors import HumanNeeded
 
         raise HumanNeeded(kind, "no answer from the operator in time")

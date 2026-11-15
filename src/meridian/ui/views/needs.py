@@ -20,6 +20,8 @@ def _otps(store) -> int:
         who = run.task_id if run else req["run_id"]
         with st.container(border=True):
             if req["kind"] == "otp":
+                if store.otp_asked_before(req["run_id"]):
+                    st.warning("The portal did not accept the previous code (invalid or expired). Use the **newest** code — it is valid for 5 minutes.")
                 with st.form(f"n-otp-{req['id']}", clear_on_submit=True, border=False):
                     c = st.columns([3, 1], vertical_alignment="bottom")
                     code = c[0].text_input(f"One-time password · {who}", type="password", max_chars=10)

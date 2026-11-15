@@ -190,6 +190,12 @@ class Store:
         with self._conn() as c:
             return [dict(r) for r in c.execute(q + " ORDER BY created", args)]
 
+    def otp_asked_before(self, run_id: str) -> bool:
+        """True when this run already used a code — the new request means it was rejected or expired."""
+        with self._conn() as c:
+            return c.execute("SELECT COUNT(*) FROM human_requests WHERE run_id=? AND kind='otp' AND status!='pending'",
+                             (run_id,)).fetchone()[0] > 0
+
     def answer_human(self, request_id: str, value: str = "") -> None:
         with self._lock, self._conn() as c:
             c.execute(

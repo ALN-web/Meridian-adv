@@ -75,7 +75,12 @@ def _tokens(words: list[dict]) -> list[str]:
     """Row words left→right, with 'Rs.' prefixes dropped and 'Rs.2,818.22' split."""
     toks = []
     for w in sorted(words, key=lambda w: w["x"]):
-        t = re.sub(r"^(rs\.?|₹)", "", w["t"], flags=re.I).strip(":;|")
+        t = re.sub(r"^(rs\.?|₹)", "", w["t"], flags=re.I).strip(":;|_'`\"")
+        t = re.sub(r"(?<=\d)[.,]+$", "", t) if re.search(r"\d\.\d{2}[.,]+$", t) else t  # '0.00,' -> '0.00'
+        if not re.search(r"[A-Za-z0-9]", t):
+            continue  # lone ',' or '-' from paper noise
+        if (m := re.search(r"\d{1,2}-[A-Za-z]{3}-\d{2,4}", t)) and not _DATE.match(t):
+            t = m.group(0)  # stray mark glued to a date, e.g. '9=22-Aug-26'
         if re.fullmatch(r"[\dOoSl,.:;]+", t) and re.search(r"\d", t):
             # common OCR slips inside numbers; the arithmetic checks still decide if the row is trusted
             t = re.sub(r"(?<=\d)[:;](?=\d)", ".", t).replace("O", "0").replace("o", "0").replace("S", "5").replace("l", "1")
@@ -96,6 +101,10 @@ def read_scanned_invoice(path: str | Path, page_sub_total: Decimal | None = None
         words = _words(path)
     except Exception as exc:
         return ScannedInvoice([], None, None, [f"OCR failed: {type(exc).__name__}"])
+    for w in words:  # 'SHP-60425.' / 'SHP-6O425' -> 'SHP-60425'
+        m = re.fullmatch(r"([A-Z]{2,4})-([\dO]{4,})[.,:;_'`]*", w["t"])
+        if m:
+            w["t"] = f"{m.group(1)}-{m.group(2).replace('O', '0')}"
     anchors = [w for w in words if _SID.match(w["t"])]
     rows, problems = [], []
     for a in sorted(anchors, key=lambda w: (w["p"], w["y"])):
