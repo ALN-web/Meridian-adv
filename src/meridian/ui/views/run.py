@@ -54,7 +54,7 @@ def _new_task(store) -> None:
         elif not reachable:
             st.error(where)
         elif mode == "live":
-            st.caption("Real portal: selectors are unconfirmed until recon succeeds.")
+            st.caption("Real portal: you will be asked for the OTP here. The portal can take a minute to wake up.")
 
 
 def _human_inputs(store, run_id: str) -> None:

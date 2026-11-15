@@ -451,6 +451,7 @@ class PortalClient:
         for g in await self.grids():
             if any(pat.search(h) for h in g.headers):
                 return g
+        await self.debug_dump(f"no_grid_{re.sub(r'[^a-z]', '', must_have.lower())[:12]}")
         raise PageNotUnderstood(f"no grid with a column like {must_have!r}")
 
     async def _next_page(self, current: int | None = None) -> bool:
@@ -483,11 +484,15 @@ class PortalClient:
 
         async def run():
             await self.open_menu("invoices")
-            await self._fill_search(lane=lane, month=month, status=status, invoice_no=invoice_no)
+            # The real portal's Month filter is a billing period, not the invoice date (invoices dated
+            # 4 Nov sit under "October"), so month is never sent to the portal; dates are filtered in code.
+            if not await self._get_search(lane=lane, status=status):
+                await self._fill_search(lane=lane, status=status, invoice_no=invoice_no)
             rows: list[InvoiceRow] = []
             seen: set[str] = set()
             for page_no in range(1, 201):  # hard stop against pagination loops
-                if re.search(r"no records found|no invoices found", await self.page.inner_text("body"), re.I):
+                if re.search(r"no (records|invoices|data|results|rows)\b.{0,30}(found|match|available)|"
+                             r"no matching (records|invoices)", await self.page.inner_text("body"), re.I):
                     break
                 grid = await self.main_grid(r"invoice")
                 for r in parse_invoice_list(grid.rows):
@@ -515,6 +520,31 @@ class PortalClient:
             no = next((v.strip() for h, v in r.items() if re.search(r"invoice\s*(no|number|#)", h, re.I) and v), None)
             if href and no:
                 self._inv_href[no] = href
+
+    async def _get_search(self, *, lane=None, status=None) -> bool:
+        """If the filter form submits by GET (the real portal does), load its URL directly with the
+        option values that exist. Returns False when the form isn't a GET form, so the caller fills it."""
+        form = await self.page.evaluate(
+            """() => { const s = document.querySelector('select[name*=lane i], select[id*=lane i]');
+                 const f = s && s.closest('form'); if (!f || (f.method || '').toLowerCase() !== 'get') return null;
+                 const opts = {}; f.querySelectorAll('select').forEach(x => {
+                   opts[x.name] = Array.from(x.options).map(o => [o.value, o.text.trim()]); });
+                 return {action: f.getAttribute('action') || location.pathname, opts}; }""")
+        if not form:
+            return False
+        from urllib.parse import urlencode
+
+        params: dict[str, str] = {}
+        for name, options in form["opts"].items():
+            want = lane if re.search("lane", name, re.I) else status if re.search("status", name, re.I) else None
+            pick = ""
+            if want:
+                pick = next((v for v, t in options if want.lower() in (v.lower(), t.lower())), None)
+                if pick is None:
+                    return False  # value not offered: let the caller fall back
+            params[name] = pick
+        await self.goto(f"{form['action'].split('?')[0]}?{urlencode(params)}")
+        return True
 
     async def _set_control(self, label_pat: str, name_hint: str, value: str) -> bool:
         pat = re.compile(label_pat, re.I)

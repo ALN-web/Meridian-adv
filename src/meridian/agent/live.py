@@ -40,6 +40,15 @@ from meridian.telemetry import TaskTracer
 from meridian.store import Store
 
 
+def run_async(coro):
+    """asyncio.run with a loop that can start subprocesses. Streamlit (tornado) switches Windows to
+    the selector loop, where Playwright can't launch Chromium and fails with a bare NotImplementedError."""
+    import sys
+    if sys.platform == "win32":
+        return asyncio.run(coro, loop_factory=asyncio.ProactorEventLoop)
+    return asyncio.run(coro)
+
+
 class Cancelled(Exception):
     """The operator pressed Stop."""
 
@@ -76,7 +85,7 @@ class LiveRunner:
     # ------------------------------------------------------------------ plumbing
 
     def start(self) -> threading.Thread:
-        t = threading.Thread(target=lambda: asyncio.run(self._main()), daemon=True, name=f"live-{self.run_id}")
+        t = threading.Thread(target=lambda: run_async(self._main()), daemon=True, name=f"live-{self.run_id}")
         t.start()
         return t
 
