@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[3]
 BLUE, ORANGE = "#2a78d6", "#eb6834"  # categorical slots 1-2 of the validated default palette
 FINISHED = ("completed", "needs_human", "failed", "cancelled")
 
-from meridian.ui.theme import CSS, HERO_HEIGHT, hero_html  # noqa: E402  (CSS re-exported for app.py)
+from meridian.ui.theme import CSS, PAGE_HEIGHT, page_html  # noqa: E402  (CSS re-exported for app.py)
 
 STATUS = {  # status -> (pill class, label)
     "running": ("p-run", "Running"), "waiting_for_human": ("p-wait", "Waiting for you"), "completed": ("p-ok", "Completed"),
@@ -41,32 +41,29 @@ def chips(items, kind: str = "") -> str:
     return "".join(f"<span class='pill {cls}'>{i}</span>" for i in items)
 
 
-EYEBROW = {"Run a task": "Operate · Agent", "Needs you": "Operate · Inbox", "Results": "Operate · Results",
-           "Documents": "Operate · Evidence", "Disputes": "Operate · Disputes", "Monthly summary": "Report · Overcharges",
-           "Evaluation": "Report · Scoring", "System": "Admin · Setup"}
-
-
-def header_stats(store: Store) -> list[tuple[str, str, bool]]:
-    runs = store.list_runs(1000)
-    done = [r for r in runs if r.status in FINISHED]
-    ok = sum(r.status == "completed" for r in done)
-    waiting = len(store.pending_human()) + len(store.disputes(status="pending"))
-    live = {r.id for r in runs if r.mode == "live"}  # demo and fake-portal disputes are rehearsals
-    filed = sum(d["status"] in ("submitted", "confirmed") and d["run_id"] in live for d in store.disputes())
-    rate = f"{round(100 * ok / len(done))}%" if done else "—"
-    return [(str(len(runs)), "Runs", False), (rate, "Completed", False),
-            (str(filed), "Disputes filed", False), (str(waiting), "Waiting for you", waiting > 0)]
+LABEL = {"Run a task": "Operate", "Needs you": "Operate", "Results": "Operate", "Documents": "Operate",
+         "Disputes": "Operate", "Monthly summary": "Report", "Evaluation": "Report", "System": "Admin"}
 
 
 def header(title: str, sub: str | None = None) -> None:
-    """3D page header: container stack in the website's style, plus live counters."""
+    """Compact 3D page header: the hub's container scene, framed to the right of the title."""
     import streamlit.components.v1 as components
 
-    try:
-        stats = header_stats(get_store())
-    except Exception:  # the header must never break a page
-        stats = []
-    components.html(hero_html(title, sub, EYEBROW.get(title, "Meridian"), stats), height=HERO_HEIGHT)
+    components.html(page_html(LABEL.get(title, "Meridian"), title, sub), height=PAGE_HEIGHT)
+
+
+def section(label: str) -> None:
+    """Small yellow-dot label above a block, like the home page's section labels."""
+    st.markdown(f"<span class='label sec-label'>{label}</span>", unsafe_allow_html=True)
+
+
+def latest_details(store: Store) -> list[dict]:
+    """Newest explanation per invoice across all runs (a re-run supersedes older ones)."""
+    seen: dict[str, dict] = {}
+    for run in reversed(store.list_runs(500)):  # oldest first, newer overwrite
+        for no, d in store.details(run.id).items():
+            seen[no] = d
+    return list(seen.values())
 
 
 def inr(v) -> str:

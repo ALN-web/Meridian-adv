@@ -19,8 +19,7 @@ from meridian.ui.views import disputes, documents, evaluation, needs, results, r
 
 st.set_page_config(page_title="Meridian Portal Agent", page_icon=":material/local_shipping:", layout="wide")
 st.markdown(CSS, unsafe_allow_html=True)
-st.logo(str(Path(__file__).with_name("logo.svg")), size="large",
-        icon_image=str(Path(__file__).with_name("logo_dark.svg")), link=get_settings().website_url)
+st.logo(str(Path(__file__).with_name("logo.svg")), size="large", link=get_settings().website_url)
 store = get_store()
 
 waiting = len(store.pending_human()) + len(store.disputes(status="pending"))
@@ -40,30 +39,26 @@ nav = st.navigation({
     "Operate": [PAGES[k] for k in ("run", "needs", "results", "documents", "disputes")],
     "Report": [PAGES["summary"], PAGES["evaluation"]],
     "Admin": [PAGES["system"]],
-})
+}, position="top")
+st.session_state.setdefault("human_sig", human_signature(store))
 
-with st.sidebar:
-    st.session_state.human_sig = human_signature(store)
 
-    @st.fragment(run_every=3)
-    def watch_humans():
-        """When something new needs a person (OTP, approval), re-render the whole app once.
+@st.fragment(run_every=3)
+def watch_humans():
+    """When something new needs a person (OTP, approval), re-render the whole app once and show a bar.
 
-        Inputs live outside auto-refreshing areas, so a click or half-typed code is never lost.
-        """
-        sig = human_signature(store)
-        if sig != st.session_state.human_sig:
-            st.session_state.human_sig = sig
-            st.rerun(scope="app")
-        h, d = len(store.pending_human()), len(store.disputes(status="pending"))
-        if h or d:
-            parts = ([f"{h} password"] if h else []) + ([f"{d} approval{'s' if d > 1 else ''}"] if d else [])
-            st.warning("Waiting: " + " · ".join(parts))
-            st.page_link(PAGES["needs"], label="Open Needs you", icon=":material/arrow_forward:")
+    Inputs live outside auto-refreshing areas, so a click or half-typed code is never lost.
+    """
+    sig = human_signature(store)
+    if sig != st.session_state.human_sig:
+        st.session_state.human_sig = sig
+        st.rerun(scope="app")
+    h, d = len(store.pending_human()), len(store.disputes(status="pending"))
+    if h or d:
+        parts = ([f"{h} one-time password"] if h else []) + ([f"{d} dispute approval{'s' if d > 1 else ''}"] if d else [])
+        st.markdown(f"<div class='waitbar'><span>Waiting for you: {' · '.join(parts)}</span>"
+                    f"<a href='/needs-you' target='_self'>Open Needs you →</a></div>", unsafe_allow_html=True)
 
-    watch_humans()
-    _portal = get_settings().portal_base_url.split("//")[-1].split("/")[0]
-    st.markdown(f"<div class='side-foot'><b><i></i>Meridian Freight · AP</b><span>{_portal}</span></div>",
-                unsafe_allow_html=True)
 
+watch_humans()
 nav.run()

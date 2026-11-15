@@ -6,7 +6,7 @@ from collections import Counter
 import pandas as pd
 import streamlit as st
 
-from meridian.ui.common import big, get_store, header, inr
+from meridian.ui.common import big, get_store, header, inr, latest_details
 
 INK = "#0e0e0e"
 REASON_LABEL = {
@@ -16,19 +16,10 @@ REASON_LABEL = {
 }
 
 
-def _latest_details(store) -> list[dict]:
-    """Newest explanation per invoice across all runs (a re-run supersedes older ones)."""
-    seen: dict[str, dict] = {}
-    for run in reversed(store.list_runs(500)):  # oldest first, newer overwrite
-        for no, d in store.details(run.id).items():
-            seen[no] = d
-    return list(seen.values())
-
-
 def render() -> None:
     store = get_store()
     header("Monthly summary", "Overcharges by lane, and why.")
-    rows = _latest_details(store)
+    rows = latest_details(store)
     if not rows:
         st.info("No invoices checked yet. Run a lane-and-month task first.")
         return
