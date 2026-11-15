@@ -154,19 +154,20 @@ playwright install chromium
 pytest
 ```
 
-Landing pages:
+Website (marketing site for the agent):
 
 ```bash
 python -m http.server 8700 --directory web     # http://localhost:8700
 ```
 
-| URL | Page |
-|---|---|
-| `/` (`index.html`) | **Night Network**, the main landing page: dark, cinematic WebGL with bloom. A particle globe with India lit and lanes pulsing out of Pune, then three stations: a glitching legacy portal, the eight-rule ring sorting invoice lines, one approved dispute. Prompt: [docs/prompts/3d-night-network.md](docs/prompts/3d-night-network.md) |
-| `/3d.html` | **One invoice's journey**: white-studio 3D truck story (Three.js, every object modelled in code). Prompt: [docs/prompts/3d-landing.md](docs/prompts/3d-landing.md) |
-| `/classic.html` | The original scroll hero: a reach-stacker loads the truck, then what the agent checks slides in. `?rec=1` turns on a deterministic recorder mode (`window.__recTime(video, t)`); the clip streams from its CDN URL |
+A single page in an industrial freight style (white, black, industrial yellow) with real-time 3D built in Three.js:
 
-`/network.html` redirects to `/`. All pages link to each other, and their buttons open the operator screen on port 8510 (override with `?app=http://host:port`). Three.js and fonts load from public CDNs (jsDelivr, Google Fonts).
+- **Hero:** a black MERIDIAN container hangs from a striped crane hook over a yard of container stacks; scrolling turns it and lands it on the stack.
+- **About · How it works · stat tiles**
+- **Scan:** a top-down container ship sails under a scan line; each container (an invoice line) turns green (billed right) or red (overcharged), with live counters.
+- **What it checks** (the eight rules) · **Results** (safety, robustness, evidence, evaluation targets) · **Call to action**
+
+Every 3D object is modelled in code (no downloaded models). Buttons open the operator screen on port 8510 (override with `?app=http://host:port`). Three.js and fonts load from public CDNs (jsDelivr, Google Fonts). The design prompt is in [docs/prompts/website.md](docs/prompts/website.md).
 
 Operator screen (demo mode works without the portal):
 
