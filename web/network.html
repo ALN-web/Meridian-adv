@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian Night Network</title>
+<meta name="description" content="A cinematic WebGL story of the Meridian portal agent: five lanes, a portal that fights back, eight rules and one approved dispute. Fictional companies, synthetic data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #04060c; --text: #e8ecf5; --dim: #8d97ad; --cobalt: #3d6bff; --cyan: #5ef2ff;
+    --pass: #39e58c; --bad: #ff4d5e; --warn: #ffb547; --line: rgba(255,255,255,.12); --glass: rgba(12,18,34,.55);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); }
+  body { font-family: "Space Grotesk", system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: clip; }
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: var(--cobalt); color: #fff; }
+
+  #gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; z-index: 0; }
+  .vignette { position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background: radial-gradient(120% 90% at 65% 50%, rgba(4,6,12,0) 45%, rgba(4,6,12,.75) 100%),
+                linear-gradient(90deg, rgba(4,6,12,.72) 0, rgba(4,6,12,.35) 30%, rgba(4,6,12,0) 46%); }
+
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: flex; align-items: center;
+        justify-content: space-between; padding: 22px 34px 34px; background: linear-gradient(rgba(4,6,12,.92) 50%, rgba(4,6,12,0)); }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 19px; letter-spacing: -.03em; }
+  .brand i { width: 10px; height: 10px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 14px var(--cyan); }
+  .brand small { font-family: "JetBrains Mono", monospace; font-weight: 400; font-size: 10.5px; color: var(--dim); letter-spacing: .08em; margin-left: 4px; }
+  .nav-right { display: flex; align-items: center; gap: 24px; font-size: 13px; color: var(--dim); }
+  .nav-right a:hover { color: var(--text); }
+  .cta { color: var(--text) !important; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px);
+         border-radius: 999px; padding: 9px 16px; }
+  .cta:hover { border-color: var(--cyan); }
+
+  .rail { position: fixed; right: 30px; top: 50%; transform: translateY(-50%); z-index: 20; display: grid; gap: 14px; }
+  .rail a { display: flex; align-items: center; justify-content: flex-end; gap: 10px; font-family: "JetBrains Mono", monospace;
+            font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: rgba(232,236,245,.35); transition: color .3s; }
+  .rail a i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; transition: transform .3s, box-shadow .3s; }
+  .rail a.on { color: var(--text); }
+  .rail a.on i { background: var(--cyan); transform: scale(1.6); box-shadow: 0 0 10px var(--cyan); }
+
+  main { position: relative; z-index: 10; }
+  section { min-height: 100vh; display: flex; align-items: center; padding: 110px 34px 80px; }
+  .panel { width: min(470px, 100%); padding: 30px 30px 28px; border: 1px solid var(--line); border-radius: 18px;
+           background: var(--glass); backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2);
+           box-shadow: 0 30px 80px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+           opacity: 0; transform: translateY(18px); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.7,.2,1); }
+  section.in .panel { opacity: 1; transform: none; }
+  .hero .panel { background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 0; width: min(620px, 100%); }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-family: "JetBrains Mono", monospace; font-size: 11px;
+            letter-spacing: .14em; text-transform: uppercase; color: var(--dim); margin-bottom: 18px; }
+  .kicker b { color: var(--cyan); font-weight: 500; }
+  h1, h2 { font-weight: 600; letter-spacing: -.035em; line-height: .98; }
+  h1 { font-size: clamp(46px, 6.6vw, 98px); }
+  h2 { font-size: clamp(34px, 3.8vw, 54px); }
+  .grad { background: linear-gradient(92deg, var(--cyan), var(--cobalt) 70%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .panel p { margin-top: 16px; font-size: 15.5px; line-height: 1.6; color: #c3cad8; }
+  .hero p { font-size: 17px; max-width: 520px; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin-top: 22px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--line); }
+  .stat { background: rgba(6,9,18,.75); padding: 12px 14px; }
+  .stat dt { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+  .stat dd { font-family: "JetBrains Mono", monospace; font-size: 18px; margin-top: 4px; }
+  .stat dd.bad { color: var(--bad); } .stat dd.pass { color: var(--pass); } .stat dd.cy { color: var(--cyan); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 18px; }
+  .chip { font-family: "JetBrains Mono", monospace; font-size: 11px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); color: #c3cad8; background: rgba(255,255,255,.03); }
+  .scroll { margin-top: 38px; display: flex; align-items: center; gap: 12px; font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+  .scroll i { width: 22px; height: 34px; border: 1px solid var(--line); border-radius: 12px; position: relative; }
+  .scroll i::after { content: ""; position: absolute; left: 50%; top: 7px; width: 3px; height: 7px; margin-left: -1.5px; border-radius: 2px; background: var(--cyan); animation: wheel 1.8s ease-in-out infinite; }
+  @keyframes wheel { 0% { opacity: 0; transform: translateY(0); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(12px); } }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+  .btn { border: 1px solid var(--line); border-radius: 999px; padding: 13px 20px; font-size: 13px; font-weight: 500; background: rgba(255,255,255,.04); }
+  .btn.primary { border: 0; color: #04060c; background: linear-gradient(92deg, var(--cyan), #7fa2ff); box-shadow: 0 0 30px rgba(94,242,255,.35); }
+  .btn:hover { border-color: var(--cyan); }
+  .fine { margin-top: 18px !important; font-size: 12px !important; color: var(--dim) !important; }
+
+  .tag { position: fixed; z-index: 15; pointer-events: none; transform: translate(-50%, -130%);
+         font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .08em; color: var(--text);
+         padding: 4px 8px; border: 1px solid rgba(94,242,255,.4); border-radius: 6px; background: rgba(4,6,12,.7);
+         opacity: 0; transition: opacity .3s; white-space: nowrap; }
+  .tag.hub { border-color: var(--cyan); color: var(--cyan); }
+  .hud { position: fixed; z-index: 15; pointer-events: none; transform: translate(-50%, 0); display: flex; gap: 10px;
+         font-family: "JetBrains Mono", monospace; font-size: 12px; opacity: 0; transition: opacity .3s; }
+  .hud span { padding: 7px 11px; border-radius: 8px; border: 1px solid var(--line); background: rgba(4,6,12,.72); white-space: nowrap; }
+  .hud b { font-weight: 500; }
+  .hud .p { color: var(--pass); } .hud .b { color: var(--bad); } .hud .c { color: var(--cyan); }
+
+  .nogl #gl, .nogl .vignette { display: none; }
+  .nogl section .panel { opacity: 1; transform: none; }
+
+  @media (max-width: 767px), (orientation: portrait) {
+    nav { padding: 16px 18px; }
+    .nav-right .hide-s, .brand small, .rail { display: none; }
+    section { align-items: flex-end; padding: 54vh 16px 40px; }
+    .hero { padding-top: 46vh; }
+    .panel { padding: 22px 20px; }
+    .vignette { background: linear-gradient(rgba(4,6,12,0) 35%, rgba(4,6,12,.85) 70%); }
+    .hud { font-size: 10.5px; gap: 6px; }
+    .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .stat dd { font-size: 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .panel { transition: none; } .scroll i::after { animation: none; } }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div class="vignette" aria-hidden="true"></div>
+<div id="tags" aria-hidden="true"></div>
+<div class="hud" id="hud" aria-hidden="true"></div>
+
+<nav aria-label="Main">
+  <a class="brand" href="#s0"><i></i>Meridian<small>portal agent</small></a>
+  <div class="nav-right">
+    <a class="hide-s" href="index.html">Classic</a>
+    <a class="hide-s" data-app="/evaluation" href="http://localhost:8510/evaluation">Evaluation</a>
+    <a class="cta" data-app="/" href="http://localhost:8510/">Open operator screen →</a>
+  </div>
+</nav>
+
+<div class="rail" id="rail" aria-label="Chapters">
+  <a href="#s0"><span>Intro</span><i></i></a>
+  <a href="#s1"><span>Network</span><i></i></a>
+  <a href="#s2"><span>Portal</span><i></i></a>
+  <a href="#s3"><span>Rules</span><i></i></a>
+  <a href="#s4"><span>Dispute</span><i></i></a>
+  <a href="#s5"><span>Record</span><i></i></a>
+</div>
+
+<main>
+  <section class="hero" id="s0">
+    <div class="panel">
+      <div class="kicker">Meridian Freight · <b>Accounts payable</b></div>
+      <h1>The carrier bills.<br><span class="grad">We check every line.</span></h1>
+      <p>A browser agent that works TransIndus Roadways' legacy portal, checks every invoice line against what was actually delivered, and raises a dispute only after a person approves it.</p>
+      <div class="scroll"><i></i>Scroll the night shift</div>
+    </div>
+  </section>
+
+  <section id="s1">
+    <div class="panel">
+      <div class="kicker">01 · <b>Network</b></div>
+      <h2>Five lanes.<br><span class="grad">600 invoices a month.</span></h2>
+      <p>Every truck out of Pune to Bengaluru, Hyderabad, Chennai, Delhi and Ahmedabad is billed by one carrier, through one portal built in 2009. There's no API and no export. Until now, two people spent three days a month clicking through it.</p>
+      <dl class="stats">
+        <div class="stat"><dt>Lanes</dt><dd class="cy">5</dd></div>
+        <div class="stat"><dt>Invoices / mo</dt><dd>~600</dd></div>
+        <div class="stat"><dt>Days saved</dt><dd class="pass">3</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section id="s2">
+    <div class="panel">
+      <div class="kicker">02 · <b>Portal</b></div>
+      <h2>A portal that<br><span class="grad">fights back.</span></h2>
+      <p>The portal is slow, throws error pages, shows pop-ups that block clicks, logs you out mid-task and asks for one-time passwords. The agent retries with backoff, hands every OTP and CAPTCHA to a person, and if it's logged out, resumes at the next invoice instead of starting over.</p>
+      <div class="chips"><span class="chip">timeouts + backoff</span><span class="chip">≤ 2 req/s</span><span class="chip">OTP → a person</span><span class="chip">resume, not restart</span><span class="chip">page text is data</span></div>
+    </div>
+  </section>
+
+  <section id="s3">
+    <div class="panel">
+      <div class="kicker">03 · <b>Rules</b></div>
+      <h2>Eight rules.<br><span class="grad">Zero guesses.</span></h2>
+      <p>Every line is checked in code: the weight within 2%, the rate on the booking date, the month's fuel surcharge, detention against the delivery proof, duplicates, unknown shipments, missing proofs and the GST total. Amounts compare to within ₹1. The model never does the maths.</p>
+      <div class="chips"><span class="chip">weight_over</span><span class="chip">rate_wrong</span><span class="chip">surcharge_wrong</span><span class="chip">detention_unjustified</span><span class="chip">duplicate_billing</span><span class="chip">shipment_unknown</span><span class="chip">no_pod</span><span class="chip">math_error</span></div>
+    </div>
+  </section>
+
+  <section id="s4">
+    <div class="panel">
+      <div class="kicker">04 · <b>Dispute</b></div>
+      <h2>Disputes,<br><span class="grad">only when right.</span></h2>
+      <p>Only an overcharge above ₹500 becomes a dispute, and only after a person approves it. The agent checks the portal's dispute list before submitting and again after. A success message is not proof, and nothing is ever raised twice.</p>
+      <dl class="stats">
+        <div class="stat"><dt>Billed</dt><dd>₹91,457.96</dd></div>
+        <div class="stat"><dt>Correct</dt><dd class="pass">₹88,829.62</dd></div>
+        <div class="stat"><dt>Over</dt><dd class="bad">₹2,628.34</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section id="s5">
+    <div class="panel">
+      <div class="kicker">05 · <b>Record</b></div>
+      <h2>Every step,<br><span class="grad">on the record.</span></h2>
+      <p>One trace per task with one span per step: the page, the action, the outcome, retries and time. Every write gets a masked screenshot, and an evaluation page scores each run against the answer key. No passwords, names or phone numbers ever leave the masks.</p>
+      <div class="actions">
+        <a class="btn primary" data-app="/" href="http://localhost:8510/">Open the operator screen</a>
+        <a class="btn" data-app="/evaluation" href="http://localhost:8510/evaluation">See the evaluation</a>
+      </div>
+      <p class="fine">Meridian Freight and TransIndus Roadways are fictional. Synthetic data only. FDE Fellowship · Week 3 · Team Delta.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+  (() => {
+    const base = new URLSearchParams(location.search).get("app") ||
+      (location.hostname ? `${location.protocol}//${location.hostname}:8510` : "http://localhost:8510");
+    document.querySelectorAll("[data-app]").forEach(a => { a.href = base.replace(/\/$/, "") + a.dataset.app; });
+    const rail = [...document.querySelectorAll("#rail a")];
+    const io = new IntersectionObserver(es => es.forEach(e => {
+      e.target.classList.toggle("in", e.isIntersecting);
+      if (e.isIntersecting) rail.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id));
+    }), { threshold: 0.45 });
+    document.querySelectorAll("section").forEach(s => io.observe(s));
+  })();
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
+const canvas = document.getElementById("gl");
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" }); }
+catch (e) { document.documentElement.classList.add("nogl"); throw e; }
+
+const PHONE = innerWidth < 768 || innerWidth <= innerHeight;
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const CYAN = new THREE.Color(0x5ef2ff), COBALT = new THREE.Color(0x3d6bff);
+const PASS = new THREE.Color(0x39e58c), BAD = new THREE.Color(0xff4d5e), WARN = new THREE.Color(0xffb547);
+const glow = (c, k) => c.clone().multiplyScalar(k);     // HDR colour so bloom picks it up
+
+renderer.setClearColor(0x04060c, 1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x04060c, 0.006);
+const camera = new THREE.PerspectiveCamera(PHONE ? 52 : 38, 1, 0.1, 900);
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 1.05, 0.62, 0.86);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const range = (p, a, b) => clamp((p - a) / (b - a));
+const smooth = t => t * t * (3 - 2 * t);
+const deg = Math.PI / 180;
+
+function canvasTex(w, h, draw) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const ctx = c.getContext("2d"); draw(ctx, w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  return { tex: t, ctx, c };
+}
+
+// soft round points with per-vertex colour and size
+function pointsMaterial(size, opacity = 1) {
+  return new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { uSize: { value: size * Math.min(devicePixelRatio, 2) }, uOpacity: { value: opacity }, uTime: { value: 0 } },
+    vertexShader: `attribute vec3 color; attribute float aScale; varying vec3 vColor; uniform float uSize;
+      void main(){ vColor = color; vec4 mv = modelViewMatrix * vec4(position,1.0);
+        gl_PointSize = uSize * aScale * (60.0 / -mv.z); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `varying vec3 vColor; uniform float uOpacity;
+      void main(){ float d = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.0, d);
+        gl_FragColor = vec4(vColor, a * uOpacity); }`,
+  });
+}
+
+// ------------------------------------------------------------------ the globe
+const R = 10;
+const globe = new THREE.Group();
+scene.add(globe);
+
+const INDIA = [[68.2,23.7],[70.5,20.8],[72.8,19.0],[73.8,15.5],[74.8,12.8],[76.3,9.5],[77.5,8.1],[78.3,8.9],[79.9,10.3],[80.3,13.0],[80.2,15.8],[82.3,17.0],[84.8,19.3],[86.9,20.9],[88.6,21.6],[89.8,22.0],[92.0,22.5],[93.0,24.0],[94.5,25.5],[95.5,27.5],[97.0,28.3],[95.0,29.2],[92.0,27.8],[88.8,27.3],[88.0,26.4],[85.5,26.7],[83.0,27.4],[81.0,28.7],[80.0,30.3],[78.8,31.6],[77.8,32.6],[76.5,34.0],[77.8,35.4],[74.6,34.8],[73.8,33.6],[74.5,32.5],[73.5,30.0],[71.0,28.0],[70.0,26.5],[70.5,25.0],[68.8,24.3]];
+function inPoly(lon, lat, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if (((yi > lat) !== (yj > lat)) && (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+function ll(lat, lon, r = R) {
+  const phi = (90 - lat) * deg, th = (lon + 180) * deg;
+  return new THREE.Vector3(-r * Math.sin(phi) * Math.cos(th), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(th));
+}
+
+{ // fibonacci sphere, India lit
+  const N = PHONE ? 7000 : 12000, pos = [], col = [], sc = [];
+  const base = new THREE.Color(0x4566c4), lit = new THREE.Color(0x5ef2ff);
+  for (let i = 0; i < N; i++) {
+    const y = 1 - (i / (N - 1)) * 2, rr = Math.sqrt(1 - y * y), th = i * Math.PI * (3 - Math.sqrt(5));
+    const v = new THREE.Vector3(Math.cos(th) * rr, y, Math.sin(th) * rr).multiplyScalar(R);
+    const lat = Math.asin(v.y / R) / deg;
+    let lon = Math.atan2(v.z, -v.x) / deg - 180; if (lon < -180) lon += 360;
+    const india = inPoly(lon, lat, INDIA);
+    // faint "landmass" noise so the sphere isn't uniform
+    const n = Math.sin(lat * 0.21 + Math.cos(lon * 0.13) * 2.1) * Math.cos(lon * 0.09 + lat * 0.05);
+    if (!india && n < -0.15) continue;
+    pos.push(v.x, v.y, v.z);
+    const c = india ? glow(lit, 1.5) : base.clone().multiplyScalar(0.7 + n * 0.5);
+    col.push(c.r, c.g, c.b); sc.push(india ? 1.25 : 0.9);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  g.setAttribute("aScale", new THREE.Float32BufferAttribute(sc, 1));
+  globe.add(new THREE.Points(g, pointsMaterial(2.6)));
+}
+// dark core so far-side points are hidden
+globe.add(new THREE.Mesh(new THREE.SphereGeometry(R * 0.985, 64, 64), new THREE.MeshBasicMaterial({ color: 0x04060c })));
+// fresnel atmosphere
+globe.add(new THREE.Mesh(new THREE.SphereGeometry(R * 1.015, 64, 64), new THREE.ShaderMaterial({
+  transparent: true, side: THREE.FrontSide, blending: THREE.AdditiveBlending, depthWrite: false,
+  uniforms: { uColor: { value: glow(COBALT, 1.1) } },
+  vertexShader: `varying vec3 vN; varying vec3 vV; void main(){ vN = normalize(normalMatrix * normal);
+    vec4 mv = modelViewMatrix * vec4(position,1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: `varying vec3 vN; varying vec3 vV; uniform vec3 uColor;
+    void main(){ float f = pow(1.0 - abs(dot(vN, vV)), 4.0); gl_FragColor = vec4(uColor, f * 0.75); }`,
+})));
+
+// cities and arcs
+const CITIES = [
+  { code: "PUN", name: "Pune", lat: 18.52, lon: 73.86, hub: true },
+  { code: "BLR", lat: 12.97, lon: 77.59 }, { code: "HYD", lat: 17.39, lon: 78.49 }, { code: "CHN", lat: 13.08, lon: 80.27 },
+  { code: "DEL", lat: 28.61, lon: 77.21 }, { code: "AMD", lat: 23.02, lon: 72.57 },
+];
+const tagsEl = document.getElementById("tags");
+const markers = CITIES.map(c => {
+  const p = ll(c.lat, c.lon, R * 1.004);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.16, 0.22, 40), new THREE.MeshBasicMaterial({ color: glow(c.hub ? CYAN : COBALT, 2.2), transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+  ring.position.copy(p); ring.lookAt(p.clone().multiplyScalar(2)); globe.add(ring);
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(c.hub ? 0.11 : 0.075, 16, 16), new THREE.MeshBasicMaterial({ color: glow(CYAN, c.hub ? 3 : 2) }));
+  dot.position.copy(p); globe.add(dot);
+  const el = document.createElement("div"); el.className = "tag" + (c.hub ? " hub" : ""); el.textContent = c.hub ? "PUN · HUB" : c.code;
+  tagsEl.appendChild(el);
+  return { c, p, ring, el };
+});
+const hubP = markers[0].p;
+const arcMat = (offset) => new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  uniforms: { uTime: { value: 0 }, uDraw: { value: 0 }, uOff: { value: offset }, uBase: { value: glow(COBALT, 1.3) }, uHot: { value: glow(CYAN, 3.2) } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `varying vec2 vUv; uniform float uTime, uDraw, uOff; uniform vec3 uBase, uHot;
+    void main(){ if (vUv.x > uDraw) discard;
+      float head = fract(uTime * 0.32 + uOff);
+      float pulse = smoothstep(0.14, 0.0, abs(vUv.x - head)) ;
+      vec3 c = mix(uBase, uHot, pulse); float a = 0.45 + pulse * 0.55;
+      gl_FragColor = vec4(c, a); }`,
+});
+const arcs = markers.slice(1).map((m, i) => {
+  const a = hubP.clone().normalize(), b = m.p.clone().normalize();
+  const pts = [];
+  for (let k = 0; k <= 48; k++) {
+    const t = k / 48;
+    const v = new THREE.Vector3().copy(a).lerp(b, t).normalize();
+    pts.push(v.multiplyScalar(R * (1.004 + Math.sin(Math.PI * t) * (0.06 + a.distanceTo(b) * 0.18))));
+  }
+  const curve = new THREE.CatmullRomCurve3(pts);
+  const mat = arcMat(i * 0.21);
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 96, 0.022, 8, false), mat);
+  globe.add(tube);
+  return { curve, mat };
+});
+
+// orient the globe so India faces the camera, slightly from above
+const indiaDir = ll(21, 78, 1).normalize();
+const faceIndia = new THREE.Quaternion().setFromUnitVectors(indiaDir, new THREE.Vector3(0.12, 0.28, 1).normalize());
+const qSpin = new THREE.Quaternion();
+const yAxis = new THREE.Vector3(0, 1, 0);
+
+// ------------------------------------------------------------------ dust
+{
+  const N = PHONE ? 1400 : 2600, pos = [], col = [], sc = [];
+  for (let i = 0; i < N; i++) {
+    const v = new THREE.Vector3().randomDirection().multiplyScalar(60 + Math.random() * 260);
+    v.x += 80;
+    pos.push(v.x, v.y, v.z);
+    const c = new THREE.Color().setHSL(0.6 + Math.random() * 0.05, 0.6, 0.55 + Math.random() * 0.3);
+    col.push(c.r, c.g, c.b); sc.push(0.5 + Math.random() * 1.1);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  g.setAttribute("aScale", new THREE.Float32BufferAttribute(sc, 1));
+  var dust = new THREE.Points(g, pointsMaterial(3.2, 0.55));
+  scene.add(dust);
+}
+
+// ------------------------------------------------------------------ station A: the portal wall
+const A = new THREE.Vector3(60, 5, 0);
+const portal = new THREE.Group(); portal.position.copy(A); scene.add(portal);
+function drawWindow(ctx, w, h, state) {
+  ctx.fillStyle = "#e9ecf1"; ctx.fillRect(0, 0, w, h);
+  const bar = ctx.createLinearGradient(0, 0, 0, 34); bar.addColorStop(0, "#3a6aa8"); bar.addColorStop(1, "#1d3f6e");
+  ctx.fillStyle = bar; ctx.fillRect(0, 0, w, 34);
+  ctx.fillStyle = "#fff"; ctx.font = "600 17px 'Space Grotesk', sans-serif"; ctx.fillText("TransIndus · Customer Self Service", 12, 23);
+  ctx.fillStyle = "#cfd6e2"; ctx.fillRect(0, 34, w, 22);
+  ctx.fillStyle = "#1d3f6e"; ctx.font = "600 12px 'Space Grotesk', sans-serif"; ctx.fillText("Invoices   Delivery Proofs   Rate Card   Disputes", 12, 50);
+  for (let r = 0; r < 7; r++) { ctx.fillStyle = r % 2 ? "#f4f6fa" : "#dfe5ee"; ctx.fillRect(14, 70 + r * 24, w - 28, 22); }
+  ctx.fillStyle = "#5b7ea6"; ctx.fillRect(14, 70, w - 28, 22);
+  const over = { err: ["#d23b45", "Server Error in '/' Application"], otp: ["#e0951c", "Enter one-time password → a person"],
+                 note: ["#e8c02f", "Notice: scheduled maintenance tonight"], exp: ["#8a5cf0", "Session expired · logging in again"],
+                 ok: ["#1fa462", "200 OK ✓  invoice read"] }[state];
+  if (state !== "idle") {
+    ctx.fillStyle = "rgba(10,14,24,.55)"; ctx.fillRect(0, 56, w, h - 56);
+    ctx.fillStyle = "#fff"; ctx.fillRect(28, h / 2 - 34, w - 56, 78);
+    ctx.fillStyle = over[0]; ctx.fillRect(28, h / 2 - 34, 10, 78);
+    ctx.fillStyle = "#111"; ctx.font = "600 19px 'Space Grotesk', sans-serif"; ctx.fillText(over[1], 52, h / 2 + 10);
+  }
+}
+const STATES = ["err", "otp", "note", "exp", "idle"];
+const windows = [];
+for (let i = 0; i < 9; i++) {
+  const col = i % 3, row = Math.floor(i / 3);
+  const t = canvasTex(512, 300, (ctx, w, h) => drawWindow(ctx, w, h, "idle"));
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 3.05), new THREE.MeshBasicMaterial({ map: t.tex, color: new THREE.Color(0.72, 0.72, 0.72), transparent: true, opacity: 0.95, side: THREE.DoubleSide }));
+  const ang = (col - 1) * 0.42;
+  m.position.set(Math.sin(ang) * 14, (1 - row) * 3.6, -Math.cos(ang) * 14 + 14 - 6);
+  m.lookAt(new THREE.Vector3(0, (1 - row) * 3.6, 18));
+  const frame = new THREE.Mesh(new THREE.PlaneGeometry(5.36, 3.21), new THREE.MeshBasicMaterial({ color: glow(COBALT, 1.4), transparent: true, opacity: 0.6, side: THREE.DoubleSide }));
+  frame.position.copy(m.position); frame.quaternion.copy(m.quaternion); frame.translateZ(-0.02);
+  portal.add(frame, m);
+  windows.push({ m, t, frame, state: "idle", seed: i * 1.37 });
+}
+const agent = new THREE.Mesh(new THREE.SphereGeometry(0.2, 24, 24), new THREE.MeshBasicMaterial({ color: glow(CYAN, 2.2) }));
+agent.position.set(0, -6.2, 6); portal.add(agent);
+const beamGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+const beam = new THREE.Line(beamGeo, new THREE.LineBasicMaterial({ color: glow(CYAN, 1.8), transparent: true, opacity: 0.9 }));
+portal.add(beam);
+
+// ------------------------------------------------------------------ station B: the rules ring
+const B = new THREE.Vector3(110, 5, 0);
+const rules = new THREE.Group(); rules.position.copy(B); scene.add(rules);
+const ring = new THREE.Mesh(new THREE.TorusGeometry(5.2, 0.05, 16, 160), new THREE.MeshBasicMaterial({ color: glow(CYAN, 1.6) }));
+ring.rotation.y = Math.PI / 2; rules.add(ring);
+const ring2 = new THREE.Mesh(new THREE.TorusGeometry(5.8, 0.02, 8, 160), new THREE.MeshBasicMaterial({ color: glow(COBALT, 1.8), transparent: true, opacity: 0.7 }));
+ring2.rotation.y = Math.PI / 2; rules.add(ring2);
+const ruleLabels = [];
+const RULES = ["WEIGHT +2%", "RATE @ BOOKING", "FUEL % BY MONTH", "DETENTION vs POD", "BILLED TWICE", "UNKNOWN SHIPMENT", "NO POD", "LINES + 12% GST"];
+RULES.forEach((name, i) => {
+  const a = (i / RULES.length) * Math.PI * 2 + Math.PI / 2;
+  const node = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 16), new THREE.MeshBasicMaterial({ color: glow(CYAN, 3) }));
+  node.position.set(0, Math.sin(a) * 5.2, Math.cos(a) * 5.2); rules.add(node);
+  const t = canvasTex(512, 64, (ctx, w, h) => { ctx.font = "500 30px 'JetBrains Mono', monospace"; ctx.fillStyle = "#cfe9ff"; ctx.textAlign = "center"; ctx.fillText(name, w / 2, 42); });
+  const lab = new THREE.Mesh(new THREE.PlaneGeometry(4.0, 0.5), new THREE.MeshBasicMaterial({ map: t.tex, transparent: true, depthWrite: false, color: new THREE.Color(0.8, 0.8, 0.8) }));
+  lab.position.set(0.2, Math.sin(a) * 6.55, Math.cos(a) * 6.55); lab.userData.t = t;
+  rules.add(lab); ruleLabels.push(lab);
+});
+const CHIPS = PHONE ? 140 : 220;
+const chipMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.3, 0.03), new THREE.MeshBasicMaterial({ vertexColors: false }), CHIPS);
+chipMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+rules.add(chipMesh);
+const chipData = Array.from({ length: CHIPS }, (_, i) => ({ u: i / CHIPS, y: (Math.random() - .5) * 6, z: (Math.random() - .5) * 6, bad: Math.random() < 0.17, w: 0.6 + Math.random() * 0.8 }));
+const dummy = new THREE.Object3D();
+const cIn = glow(new THREE.Color(0xbfd0ff), 1.0), cPass = glow(PASS, 1.8), cBad = glow(BAD, 2.4);
+for (let i = 0; i < CHIPS; i++) chipMesh.setColorAt(i, cIn);   // create instance colours before the first render
+
+// ------------------------------------------------------------------ station C: one dispute
+const C = new THREE.Vector3(156, 5, 0);
+const disp = new THREE.Group(); disp.position.copy(C); scene.add(disp);
+function drawCard(ctx, w, h, stamped) {
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "rgba(14,20,38,.92)"; ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = "rgba(94,242,255,.55)"; ctx.lineWidth = 3; ctx.strokeRect(2, 2, w - 4, h - 4);
+  ctx.fillStyle = "#8d97ad"; ctx.font = "500 22px 'JetBrains Mono', monospace"; ctx.fillText("TAX INVOICE · PUN-BLR · SEP-26", 36, 54);
+  ctx.fillStyle = "#e8ecf5"; ctx.font = "600 56px 'Space Grotesk', sans-serif"; ctx.fillText("TIR/26-27/10118", 36, 124);
+  const rows = [["Billed", "₹91,457.96", "#e8ecf5"], ["Correct amount", "₹88,829.62", "#39e58c"], ["Overcharge", "₹2,628.34", "#ff4d5e"]];
+  rows.forEach(([k, v, c], i) => {
+    ctx.fillStyle = "#8d97ad"; ctx.font = "500 24px 'Space Grotesk', sans-serif"; ctx.fillText(k, 36, 196 + i * 50);
+    ctx.fillStyle = c; ctx.font = "500 32px 'JetBrains Mono', monospace"; ctx.fillText(v, 330, 196 + i * 50);
+  });
+  ctx.fillStyle = "rgba(255,77,94,.16)"; ctx.fillRect(36, 330, 210, 40);
+  ctx.fillStyle = "#ff8a95"; ctx.font = "500 24px 'JetBrains Mono', monospace"; ctx.fillText("weight_over", 50, 358);
+  if (stamped) {
+    ctx.save(); ctx.translate(w - 190, h - 92); ctx.rotate(-0.16);
+    ctx.strokeStyle = "#5ef2ff"; ctx.lineWidth = 5; ctx.strokeRect(-170, -40, 340, 80);
+    ctx.fillStyle = "#5ef2ff"; ctx.font = "700 28px 'Space Grotesk', sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("APPROVED BY A PERSON", 0, 10); ctx.restore();
+  }
+}
+const cardT = canvasTex(720, 420, (ctx, w, h) => drawCard(ctx, w, h, false));
+const card = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 4.2), new THREE.MeshBasicMaterial({ map: cardT.tex, transparent: true, color: new THREE.Color(0.86, 0.86, 0.86) }));
+disp.add(card);
+let approvalGeo = new THREE.RingGeometry(4.9, 5.0, 128, 1, Math.PI / 2, 0.001);
+const approval = new THREE.Mesh(approvalGeo, new THREE.MeshBasicMaterial({ color: glow(CYAN, 1.8), side: THREE.DoubleSide, transparent: true }));
+disp.add(approval);
+const approvalTrack = new THREE.Mesh(new THREE.RingGeometry(4.9, 5.0, 128), new THREE.MeshBasicMaterial({ color: glow(COBALT, 0.7), transparent: true, opacity: 0.35, side: THREE.DoubleSide }));
+disp.add(approvalTrack);
+const stack = new THREE.Group(); stack.position.set(5.2, -3.6, -1.2); disp.add(stack);
+for (let i = 0; i < 3; i++) {
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.12, 2.6), new THREE.MeshBasicMaterial({ color: glow(COBALT, 0.6 + i * 0.25), transparent: true, opacity: 0.85 }));
+  plate.position.y = i * 0.32; stack.add(plate);
+}
+const stackLabT = canvasTex(512, 64, (ctx, w, h) => { ctx.font = "500 28px 'JetBrains Mono', monospace"; ctx.fillStyle = "#cfe9ff"; ctx.fillText("PORTAL DISPUTE LIST", 10, 42); });
+const stackLab = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 0.52), new THREE.MeshBasicMaterial({ map: stackLabT.tex, transparent: true, color: new THREE.Color(0.8, 0.8, 0.8) }));
+stackLab.position.set(0, -0.55, 1.35); stack.add(stackLab);
+
+// ------------------------------------------------------------------ camera path
+const indiaWorld = () => ll(21, 78, R).applyQuaternion(globe.quaternion);
+const IN = () => indiaWorld().multiplyScalar(1.9).add(new THREE.Vector3(2.5, -1.5, 0));
+const INT = () => indiaWorld().multiplyScalar(0.98);
+const AP = () => A.clone().add(new THREE.Vector3(4.5, 0.5, 39)), AT = () => A.clone().add(new THREE.Vector3(4.5, -0.8, 0));
+const BP = () => B.clone().add(new THREE.Vector3(-17, 4, 15)), BT = () => B.clone().add(new THREE.Vector3(1, 0, 0));
+const CP = () => C.clone().add(new THREE.Vector3(2.4, 0, 19)), CT = () => C.clone().add(new THREE.Vector3(2.4, -1.3, 0));
+const K = [
+  { p: 0.00, pos: () => new THREE.Vector3(0, 2.5, 38), tgt: () => new THREE.Vector3(0, 0, 0) },
+  { p: 0.17, pos: IN, tgt: INT }, { p: 0.25, pos: IN, tgt: INT },
+  { p: 0.36, pos: AP, tgt: AT },  { p: 0.46, pos: AP, tgt: AT },
+  { p: 0.56, pos: BP, tgt: BT },  { p: 0.67, pos: BP, tgt: BT },
+  { p: 0.76, pos: CP, tgt: CT },  { p: 0.89, pos: CP, tgt: CT },
+  { p: 0.97, pos: () => new THREE.Vector3(-4, 9, 36), tgt: () => new THREE.Vector3(0, 0, 0) },
+  { p: 1.00, pos: () => new THREE.Vector3(-2, 11, 40), tgt: () => new THREE.Vector3(0, 0, 0) },
+];
+const wantPos = new THREE.Vector3(), wantTgt = new THREE.Vector3(), camPos = new THREE.Vector3(), camTgt = new THREE.Vector3();
+function camAt(p) {
+  let i = 0; while (i < K.length - 2 && p > K[i + 1].p) i++;
+  const a = K[i], b = K[i + 1];
+  const t = smooth(range(p, a.p, b.p));
+  // arc the flight between stations so travel feels like motion, not a zoom
+  wantPos.lerpVectors(a.pos(), b.pos(), t); wantPos.y += Math.sin(t * Math.PI) * (a.p >= 0.17 && b.p <= 0.89 ? 6 : 2);
+  wantTgt.lerpVectors(a.tgt(), b.tgt(), t);
+}
+
+// ------------------------------------------------------------------ sizing
+function resize() {
+  const phone = innerWidth < 768 || innerWidth <= innerHeight;
+  const pr = Math.min(devicePixelRatio, phone ? 1.5 : 2);
+  renderer.setPixelRatio(pr); renderer.setSize(innerWidth, innerHeight, false);
+  composer.setPixelRatio(pr); composer.setSize(innerWidth, innerHeight);
+  bloom.setSize(innerWidth * (phone ? 0.5 : 1), innerHeight * (phone ? 0.5 : 1));
+  camera.aspect = innerWidth / innerHeight;
+  camera.setViewOffset(innerWidth, innerHeight, phone ? 0 : -innerWidth * 0.17, phone ? innerHeight * 0.22 : 0, innerWidth, innerHeight);
+  camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize); resize();
+
+// ------------------------------------------------------------------ scroll → scene
+const hud = document.getElementById("hud");
+const tmp = new THREE.Vector3();
+const scrollP = () => clamp(scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight));
+let pS = scrollP();
+let stamped = false;
+function project(v) { tmp.copy(v).project(camera); return { x: (tmp.x + 1) / 2 * innerWidth, y: (1 - tmp.y) / 2 * innerHeight, front: tmp.z < 1 }; }
+
+function apply(p, t) {
+  // globe: free spin on the intro, eased to face India by the network chapter
+  const face = smooth(range(p, 0.02, 0.15));
+  qSpin.setFromAxisAngle(yAxis, (REDUCED ? 0 : t * 0.12) * (1 - face) + (1 - face) * 1.4);
+  globe.quaternion.copy(faceIndia).premultiply(qSpin);
+
+  const draw = smooth(range(p, 0.08, 0.18));
+  arcs.forEach((a, i) => { a.mat.uniforms.uTime.value = t; a.mat.uniforms.uDraw.value = Math.max(draw, smooth(range(p, 0.9, 0.97))); });
+  const showTags = (p > 0.12 && p < 0.28) || p > 0.93;
+  markers.forEach((m, i) => {
+    const s = 1 + (REDUCED ? 0 : 0.35 * Math.sin(t * 2.4 + i));
+    m.ring.scale.setScalar(s);
+    const wp = m.p.clone().applyQuaternion(globe.quaternion);
+    const facing = wp.clone().normalize().dot(camera.position.clone().sub(wp).normalize()) > 0.1;
+    const pr = project(wp);
+    m.el.style.left = pr.x + "px"; m.el.style.top = pr.y + "px";
+    m.el.style.opacity = showTags && facing && pr.front ? 1 : 0;
+  });
+
+  // station A: glitching windows, agent beam, all settle OK
+  const aIn = range(p, 0.29, 0.35) * (1 - range(p, 0.48, 0.52));
+  const settle = range(p, 0.4, 0.46);
+  windows.forEach((w, i) => {
+    let st;
+    if (settle > i / 9 + 0.05) st = "ok";
+    else { const k = REDUCED ? i * 2 : Math.floor(t * (0.9 + (i % 4) * 0.27) + i * 2.3); st = STATES[((k % 5) + 5) % 5]; }
+    if (st !== w.state) { w.state = st; drawWindow(w.t.ctx, 512, 300, st); w.t.tex.needsUpdate = true; }
+    const col = st === "ok" ? PASS : st === "err" ? BAD : st === "otp" ? WARN : st === "idle" ? COBALT : st === "exp" ? new THREE.Color(0x8a5cf0) : WARN;
+    w.frame.material.color.copy(glow(col, st === "idle" ? 0.9 : 1.35));
+    w.m.material.opacity = 0.95 * aIn; w.frame.material.opacity = 0.75 * aIn;
+  });
+  portal.visible = aIn > 0.01;
+  const target = windows[Math.floor((REDUCED ? 4 : t * 1.3) % 9)].m;
+  agent.position.set(Math.sin(t * 0.9) * 3, -5.0 + Math.sin(t * 1.7) * 0.4, 6);
+  beamGeo.setFromPoints([agent.position, target.position]);
+  beam.material.opacity = aIn * (settle < 1 ? 0.9 : 0.25);
+
+  // station B: chips stream through the ring and split
+  const bIn = range(p, 0.5, 0.56) * (1 - range(p, 0.69, 0.73));
+  rules.visible = bIn > 0.01;
+  let passed = 0, flagged = 0;
+  if (rules.visible) {
+    ring.rotation.x = REDUCED ? 0 : t * 0.25; ring2.rotation.x = REDUCED ? 0 : -t * 0.15;
+    ruleLabels.forEach(l => l.quaternion.copy(camera.quaternion));
+    chipData.forEach((d, i) => {
+      const u = (d.u + (REDUCED ? 0 : t * 0.045 * d.w)) % 1;
+      const x = -22 + u * 44;
+      const after = smooth(clamp((x + 0.5) / 7));
+      const lane = d.bad ? -5.5 : 5.0;
+      const y = d.y * (1 - smooth(clamp((x + 12) / 12)) * 0.85) * (1 - after) + lane * after;
+      const z = d.z * (1 - smooth(clamp((x + 12) / 12)) * 0.85) * (1 - after);
+      dummy.position.set(x, y, z);
+      dummy.rotation.set(0, Math.PI / 2, Math.sin(i) * 0.3 * (1 - after));
+      dummy.scale.setScalar(bIn);
+      dummy.updateMatrix(); chipMesh.setMatrixAt(i, dummy.matrix);
+      chipMesh.setColorAt(i, x < 0 ? cIn : d.bad ? cBad : cPass);
+      if (x > 0) { if (d.bad) flagged++; else passed++; }
+    });
+    chipMesh.instanceMatrix.needsUpdate = true; chipMesh.instanceColor.needsUpdate = true;
+  }
+  const checked = Math.floor(1180 + range(p, 0.55, 0.67) * 1640);
+
+  // station C: approval ring closes, card stamped, slides into the dispute list
+  const cIn2 = range(p, 0.7, 0.76) * (1 - range(p, 0.9, 0.93));
+  disp.visible = cIn2 > 0.01;
+  const appr = smooth(range(p, 0.77, 0.82));
+  disp.remove(approval); approval.geometry.dispose();
+  approval.geometry = new THREE.RingGeometry(4.94, 5.0, 128, 1, Math.PI / 2, Math.max(0.001, appr * Math.PI * 2));
+  disp.add(approval);
+  approval.material.color.copy(glow(appr >= 1 ? PASS : CYAN, 1.8));
+  const nowStamped = appr >= 1;
+  if (nowStamped !== stamped) { stamped = nowStamped; drawCard(cardT.ctx, 720, 420, stamped); cardT.tex.needsUpdate = true; }
+  const slide = smooth(range(p, 0.83, 0.88));
+  card.position.set(slide * 5.2, slide * -2.75, slide * -1.0);
+  card.scale.setScalar(1 - slide * 0.42);
+  card.rotation.set(-slide * 1.2, 0, 0);
+  approval.visible = approvalTrack.visible = slide < 0.6;
+  card.material.opacity = cIn2; approval.material.opacity = cIn2; approvalTrack.material.opacity = 0.35 * cIn2;
+
+  // HUD under the active station
+  let html = "", anchor = null;
+  if (bIn > 0.6) { html = `<span>lines checked <b class="c">${checked.toLocaleString("en-IN")}</b></span><span>passed <b class="p">${Math.floor(checked * 0.83).toLocaleString("en-IN")}</b></span><span>overcharged <b class="b">${Math.floor(checked * 0.17).toLocaleString("en-IN")}</b></span>`; anchor = B.clone().add(new THREE.Vector3(0, -8.2, 0)); }
+  else if (cIn2 > 0.6 && slide > 0.95) { html = `<span>checked before <b class="p">✓</b></span><span>checked after <b class="p">✓</b></span><span>duplicates <b class="p">0</b></span>`; anchor = C.clone().add(new THREE.Vector3(5.2, -5.3, 0)); }
+  else if (aIn > 0.6) { html = settle >= 1 ? `<span>9 / 9 pages <b class="p">200 OK</b></span><span>OTP <b class="c">handled by a person</b></span>` : `<span>errors <b class="b">retrying</b></span><span>OTP <b class="c">→ a person</b></span><span>session <b class="c">resumed</b></span>`; anchor = A.clone().add(new THREE.Vector3(1.5, -7.2, 6)); }
+  if (anchor) { const pr = project(anchor); hud.style.left = (PHONE ? innerWidth / 2 : pr.x) + "px"; hud.style.top = (PHONE ? 74 : pr.y) + "px"; hud.innerHTML = html; hud.style.opacity = 1; }
+  else hud.style.opacity = 0;
+
+  // globe dims while we're away at the stations
+  globe.visible = p < 0.31 || p > 0.88;
+  dust.rotation.y = REDUCED ? 0 : t * 0.004;
+}
+
+// ------------------------------------------------------------------ loop
+const clock = new THREE.Clock();
+let running = true;
+document.addEventListener("visibilitychange", () => { running = !document.hidden; if (running) requestAnimationFrame(loop); });
+camAt(pS); camPos.copy(wantPos); camTgt.copy(wantTgt);
+function loop() {
+  if (!running) return;
+  const t = clock.getElapsedTime();
+  const target = scrollP();
+  pS += (target - pS) * (REDUCED ? 1 : 0.1);
+  if (Math.abs(target - pS) < 1e-4) pS = target;
+  apply(pS, t);
+  camAt(pS);
+  if (!REDUCED && pS < 0.08) { wantPos.x += Math.sin(t * 0.2) * 1.2; wantPos.y += Math.sin(t * 0.27) * 0.6; }
+  if (PHONE && pS > 0.28 && pS < 0.92) { wantTgt.x += 1.4; wantPos.sub(wantTgt).multiplyScalar(1.35).add(wantTgt); }
+  const k = REDUCED ? 1 : 0.075;
+  camPos.lerp(wantPos, k); camTgt.lerp(wantTgt, k);
+  camera.position.copy(camPos); camera.lookAt(camTgt);
+  composer.render();
+  requestAnimationFrame(loop);
+}
+document.fonts && document.fonts.ready.then(() => {
+  windows.forEach(w => { drawWindow(w.t.ctx, 512, 300, w.state); w.t.tex.needsUpdate = true; });
+  drawCard(cardT.ctx, 720, 420, stamped); cardT.tex.needsUpdate = true;
+});
+requestAnimationFrame(loop);
+window.__net = { scene, camera, apply, scrollP, windows };
+</script>
+</body>
+</html>
