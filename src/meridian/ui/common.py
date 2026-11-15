@@ -15,37 +15,7 @@ ROOT = Path(__file__).resolve().parents[3]
 BLUE, ORANGE = "#2a78d6", "#eb6834"  # categorical slots 1-2 of the validated default palette
 FINISHED = ("completed", "needs_human", "failed", "cancelled")
 
-CSS = """
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
-.stApp, .stApp p, .stApp label, .stApp input, .stApp textarea, .stApp button, .stApp li,
-.stApp h1, .stApp h2, .stApp h3, .stApp h4, [data-testid="stMarkdownContainer"] { font-family: Manrope, system-ui, sans-serif; }
-.stApp code, .mono { font-family: "IBM Plex Mono", monospace !important; }
-.block-container { padding-top: 2.4rem; padding-bottom: 4rem; max-width: 1240px; }
-.stApp h1 { font-size: 2.1rem; font-weight: 600; letter-spacing: -.03em; padding: 0 0 .2rem; }
-.stApp h3 { font-size: 1.15rem; font-weight: 600; letter-spacing: -.015em; padding-top: .6rem; }
-[data-testid="stSidebar"] { background: #f5f5f3; border-right: 1px solid #e6e6e2; }
-[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
-.stButton button, .stDownloadButton button, .stFormSubmitButton button, .stLinkButton a { border-radius: 999px; font-weight: 600; }
-[data-testid="stDataFrame"] { border-radius: 10px; }
-.sub { color: #8a8a84; margin: -.5rem 0 1.6rem; font-size: 1rem; }
-.brand { display: flex; align-items: center; gap: 9px; font-weight: 800; letter-spacing: .04em; font-size: .95rem; margin: .2rem 0 .6rem; }
-.brand i { display: inline-block; width: 6px; height: 17px; background: #f5c400; transform: skewX(-20deg); margin-right: -6px; }
-.brand i + i { background: #0e0e0e; margin-right: 2px; }
-.pill { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: .78rem; font-weight: 600; margin: 0 4px 4px 0; white-space: nowrap; }
-.p-ok { background: rgba(47,191,113,.14); color: #1d8a51; } .p-bad { background: rgba(229,72,77,.12); color: #c23338; }
-.p-wait { background: rgba(245,196,0,.24); color: #6b5600; } .p-grey { background: #efefec; color: #44443f; }
-.p-run { background: #0e0e0e; color: #fff; }
-.kpi { border: 1px solid #e6e6e2; border-radius: 12px; padding: 12px 16px; height: 100%; }
-.lbl { font-size: .8rem; color: #8a8a84; }
-.big { font-size: 1.4rem; font-weight: 700; letter-spacing: -.02em; white-space: nowrap; line-height: 1.35; }
-.plan-row { padding: 5px 0; font-size: .92rem; display: flex; gap: 10px; align-items: center; color: #44443f; }
-.plan-row b { width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; font-size: .7rem; background: #e8e8e4; color: #8a8a84; flex: none; }
-.plan-row.done b { background: #0e0e0e; color: #fff; } .plan-row.now b { background: #f5c400; color: #1a1500; }
-.plan-row.now { color: #0e0e0e; font-weight: 600; }
-.muted { color: #8a8a84; font-size: .88rem; }
-</style>
-"""
+from meridian.ui.theme import CSS, HERO_HEIGHT, hero_html  # noqa: E402  (CSS re-exported for app.py)
 
 STATUS = {  # status -> (pill class, label)
     "running": ("p-run", "Running"), "waiting_for_human": ("p-wait", "Waiting for you"), "completed": ("p-ok", "Completed"),
@@ -71,10 +41,32 @@ def chips(items, kind: str = "") -> str:
     return "".join(f"<span class='pill {cls}'>{i}</span>" for i in items)
 
 
+EYEBROW = {"Run a task": "Operate · Agent", "Needs you": "Operate · Inbox", "Results": "Operate · Results",
+           "Documents": "Operate · Evidence", "Disputes": "Operate · Disputes", "Monthly summary": "Report · Overcharges",
+           "Evaluation": "Report · Scoring", "System": "Admin · Setup"}
+
+
+def header_stats(store: Store) -> list[tuple[str, str, bool]]:
+    runs = store.list_runs(1000)
+    done = [r for r in runs if r.status in FINISHED]
+    ok = sum(r.status == "completed" for r in done)
+    waiting = len(store.pending_human()) + len(store.disputes(status="pending"))
+    live = {r.id for r in runs if r.mode == "live"}  # demo and fake-portal disputes are rehearsals
+    filed = sum(d["status"] in ("submitted", "confirmed") and d["run_id"] in live for d in store.disputes())
+    rate = f"{round(100 * ok / len(done))}%" if done else "—"
+    return [(str(len(runs)), "Runs", False), (rate, "Completed", False),
+            (str(filed), "Disputes filed", False), (str(waiting), "Waiting for you", waiting > 0)]
+
+
 def header(title: str, sub: str | None = None) -> None:
-    st.title(title)
-    if sub:
-        st.markdown(f"<p class='sub'>{sub}</p>", unsafe_allow_html=True)
+    """3D page header: container stack in the website's style, plus live counters."""
+    import streamlit.components.v1 as components
+
+    try:
+        stats = header_stats(get_store())
+    except Exception:  # the header must never break a page
+        stats = []
+    components.html(hero_html(title, sub, EYEBROW.get(title, "Meridian"), stats), height=HERO_HEIGHT)
 
 
 def inr(v) -> str:
