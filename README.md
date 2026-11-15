@@ -88,7 +88,7 @@ result.to_output()                                               # dict for the 
 - Portal formats: dates like `14-Oct-26`, amounts like `Rs. 1,23,456.00` (Indian grouping).
 - Mid-month rate change → use the rate effective on each shipment's booking date.
 - Dispute already exists → don't raise another; report it.
-- Low-confidence scanned POD → flag for a human, don't guess.
+- Scanned documents are read with OCR (see **Scanned documents** below). If OCR is unsure, the line goes to a human — never a guess.
 
 ## Task kinds
 
@@ -230,11 +230,15 @@ python harness/recon.py
 
 Saves masked screenshots and `runs/recon/recon.json` (menu, forms, grid headers, sample rows) — git-ignored.
 
-Docker (target for hand-in):
+Docker:
 
 ```bash
-docker compose up
+cp .env.example .env        # fill in the private values
+docker compose up --build   # operator screen :8510 · website :8700 · fake portal :8600
 ```
+
+The image is the official Playwright image plus Tesseract OCR. `runs/`, `data/` and `.auth/`
+(the saved portal session) are mounted from the host; secrets come only from `.env`.
 
 > ⚠️ Never commit `.env`, the team key, portal passwords, the tasks URL with its key, or unmasked screenshots.
 
@@ -256,6 +260,31 @@ LANGFUSE_HOST=https://cloud.langfuse.com      # or https://us.cloud.langfuse.com
 - **No personal data in traces.** Everything sent passes a mask: portal user, password, team key, phone numbers, e-mails and receiver names become `[redacted]`, `[phone]`, `[email]`, `[person]`. Screenshots are masked in the browser before capture. OTP codes are never logged. Tested against a local stub of the Langfuse endpoint (`tests/test_telemetry.py`).
 - Tracing never breaks a task: export errors are logged and ignored.
 
+## Scanned documents (OCR)
+
+The real portal serves **legacy invoices** whose line items exist only in a scanned, slightly
+tilted PDF ("Line item details are available in the attached PDF only"). Some PODs are scans too.
+
+1. Render the PDF page at 300 dpi, **straighten it** (try small rotations, keep the one where text
+   rows are sharpest), then read words and their positions with **Tesseract, locally** — the
+   document never leaves the machine and no model is paid for.
+2. Put words back into table rows by position: each `SHP-…` starts a row; the row must have a date
+   and exactly 7 numbers.
+3. **Cross-check every number before trusting it:** weight × rate = freight, freight × fuel % = fuel,
+   freight + fuel + detention = line total, and the line totals must add up to the **sub total shown
+   as text on the invoice web page**. (The invoice total is not used as a check — a wrong total is a
+   finding, `math_error`, not an OCR fault.)
+4. Any check fails → the invoice is reported `needs_human` with the reason, and no dispute is proposed.
+
+PODs: text first; OCR only for scans, trusted only when the date lines were read with ≥ 80 % confidence.
+Tested in `tests/test_scaninvoice.py` (tilted synthetic scans, plus a refusal case).
+
+## Login session reuse
+
+After a good login the browser's cookies are saved to `.auth/<portal host>.json` (git-ignored).
+The next task starts with them, like a person's browser tab, so one OTP covers a batch of tasks
+until the portal ends the session; then the agent logs in again and asks for a new OTP.
+
 ## The real portal (from recon)
 
 What `harness/recon.py` found on the TransIndus portal (read-only runs, 15 Nov 2026). The fake
@@ -266,7 +295,8 @@ portal copies this layout, so local tests exercise the same paths.
 | Login → OTP | `/Login.aspx` → `/Login/Otp.aspx` | `#txtUser` `#txtPass` `#btnLogin`; OTP box `#txtOtp`, button **Verify**, code valid 5 minutes |
 | Notice | (overlay on any page) | "Portal maintenance notice" with one button, **I Acknowledge** |
 | Invoices | `/Billing/InvoiceList.aspx` | Filters `ddlLane`, `ddlMonth` ("October 2026"), `ddlStatus`; **no invoice-number or shipment search**; columns Invoice No · Invoice Date · Lane · No. of Consignments · Invoice Value (Rs.) · Status |
-| Invoice | `/Billing/InvoiceView.aspx?InvNo=…` | Lines: Consignment · Booked On · Weight (kg) · Rate/kg · Freight · Fuel % · Fuel Amt · Detention · Amount; Sub Total, IGST @ 12 %, Invoice Total; **Raise Dispute** link; PDF via button |
+| Invoice | `/Billing/InvoiceView.aspx?InvNo=…` | Lines: Consignment · Booked On · Weight (kg) · Rate/kg · Freight · Fuel % · Fuel Amt · Detention · Amount; Sub Total, IGST @ 12 %, Invoice Total; **Raise Dispute** link; PDF at `/Billing/GetDoc.ashx`. **Legacy invoices** show no line grid — lines only in a scanned PDF |
+| Invoice list paging | `…InvoiceList.aspx?…&pg=2` | "Showing 1-15 of 67 records"; pager links sit **outside** the grid |
 | POD | `/Ops/PODSearch.aspx?txtCons=…` | Consignment · Status · Promised · Delivered; **View POD** document link |
 | Rate card | `/Masters/RateCard.aspx` | Lane · Rate · Effective From · Effective To ("Till date") |
 | Fuel | `/Masters/FuelSurcharge.aspx` | Month (`2026-08`) · FSC % |
@@ -299,8 +329,13 @@ Budget ₹6,000 for the week; suggested cap ₹3,000 for this project. Spend lim
 | Browser automation | Playwright + Chromium (local) | ₹0 | ₹0 |
 | Reconciliation | Python rules engine (no LLM) | ₹0 | ₹0 |
 | Tracing | Langfuse Cloud, free tier | ₹0 | ₹0 |
+| OCR for scanned invoices / PODs | Tesseract 5 (local, open source) | ₹0 | ₹0 |
 | LLM / vision fallback | not enabled (`LLM_MODEL` unset) | ₹0 | ₹0 |
 | **Total so far** | | **₹0** | **₹0** |
+
+**Models and data terms.** No hosted AI model is called: the scripted path, the rules engine and
+OCR all run locally, so no invoice, POD or personal data is sent to a model provider. The only
+external services are the TransIndus portal itself and Langfuse (masked traces, see above).
 
 The scripted path needs no model calls. If the optional vision fallback is switched on, its
 calls are traced in Langfuse and this table gets a real per-task figure.

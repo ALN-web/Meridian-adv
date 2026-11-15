@@ -205,19 +205,38 @@ class PortalClient:
         self._inv_cache: dict[str, tuple] = {}
         self._dispute_href: dict[str, str] = {}
         self._shipment_index: dict[str, list[InvoiceRow]] | None = None
+        self.unreadable: dict[str, str] = {}  # invoice no -> why its scanned lines could not be trusted
 
     # ------------------------------------------------------------------ lifecycle
 
     async def start(self, browser) -> None:
         self.download_dir.mkdir(parents=True, exist_ok=True)
         self.screenshot_dir.mkdir(parents=True, exist_ok=True)
-        self._ctx = await browser.new_context(accept_downloads=True, viewport={"width": 1280, "height": 900})
+        state = self.session_file()
+        self._ctx = await browser.new_context(accept_downloads=True, viewport={"width": 1280, "height": 900},
+                                              storage_state=str(state) if state.exists() else None)
         self._ctx.set_default_timeout(ACTION_TIMEOUT_MS)
         self._ctx.set_default_navigation_timeout(NAV_TIMEOUT_MS)
         self.page = await self._ctx.new_page()
         from urllib.parse import urlparse
 
         self.log.page_fn = lambda: urlparse(self.page.url).path.lstrip("/") or "(blank)"
+
+    def session_file(self) -> Path:
+        """Cookies of the last good login, kept outside git (.auth/ is ignored), so the next task
+        reuses the session the way a person's browser does instead of asking for a new OTP."""
+        from urllib.parse import urlparse
+
+        host = urlparse(self.settings.portal_base_url).netloc.replace(":", "_") or "portal"
+        return Path(".auth") / f"{host}.json"
+
+    async def save_session(self) -> None:
+        try:
+            f = self.session_file()
+            f.parent.mkdir(exist_ok=True)
+            await self._ctx.storage_state(path=str(f))
+        except Exception:
+            pass
 
     async def close(self) -> None:
         if self._ctx is not None:
@@ -362,6 +381,7 @@ class PortalClient:
             self._login_failures = 0
 
         await with_retry("login", attempt, policy=self.policy, stats=self.log.retries)
+        await self.save_session()
         self.log.add("login", "ok")
 
     async def _submit_otp(self) -> None:
@@ -653,11 +673,18 @@ class PortalClient:
             if re.search(r"invoice .{0,40}not found", await self.page.inner_text("body"), re.I):
                 return None
             grids = await self.grids()
-            lines_grid = next((g for g in grids if any(re.search(r"shipment|consignment", h, re.I) for h in g.headers)), None)
+            from meridian.portal.tables import ALIASES
+
+            sid_pat = ALIASES["shipment_id"][0]
+            lines_grid = next((g for g in grids if any(re.search(sid_pat, h, re.I) for h in g.headers)), None)
             credit_grid = next((g for g in grids if any(re.search(r"credit", h, re.I) for h in g.headers)), None)
-            if lines_grid is None:
+            if lines_grid is not None:
+                lines = parse_invoice_lines(lines_grid.rows)
+            elif re.search(r"attached pdf|legacy invoice|see (the )?attach", await self.page.inner_text("body"), re.I):
+                lines = await self._scanned_lines(invoice_no)
+            else:
+                await self.debug_dump(f"no_lines_{invoice_no.split('/')[-1]}")
                 raise PageNotUnderstood(f"no lines grid on invoice {invoice_no}")
-            lines = parse_invoice_lines(lines_grid.rows)
             credits = []
             if credit_grid is not None:
                 amt_col = next((h for h in credit_grid.headers if re.search(r"amount", h, re.I)), None)
@@ -692,6 +719,28 @@ class PortalClient:
             self.log.add(f"invoice_pdf:{invoice_no}", "failed", error=type(exc).__name__)
         self._inv_cache[invoice_no] = (inv, pdf)
         return inv, pdf
+
+    async def _scanned_lines(self, invoice_no: str):
+        """Legacy invoice: lines only in a scanned PDF. OCR + arithmetic cross-checks; if any check
+        fails the invoice is marked unreadable (needs a human) with no lines — never a guess."""
+        import asyncio
+
+        from meridian.portal.scaninvoice import read_scanned_invoice
+        from meridian.portal.tables import parse_invoice_lines
+
+        url = await self._document_url(r"download.*(invoice|pdf)|invoice.*pdf|^pdf$|print|attach|view")
+        if not url:
+            raise PageNotUnderstood(f"legacy invoice {invoice_no} has no document link")
+        pdf = await self.fetch_file(url, f"INV_{invoice_no}")
+        sub_txt = await self.labelled(r"sub\s*total")
+        sub = parse_amount(sub_txt) if sub_txt else None
+        scan = await asyncio.to_thread(read_scanned_invoice, pdf, sub)
+        if not scan.ok:
+            self.unreadable[invoice_no] = "; ".join(scan.problems)[:300] or "no lines read"
+            self.log.add(f"invoice_scan:{invoice_no}", "unreadable", detail=self.unreadable[invoice_no])
+            return []
+        self.log.add(f"invoice_scan:{invoice_no}", "ok", detail=f"{len(scan.rows)} lines read from the scan, all sums check")
+        return parse_invoice_lines(scan.rows)
 
     async def shipment_index(self, on_progress=None) -> dict[str, list[InvoiceRow]]:
         """shipment id -> every invoice row (any status) that bills it.

@@ -18,11 +18,11 @@ with status. ✅ done · 🟡 partial · ❌ not started · ⭐ stretch.
 
 | # | Feature | Source | Status |
 |---|---|---|---|
-| 2.1 | Playwright navigation, waits, downloads; stable locators | Operate | ✅ (fake portal) · ❌ confirmed on real portal |
+| 2.1 | Playwright navigation, waits, downloads; stable locators | Operate | ✅ fake and real portal (login, OTP, notice, paging, invoices, legacy scans) |
 | 2.2 | Vision-model fallback when a page doesn't match | Operate | ❌ |
 | 2.3 | LLM for decisions, scripted clicks | Operate | 🟡 no LLM used yet |
 | 2.4 | Download every invoice PDF and POD | Collect | ✅ |
-| 2.5 | Scanned PODs read by the week-2 document reader | Collect | 🟡 text PDFs read; scans → human |
+| 2.5 | Scanned PODs and legacy (scan-only) invoices read with OCR | Collect | ✅ local Tesseract + deskew + arithmetic cross-checks; unsure → human |
 
 ## 3. Robustness ("a portal that fights back")
 
@@ -87,10 +87,10 @@ with status. ✅ done · 🟡 partial · ❌ not started · ⭐ stretch.
 
 | # | Feature | Status |
 |---|---|---|
-| 8.1 | `docker compose up` starts everything | 🟡 files exist, untested |
-| 8.2 | README: run, models + data terms, cost table, every threshold | 🟡 cost table + models missing |
+| 8.1 | `docker compose up` starts everything | 🟡 agent + website + fake portal + Tesseract; not run here (no Docker on this PC) |
+| 8.2 | README: run, models + data terms, cost table, every threshold | ✅ |
 | 8.3 | Test set, harness, latest results in repo | ✅ |
-| 8.4 | 8-minute demo script rehearsed | ❌ |
+| 8.4 | 8-minute demo script rehearsed | 🟡 written ([demo-script.md](demo-script.md)); rehearsal pending |
 
 ## 9. Stretch (+10 %)
 
@@ -101,4 +101,4 @@ with status. ✅ done · 🟡 partial · ❌ not started · ⭐ stretch.
 
 ## Biggest open risk
 
-Real portal not yet connected (recon failed). The hidden test (30 %) runs there.
+The hidden test (30 %) runs on the real portal. Public tasks are being run there one by one; each new portal trap found (paging outside the grid, scan-only legacy invoices) is fixed and covered by a test.

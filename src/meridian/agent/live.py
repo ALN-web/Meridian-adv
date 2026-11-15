@@ -259,6 +259,13 @@ class LiveRunner:
             if inv is None:
                 results.append({"invoice_no": row.invoice_no, "result": "mismatch", "reasons": [], "error": "not found"})
                 continue
+            if inv.invoice_no in c.unreadable:
+                needs = True
+                out = {"invoice_no": inv.invoice_no, "result": "mismatch", "reasons": [],
+                       "needs_human": [f"scanned invoice unreadable: {c.unreadable[inv.invoice_no]}"]}
+                self.store.add_step(self.run_id, f"reconcile:{inv.invoice_no}", "needs_human", out["needs_human"][0])
+                results.append(out)
+                continue
             if not inv.lane:
                 inv = replace(inv, lane=row.lane or "")
             history: list[BillingRecord] = [BillingRecord.from_invoice(inv)]

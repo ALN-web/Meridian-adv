@@ -154,7 +154,8 @@ def main() -> None:
     label = args.label or datetime.now().strftime("%Y%m%d-%H%M%S")
     out_dir = ROOT / "runs" / "eval" / label
     out_dir.mkdir(parents=True, exist_ok=True)
-    store = Store(out_dir / "store.sqlite")
+    # Live: share the operator screen's store so the OTP box and approvals appear there.
+    store = Store(ROOT / "runs" / "meridian.sqlite") if args.mode == "live" else Store(out_dir / "store.sqlite")
     helper = AutoHuman(store, args.auto_otp, args.auto_approve, args.mode)
     helper.start()
     if not args.auto_otp:
