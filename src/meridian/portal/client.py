@@ -43,7 +43,8 @@ MENU = {
 
 # Buttons we may click to clear a blocking notice. Anything else on an overlay is ignored.
 SAFE_DISMISS = re.compile(
-    r"^\s*(ok|okay|close|close notice|close window|continue|dismiss|got it|acknowledge|i understand|proceed|"
+    r"^\s*(ok|okay|close|close notice|close window|continue|dismiss|got it|acknowledge|i acknowledge|acknowledged|"
+    r"noted|i have read (this|the notice)|i understand|proceed|"
     r"skip|not now|later|remind me later|back|return|hide|×|✕|✖|x)\s*[.!]?\s*$",
     re.I,
 )
@@ -359,13 +360,25 @@ class PortalClient:
     async def _submit_otp(self) -> None:
         self.log.human_steps.append("otp")
         self.log.add("otp", "waiting_for_human")
+        await self.debug_dump("otp_page")          # record what the OTP page looks like (masked)
         code = await self.human.request_otp()
         if not code:
             raise HumanNeeded("otp", "no code provided")
+        # The person may take a while; the page can move on meanwhile (e.g. straight to the home page).
+        if classify(await self.snapshot()) is not PageState.OTP:
+            self.log.add("otp", "not_needed", detail="page moved on before the code was entered")
+            return
         field_ = self.page.locator("input[name*=otp i], input[id*=otp i], input[autocomplete=one-time-code]")
         if await field_.count() == 0:
             field_ = self.page.locator("input[type=text]:visible, input[type=number]:visible, input[type=password]:visible")
+        try:
+            await field_.first.wait_for(state="visible", timeout=10_000)
+        except Exception:
+            pass
         if await field_.count() == 0:
+            if classify(await self.snapshot()) is not PageState.OTP:
+                self.log.add("otp", "not_needed", detail="no OTP box; already past the OTP step")
+                return
             await self.debug_dump("otp_field_not_found")
             raise PageNotUnderstood("OTP page without an input field")
         field_ = field_.first

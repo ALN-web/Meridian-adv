@@ -116,3 +116,48 @@ def test_stuck_notice_reports_and_does_not_click_unsafe():
     assert ok is False
     assert clicked == []
     assert last["outcome"] == "failed" and "Confirm" in last["controls"]
+
+
+def test_i_acknowledge_notice_is_dismissed():
+    """The real TransIndus portal shows a maintenance notice whose only button is 'I Acknowledge'."""
+    html = page_html(
+        "<div id='ovl'><div><b>Portal maintenance notice</b><p>Unavailable on Sunday 01:00-05:00 IST.</p>"
+        "<form><input type='submit' class='btn' id='btnAck' value='I Acknowledge' "
+        "onclick=\"window.clicked.push('ack');document.getElementById('ovl').style.display='none';return false;\"></form></div></div>"
+    )
+
+    async def fn(c):
+        ok = await c._dismiss_overlay()
+        return ok, await c.page.evaluate("window.clicked")
+
+    ok, clicked = run(html, fn)
+    assert ok is True and clicked == ["ack"]
+
+
+def test_otp_skipped_when_page_already_moved_on():
+    """Seen on the real portal: by the time the person types the code, the home page is already showing."""
+
+    class CodeGate:
+        async def request_otp(self):
+            return "990582"
+
+        async def request_captcha(self):
+            raise AssertionError
+
+    async def go():
+        async with pw_api.async_playwright() as p:
+            try:
+                browser = await p.chromium.launch()
+            except Exception as exc:
+                pytest.skip(f"chromium unavailable: {exc}")
+            c = PortalClient(Settings(), CodeGate(), screenshot_dir="runs/test_shots", download_dir="runs/test_dl")
+            await c.start(browser)
+            try:
+                await c.page.set_content(page_html())   # logged-in home page, no OTP box
+                await c._submit_otp()
+                return [e["outcome"] for e in c.log.events if e["step"] == "otp"]
+            finally:
+                await c.close(); await browser.close()
+
+    outcomes = asyncio.run(go())
+    assert outcomes[-1] == "not_needed"
