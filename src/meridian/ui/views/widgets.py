@@ -66,19 +66,17 @@ def line_table(detail: dict) -> None:
 
 
 def invoice_header(detail: dict) -> None:
-    c = st.columns(5)
-    c[0].markdown(f"<div class='lbl'>Printed total</div><div class='big'>{inr(detail.get('printed_total'))}</div>"
-                  f"<div class='lbl'>lines + 12% GST: {inr(detail.get('lines_plus_gst'))}</div>", unsafe_allow_html=True)
+    from meridian.ui.common import big
+
+    c = st.columns(4)
+    big(c[0], "Printed total", inr(detail.get("printed_total")), f"lines + GST {inr(detail.get('lines_plus_gst'))}")
     credits = detail.get("credit_notes") or []
-    c[1].markdown(f"<div class='lbl'>Credit notes</div><div class='big'>{inr(sum(credits)) if credits else '—'}</div>"
-                  f"<div class='lbl'>{len(credits)} note(s)</div>", unsafe_allow_html=True)
-    c[2].markdown(f"<div class='lbl'>Billed</div><div class='big'>{inr(detail.get('billed_inr'))}</div>", unsafe_allow_html=True)
-    c[3].markdown(f"<div class='lbl'>Expected</div><div class='big'>{inr(detail.get('expected_inr'))}</div>", unsafe_allow_html=True)
-    c[4].markdown(f"<div class='lbl'>Difference</div><div class='big'>{inr(detail.get('overcharge_inr'))}</div>"
-                  f"<div class='lbl'>{'dispute already on portal' if detail.get('already_disputed') else ''}</div>",
-                  unsafe_allow_html=True)
+    big(c[1], "Billed", inr(detail.get("billed_inr")), f"after {len(credits)} credit note(s)" if credits else "")
+    big(c[2], "Expected", inr(detail.get("expected_inr")))
+    big(c[3], "Difference", inr(detail.get("overcharge_inr")), "dispute exists" if detail.get("already_disputed") else "")
     reasons = detail.get("reasons") or []
-    st.markdown(chips(reasons, "bad") if reasons else chips(["no rule fired"], "ok"), unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:10px'>" + (chips(reasons, "bad") if reasons else chips(["all rules passed"], "ok")) + "</div>",
+                unsafe_allow_html=True)
 
 
 def trace_view(result: dict, key: str) -> None:
@@ -89,15 +87,17 @@ def trace_view(result: dict, key: str) -> None:
 
     tid = result.get("trace_id")
     if not tid:
-        st.caption("No trace for this run (it ran before tracing was added).")
+        st.markdown("<p class='muted'>No trace for this run.</p>", unsafe_allow_html=True)
         return
     url = result.get("trace_url")
     recs = read_trace(tid)
     spans = [r for r in recs if r["type"] == "span"]
     end = next((r for r in recs if r["type"] == "end"), {})
-    c = st.columns([3, 1])
-    c[0].markdown(f"Trace `{tid}` · {len(spans)} spans · {end.get('duration_s', '—')} s"
-                  + (f" · [open in Langfuse]({url})" if url else " · local copy only (set LANGFUSE keys to send to Langfuse)"))
+    c = st.columns([3, 1], vertical_alignment="center")
+    c[0].markdown(f"<span class='muted'>{len(spans)} spans · {end.get('duration_s', '—')} s · "
+                  f"{'Langfuse' if url else 'local copy'} · <span class='mono'>{tid[:12]}…</span></span>", unsafe_allow_html=True)
+    if url:
+        c[1].link_button("Open in Langfuse", url, width="stretch")
     if spans:
         df = pd.DataFrame(spans)[["end", "name", "page", "outcome", "retries", "duration_ms", "level", "detail"]]
         df["end"] = df["end"].str[11:19]
@@ -108,11 +108,10 @@ def trace_view(result: dict, key: str) -> None:
     for a in [r for r in recs if r["type"] == "attachment"]:
         p = Path(a["path"])
         if p.suffix.lower() == ".png" and p.exists():
-            st.image(str(p), caption=f"Attached to trace: {a['label']} (masked)", width="stretch")
+            st.image(str(p), caption=a["label"], width="stretch")
         elif p.exists():
-            st.download_button(f"⬇ Attached: {a['label']}", p.read_bytes(), file_name=p.name, key=f"{key}-{a['label']}")
-    st.caption("Masked before sending: portal user, password, team key, phone numbers, e-mails, receiver names. "
-               "OTP codes are never logged.")
+            st.download_button(a["label"], p.read_bytes(), file_name=p.name, key=f"{key}-{a['label']}")
+    st.caption("Personal data and secrets are masked. OTPs are never logged.")
 
 
 def documents_for(store: Store, run_id: str, labels: list[str]) -> list[dict]:

@@ -9,7 +9,7 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
-from meridian.ui.common import BLUE, ORANGE, ROOT, big
+from meridian.ui.common import BLUE, ORANGE, ROOT, big, header
 
 
 @st.cache_resource
@@ -34,17 +34,19 @@ def _launcher() -> None:
     jobs = _jobs()
     running = {k: v for k, v in jobs.items() if v["proc"].poll() is None}
     with st.container(border=True):
-        st.markdown("#### Run the public test set")
-        c = st.columns(4)
+        c = st.columns([1.2, 1.4, 1], vertical_alignment="bottom")
         mode = c[0].selectbox("Portal", ["demo", "fake", "live"], key="ev_mode",
-                              format_func={"demo": "Demo (fast)", "fake": "Fake portal (browser)", "live": "Real portal"}.get)
+                              format_func={"demo": "Demo", "fake": "Fake portal", "live": "Real portal"}.get)
         keys = ["(none)"] + sorted(p.name for p in (ROOT / "harness" / "answer_keys").glob("*.json"))
         key = c[1].selectbox("Answer key", keys, key="ev_key")
-        rerun = c[2].checkbox("Re-run dispute tasks (duplicate check)", value=True, key="ev_rerun")
-        auto = c[3].checkbox("Auto-answer OTP/approvals", value=mode != "live", disabled=mode == "live", key="ev_auto",
-                             help="Demo and fake portal only. On the real portal a person answers in Needs you.")
-        only = st.text_input("Only these tasks (optional, e.g. T-01,T-19)", key="ev_only")
-        if st.button("▶ Start test run", type="primary", disabled=bool(running)):
+        start = c[2].button("Run 20 public tasks", type="primary", disabled=bool(running), width="stretch")
+        with st.expander("Options"):
+            o = st.columns(3)
+            rerun = o[0].checkbox("Re-run disputes (duplicate check)", value=True, key="ev_rerun")
+            auto = o[1].checkbox("Auto-answer OTP and approvals", value=mode != "live", disabled=mode == "live", key="ev_auto",
+                                 help="Demo and fake portal only.")
+            only = o[2].text_input("Only these tasks", key="ev_only", placeholder="T-01,T-19")
+        if start:
             label = f"ui-{mode}-{datetime.now():%Y%m%d-%H%M%S}"
             out = ROOT / "runs" / "eval" / label
             out.mkdir(parents=True, exist_ok=True)
@@ -70,7 +72,9 @@ def _launcher() -> None:
         def progress():
             for label, job in list(jobs.items())[-1:]:
                 code = job["proc"].poll()
-                st.markdown(f"**{label}** — {'running…' if code is None else ('finished' if code == 0 else f'exited with {code}')}")
+                if code is not None and st.session_state.get("ev_seen") == label:
+                    continue  # finished and already shown in the report list
+                st.markdown(f"**{'Running…' if code is None else ('Finished' if code == 0 else f'Exited with {code}')}** <span class='muted'>{label}</span>", unsafe_allow_html=True)
                 try:
                     tail = job["log"].read_text(encoding="utf-8", errors="replace").splitlines()[-14:]
                 except OSError:
@@ -84,35 +88,27 @@ def _launcher() -> None:
 
 
 def render() -> None:
-    st.title("Evaluation")
+    header("Evaluation", "Score every run against the targets.")
     _launcher()
     reports = load_reports()
     if not reports:
         st.info("No test runs yet.")
         return
     labels = [f"{r['label']} · {r['mode']} · {r['started']}" for r in reports][::-1]
+    st.write("")
     pick = st.selectbox("Test run", labels, index=0, key="ev_pick")
     rep = reports[::-1][labels.index(pick)]
     m, p = rep["metrics"], rep["metrics"]["pass"]
     pct = lambda v: "n/a" if v is None else f"{v:.0%}"  # noqa: E731
-    icon = lambda ok: "—" if ok is None else ("✅" if ok else "❌")  # noqa: E731
+    icon = lambda ok: "" if ok is None else ("✓ " if ok else "✕ ")  # noqa: E731
     c = st.columns(4)
-    big(c[0], "Task success", pct(m["task_success"]), f"{icon(p['task_success'])} target ≥ 80%")
-    big(c[1], "Invoice accuracy", pct(m["invoice_accuracy"]), f"{icon(p['invoice_accuracy'])} target ≥ 90%")
-    big(c[2], "Wrong disputes", str(m["wrong_disputes"]), f"{icon(p['wrong_disputes'])} target 0")
-    big(c[3], "Duplicate disputes", str(m["duplicate_disputes"]), f"{icon(p['duplicate_disputes'])} target 0")
-    st.write("")
-    c = st.columns(4)
-    big(c[0], "Needed a human", f"{m['needs_human_tasks']} task(s)", f"beyond OTP: {m.get('human_steps_beyond_otp', 0)}")
-    big(c[1], "Avg time / task", f"{m['avg_duration_s']} s")
-    big(c[2], "Avg steps / task", str(m["avg_steps"]), f"{m.get('total_retries', 0)} retries in total")
-    big(c[3], "Avg cost / task", f"₹{m['avg_cost_inr']:.2f}")
-    notes = [f"mode {rep['mode']}", f"key: {rep['answer_key'] or 'none'}"]
-    if rep.get("auto_otp") or rep.get("auto_approve"):
-        notes.append("OTP/approvals auto-answered (demo / fake portal only)")
-    if rep.get("reruns"):
-        notes.append("re-run: " + ", ".join(f"{k} → {v['new_disputes']} new disputes" for k, v in rep["reruns"].items()))
-    st.caption(" · ".join(notes))
+    big(c[0], "Task success", pct(m["task_success"]), f"{icon(p['task_success'])}target ≥ 80%")
+    big(c[1], "Invoice accuracy", pct(m["invoice_accuracy"]), f"{icon(p['invoice_accuracy'])}target ≥ 90%")
+    big(c[2], "Wrong disputes", str(m["wrong_disputes"]), f"{icon(p['wrong_disputes'])}target 0")
+    big(c[3], "Duplicates", str(m["duplicate_disputes"]), f"{icon(p['duplicate_disputes'])}target 0")
+    st.markdown(f"<p class='muted' style='margin-top:12px'>{m['needs_human_tasks']} needed a person · "
+                f"{m['avg_duration_s']} s and {m['avg_steps']} steps per task · {m.get('total_retries', 0)} retries · "
+                f"₹{m['avg_cost_inr']:.2f} per task · key: {rep['answer_key'] or 'none'}</p>", unsafe_allow_html=True)
 
     tdf = pd.DataFrame(rep["tasks"])
     tdf["items"] = tdf["items_correct"].astype(str) + "/" + tdf["items_total"].astype(str)
@@ -121,19 +117,18 @@ def render() -> None:
     if "trace_id" not in tdf:
         tdf["trace_id"] = None
     tdf["trace_id"] = tdf["trace_id"].map(lambda t: t[:12] + "…" if isinstance(t, str) else "")
-    tdf = tdf[["task_id", "kind", "status", "success", "items", "problems", "steps", "retries", "duration_s", "cost_inr",
-               "human_steps", "trace_id"]]
+    tdf = tdf[["task_id", "kind", "status", "success", "items", "problems", "duration_s"]]
     bg = lambda row: [("background-color: rgba(12,163,12,.12)" if row["success"] else  # noqa: E731
                        "background-color: rgba(250,178,25,.16)" if row["status"] == "needs_human" else
                        "background-color: rgba(208,59,59,.12)")] * len(row)
     st.dataframe(tdf.style.apply(bg, axis=1), hide_index=True, width="stretch",
-                 column_config={"duration_s": st.column_config.NumberColumn("time (s)", format="%.1f"),
-                                "cost_inr": st.column_config.NumberColumn("cost", format="₹ %.2f"),
-                                "problems": st.column_config.TextColumn(width="large")})
+                 column_config={"task_id": "Task", "kind": "Kind", "status": "Status", "success": "Pass", "items": "Items",
+                                "duration_s": st.column_config.NumberColumn("Time (s)", format="%.1f"),
+                                "problems": st.column_config.TextColumn("Problems", width="large")})
 
     scored = [r for r in reports if r["metrics"].get("task_success") is not None]
     if len(scored) > 1:
-        st.subheader("History")
+        st.markdown("**History**")
         hist = pd.DataFrame([{"run": r["label"], "Task success": r["metrics"]["task_success"],
                               "Invoice accuracy": r["metrics"]["invoice_accuracy"]} for r in scored]).set_index("run")
         st.line_chart(hist, color=[BLUE, ORANGE], y_label="share", x_label="test run")

@@ -17,26 +17,43 @@ FINISHED = ("completed", "needs_human", "failed", "cancelled")
 
 CSS = """
 <style>
-.block-container {padding-top: 1.4rem; max-width: 1400px;}
-.chip {display:inline-block;padding:1px 8px;margin:0 4px 4px 0;border-radius:10px;font-size:.78rem;
-       background:rgba(127,127,127,.14);border:1px solid rgba(127,127,127,.3);}
-.chip.bad {background:rgba(208,59,59,.12);border-color:rgba(208,59,59,.45);}
-.chip.ok {background:rgba(12,163,12,.12);border-color:rgba(12,163,12,.45);}
-.status {font-weight:600;padding:2px 10px;border-radius:10px;font-size:.8rem;border:1px solid transparent}
-.s-running{background:rgba(42,120,214,.15);border-color:rgba(42,120,214,.45)}
-.s-waiting_for_human{background:rgba(250,178,25,.18);border-color:rgba(250,178,25,.6)}
-.s-completed{background:rgba(12,163,12,.14);border-color:rgba(12,163,12,.5)}
-.s-needs_human{background:rgba(236,131,90,.18);border-color:rgba(236,131,90,.6)}
-.s-failed{background:rgba(208,59,59,.14);border-color:rgba(208,59,59,.5)}
-.s-cancelled,.s-queued{background:rgba(127,127,127,.14);border-color:rgba(127,127,127,.4)}
-.lbl {font-size:.78rem;opacity:.72} .big {font-size:1.25rem;font-weight:650;white-space:nowrap}
-.plan-row {padding:3px 0;font-size:.92rem} .plan-now {font-weight:650}
-.muted {opacity:.65;font-size:.85rem}
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+.stApp, .stApp p, .stApp label, .stApp input, .stApp textarea, .stApp button, .stApp li,
+.stApp h1, .stApp h2, .stApp h3, .stApp h4, [data-testid="stMarkdownContainer"] { font-family: Manrope, system-ui, sans-serif; }
+.stApp code, .mono { font-family: "IBM Plex Mono", monospace !important; }
+.block-container { padding-top: 2.4rem; padding-bottom: 4rem; max-width: 1240px; }
+.stApp h1 { font-size: 2.1rem; font-weight: 600; letter-spacing: -.03em; padding: 0 0 .2rem; }
+.stApp h3 { font-size: 1.15rem; font-weight: 600; letter-spacing: -.015em; padding-top: .6rem; }
+[data-testid="stSidebar"] { background: #f5f5f3; border-right: 1px solid #e6e6e2; }
+[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
+.stButton button, .stDownloadButton button, .stFormSubmitButton button, .stLinkButton a { border-radius: 999px; font-weight: 600; }
+[data-testid="stDataFrame"] { border-radius: 10px; }
+.sub { color: #8a8a84; margin: -.5rem 0 1.6rem; font-size: 1rem; }
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 800; letter-spacing: .04em; font-size: .95rem; margin: .2rem 0 .6rem; }
+.brand i { display: inline-block; width: 6px; height: 17px; background: #f5c400; transform: skewX(-20deg); margin-right: -6px; }
+.brand i + i { background: #0e0e0e; margin-right: 2px; }
+.pill { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: .78rem; font-weight: 600; margin: 0 4px 4px 0; white-space: nowrap; }
+.p-ok { background: rgba(47,191,113,.14); color: #1d8a51; } .p-bad { background: rgba(229,72,77,.12); color: #c23338; }
+.p-wait { background: rgba(245,196,0,.24); color: #6b5600; } .p-grey { background: #efefec; color: #44443f; }
+.p-run { background: #0e0e0e; color: #fff; }
+.kpi { border: 1px solid #e6e6e2; border-radius: 12px; padding: 12px 16px; height: 100%; }
+.lbl { font-size: .8rem; color: #8a8a84; }
+.big { font-size: 1.4rem; font-weight: 700; letter-spacing: -.02em; white-space: nowrap; line-height: 1.35; }
+.plan-row { padding: 5px 0; font-size: .92rem; display: flex; gap: 10px; align-items: center; color: #44443f; }
+.plan-row b { width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; font-size: .7rem; background: #e8e8e4; color: #8a8a84; flex: none; }
+.plan-row.done b { background: #0e0e0e; color: #fff; } .plan-row.now b { background: #f5c400; color: #1a1500; }
+.plan-row.now { color: #0e0e0e; font-weight: 600; }
+.muted { color: #8a8a84; font-size: .88rem; }
 </style>
 """
 
-STATUS_ICON = {"running": "⏳", "waiting_for_human": "✋", "completed": "✅", "needs_human": "🟠",
-               "failed": "❌", "cancelled": "⏹", "queued": "…"}
+STATUS = {  # status -> (pill class, label)
+    "running": ("p-run", "Running"), "waiting_for_human": ("p-wait", "Waiting for you"), "completed": ("p-ok", "Completed"),
+    "needs_human": ("p-wait", "Needs a person"), "failed": ("p-bad", "Failed"), "cancelled": ("p-grey", "Stopped"),
+    "queued": ("p-grey", "Queued"),
+}
+STATUS_ICON = {"running": "●", "waiting_for_human": "●", "completed": "✓", "needs_human": "!", "failed": "✕",
+               "cancelled": "■", "queued": "…"}
 
 
 @st.cache_resource
@@ -45,11 +62,19 @@ def get_store() -> Store:
 
 
 def badge(status: str) -> str:
-    return f"<span class='status s-{status}'>{STATUS_ICON.get(status, '')} {status.replace('_', ' ')}</span>"
+    cls, label = STATUS.get(status, ("p-grey", status.replace("_", " ")))
+    return f"<span class='pill {cls}'>{label}</span>"
 
 
 def chips(items, kind: str = "") -> str:
-    return "".join(f"<span class='chip {kind}'>{i}</span>" for i in items)
+    cls = {"bad": "p-bad", "ok": "p-ok", "wait": "p-wait"}.get(kind, "p-grey")
+    return "".join(f"<span class='pill {cls}'>{i}</span>" for i in items)
+
+
+def header(title: str, sub: str | None = None) -> None:
+    st.title(title)
+    if sub:
+        st.markdown(f"<p class='sub'>{sub}</p>", unsafe_allow_html=True)
 
 
 def inr(v) -> str:
@@ -65,12 +90,13 @@ def hhmm(ts: float | None) -> str:
 
 
 def big(col, label: str, value: str, note: str = "") -> None:
-    col.markdown(f"<div class='lbl'>{label}</div><div class='big'>{value}</div>"
-                 + (f"<div class='lbl'>{note}</div>" if note else ""), unsafe_allow_html=True)
+    col.markdown(f"<div class='kpi'><div class='lbl'>{label}</div><div class='big'>{value}</div>"
+                 + (f"<div class='lbl'>{note}</div>" if note else "") + "</div>", unsafe_allow_html=True)
 
 
 def run_label(r: Run) -> str:
-    return f"{STATUS_ICON.get(r.status, '')} {r.task_id} · {r.kind} · {r.mode} · {hhmm(r.created)}"
+    when = datetime.fromtimestamp(r.created).strftime("%d %b %H:%M") if r.created else ""
+    return f"{STATUS_ICON.get(r.status, '')}  {r.task_id} · {r.kind.replace('_', ' ')} · {when}"
 
 
 def plan_of(r: Run) -> Plan:

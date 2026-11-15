@@ -40,7 +40,7 @@ nav = st.navigation({
 })
 
 with st.sidebar:
-    st.caption("TransIndus invoice reconciliation · Team Delta · synthetic data only")
+    st.markdown("<div class='brand'><i></i><i></i>MERIDIAN</div>", unsafe_allow_html=True)
     st.session_state.human_sig = human_signature(store)
 
     @st.fragment(run_every=3)
@@ -54,11 +54,9 @@ with st.sidebar:
             st.session_state.human_sig = sig
             st.rerun(scope="app")
         h, d = len(store.pending_human()), len(store.disputes(status="pending"))
-        if h:
-            st.warning(f"🔐 {h} one-time password request(s)")
-        if d:
-            st.info(f"⚖️ {d} dispute(s) to approve")
         if h or d:
+            parts = ([f"{h} password"] if h else []) + ([f"{d} approval{'s' if d > 1 else ''}"] if d else [])
+            st.warning("Waiting: " + " · ".join(parts))
             st.page_link(PAGES["needs"], label="Open Needs you", icon="✋")
 
     watch_humans()
