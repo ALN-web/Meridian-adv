@@ -460,7 +460,8 @@ class PortalClient:
         if await nxt.count() == 0:
             nxt = self.page.locator("input[type=submit][value*=Next i], input[type=button][value*=Next i]")
         if await nxt.count() == 0 and current is not None:
-            nxt = self.page.locator("table a, .pager a, tr.pager a").filter(
+            # Numbered pager. The real portal's is a plain "Page: 1 2 3" line of ?pg=N links outside the grid.
+            nxt = self.page.locator("a[href*='pg=' i], a[href*='page' i], table a, .pager a, tr.pager a").filter(
                 has_text=re.compile(rf"^\s*{current + 1}\s*$"))
         if await nxt.count() == 0 or not await nxt.first.is_enabled():
             return False
@@ -490,10 +491,14 @@ class PortalClient:
                 await self._fill_search(lane=lane, status=status, invoice_no=invoice_no)
             rows: list[InvoiceRow] = []
             seen: set[str] = set()
+            stated = None  # "Showing 1-15 of 67 records" — every page of the list must be read
             for page_no in range(1, 201):  # hard stop against pagination loops
+                body = await self.page.inner_text("body")
                 if re.search(r"no (records|invoices|data|results|rows)\b.{0,30}(found|match|available)|"
-                             r"no matching (records|invoices)", await self.page.inner_text("body"), re.I):
+                             r"no matching (records|invoices)", body, re.I):
                     break
+                if stated is None and (m := re.search(r"\bof\s+(\d+)\s+(records|invoices|entries)", body, re.I)):
+                    stated = int(m.group(1))
                 grid = await self.main_grid(r"invoice")
                 for r in parse_invoice_list(grid.rows):
                     if r.invoice_no not in seen:
@@ -502,6 +507,9 @@ class PortalClient:
                 self._remember_links(grid.rows)
                 if not await self._next_page(page_no):
                     break
+            if stated is not None and len(rows) < stated:
+                await self.debug_dump("invoice_pages_short")
+                raise PageNotUnderstood(f"invoice list says {stated} records but only {len(rows)} were read")
             return rows
 
         rows = await self.step(f"search_invoices:{lane or ''}:{month or ''}:{invoice_no or ''}", run)

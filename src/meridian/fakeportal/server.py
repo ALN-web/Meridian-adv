@@ -334,7 +334,8 @@ def options(values, selected, label=lambda v: v, blank="-- All --"):
 
 
 @app.get(P_LIST, response_class=HTMLResponse)
-async def invoices(request: Request, ddlLane: str = "", ddlMonth: str = "", ddlStatus: str = "", page_no: int = 1):
+async def invoices(request: Request, ddlLane: str = "", ddlMonth: str = "", ddlStatus: str = "", pg: int = 1):
+    page_no = pg
     lane, month, status = ddlLane, ddlMonth, ddlStatus
     s = await guard(request)
     if isinstance(s, Response):
@@ -358,13 +359,13 @@ async def invoices(request: Request, ddlLane: str = "", ddlMonth: str = "", ddlS
                    str(len(i.lines)), plain(i.total), i.status] for i in chunk],
                  shuffle_rng=random.Random(s.sid + "inv") if s.shuffle else None, table_id="gvInvoices")
     qs = "&".join(f"{k}={v}" for k, v in dict(ddlLane=lane, ddlMonth=month, ddlStatus=status).items())
-    pager = f"<p>Page {page_no} of {total_pages} &nbsp; "
-    if page_no > 1:
-        pager += f"<a href='{P_LIST}?{qs}&page_no={page_no - 1}'>&lt; Prev</a> "
-    if page_no < total_pages:
-        pager += f"<a href='{P_LIST}?{qs}&page_no={page_no + 1}'>Next &gt;</a>"
-    pager += f" &nbsp; ({len(rows)} records)</p>"
-    body = "<h3>Invoices</h3>" + form + (table + pager if rows else "<p>No records found.</p>")
+    # Like the real page: "Showing 1-15 of 67 records" above, "Page: 1 2 3" below, current page not a link.
+    first = (page_no - 1) * PAGE_SIZE + 1
+    showing = f"<p>Showing {first}-{first + len(chunk) - 1} of {len(rows)} records</p>"
+    pager = "<div>Page: " + " ".join(
+        str(n) if n == page_no else f"<a href='{P_LIST}?{qs}&pg={n}'>{n}</a>"
+        for n in range(1, total_pages + 1)) + "</div>"
+    body = "<h3>Invoice Enquiry</h3>" + form + (showing + table + pager if rows else "<p>No records found.</p>")
     return page("Invoices", body, notice=maybe_notice())
 
 
