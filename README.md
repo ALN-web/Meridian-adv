@@ -154,6 +154,14 @@ playwright install chromium
 pytest
 ```
 
+Landing page (scroll-driven hero: a reach-stacker loads the truck, then what the agent checks slides in):
+
+```bash
+python -m http.server 8700 --directory web     # http://localhost:8700
+```
+
+Its buttons open the operator screen on port 8510 (override with `?app=http://host:port`). `?rec=1` turns on a deterministic recorder mode (`window.__recTime(video, t)`) for frame-by-frame capture. The clip is streamed from its CDN URL; fonts come from Google Fonts.
+
 Operator screen (demo mode works without the portal):
 
 ```bash

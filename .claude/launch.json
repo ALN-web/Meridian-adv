@@ -15,6 +15,13 @@
       "env": {"PYTHONPATH": "src", "FAKE_PORTAL_PORT": "8600"},
       "port": 8600,
       "autoPort": false
+    },
+    {
+      "name": "landing",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8700", "--bind", "127.0.0.1", "--directory", "web"],
+      "port": 8700,
+      "autoPort": false
     }
   ]
 }
