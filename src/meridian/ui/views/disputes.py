@@ -21,6 +21,12 @@ def render() -> None:
     header("Disputes", "Raised only after you approve. Confirmed in the portal's own list.")
     st.markdown(FLOW, unsafe_allow_html=True)
     rows = store.disputes()
+    modes = {rid: (r.mode if (r := store.get_run(rid)) else "demo") for rid in {d["run_id"] for d in rows}}
+    real = [d for d in rows if modes[d["run_id"]] == "live"]
+    if real and len(real) < len(rows):
+        # Practice disputes (demo / fake portal) never mix with the real portal's by default.
+        if not st.toggle(f"Include practice-portal disputes ({len(rows) - len(real)})", key="disp_demo"):
+            rows = real
     if not rows:
         st.info("No disputes yet. Run a dispute task, e.g. T-19.")
         return

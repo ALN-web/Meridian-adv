@@ -27,7 +27,7 @@ def load_reports() -> list[dict]:
     latest = ROOT / "eval_results" / "latest_report.json"
     if not reps and latest.exists():
         reps.append(json.loads(latest.read_text(encoding="utf-8")))
-    return sorted(reps, key=lambda r: r.get("started", ""))
+    return sorted(reps, key=lambda r: (r.get("started", ""), "merged_from" in r))  # a merged report wins a tie
 
 
 def _launcher() -> None:
@@ -118,8 +118,10 @@ def render() -> None:
         tdf["trace_id"] = None
     tdf["trace_id"] = tdf["trace_id"].map(lambda t: t[:12] + "…" if isinstance(t, str) else "")
     tdf = tdf[["task_id", "kind", "status", "success", "items", "problems", "duration_s"]]
+    scored_run = bool(rep.get("answer_key"))
     bg = lambda row: [("background-color: rgba(12,163,12,.12)" if row["success"] else  # noqa: E731
                        "background-color: rgba(250,178,25,.16)" if row["status"] == "needs_human" else
+                       "" if not scored_run and row["status"] == "completed" else  # no key: not a failure
                        "background-color: rgba(208,59,59,.12)")] * len(row)
     st.dataframe(tdf.style.apply(bg, axis=1), hide_index=True, width="stretch",
                  column_config={"task_id": "Task", "kind": "Kind", "status": "Status", "success": "Pass", "items": "Items",

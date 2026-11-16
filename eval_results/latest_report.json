@@ -1,11 +1,33 @@
 {
-  "label": "fake-full",
-  "mode": "fake",
-  "answer_key": "harness/answer_keys/demo_regression.json",
-  "auto_otp": true,
-  "auto_approve": true,
-  "started": "2026-11-14T22:51:42",
-  "wall_time_s": 1585.4,
+  "label": "live-final",
+  "mode": "live",
+  "answer_key": null,
+  "auto_otp": false,
+  "auto_approve": false,
+  "started": "2026-11-16T08:58:16",
+  "wall_time_s": 3666.1,
+  "merged_from": {
+    "T-01": "live-full-3",
+    "T-02": "live-full-3",
+    "T-03": "live-full-3",
+    "T-04": "live-full-3",
+    "T-05": "live-full-3",
+    "T-06": "live-full-3",
+    "T-07": "live-rerun-3",
+    "T-08": "live-full-3",
+    "T-09": "live-full-3",
+    "T-10": "live-full-3",
+    "T-11": "live-full-3",
+    "T-12": "live-full-3",
+    "T-13": "live-full-3",
+    "T-14": "live-full-3",
+    "T-15": "live-full-3",
+    "T-16": "live-full-3",
+    "T-17": "live-full-3",
+    "T-18": "live-full-3",
+    "T-19": "live-full-3",
+    "T-20": "live-rerun-3"
+  },
   "targets": {
     "task_success": 0.8,
     "invoice_accuracy": 0.9,
@@ -14,20 +36,20 @@
   },
   "metrics": {
     "tasks": 20,
-    "task_success": 0.7,
-    "invoice_accuracy": 1.0,
+    "task_success": null,
+    "invoice_accuracy": null,
     "wrong_disputes": 0,
     "duplicate_disputes": 0,
-    "needs_human_tasks": 2,
+    "needs_human_tasks": 0,
     "human_steps_beyond_otp": 0,
-    "failed_tasks": 4,
-    "avg_duration_s": 75.0,
-    "avg_steps": 33.8,
+    "failed_tasks": 0,
+    "avg_duration_s": 122.2,
+    "avg_steps": 67.9,
     "avg_cost_inr": 0.0,
-    "total_retries": 48,
+    "total_retries": 34,
     "pass": {
-      "task_success": false,
-      "invoice_accuracy": true,
+      "task_success": null,
+      "invoice_accuracy": null,
       "wrong_disputes": true,
       "duplicate_disputes": true
     }
@@ -37,374 +59,368 @@
       "task_id": "T-01",
       "kind": "list",
       "status": "completed",
-      "success": true,
-      "items_correct": 4,
-      "items_total": 4,
-      "problems": [],
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "no answer key for this task"
+      ],
       "wrong_disputes": 0,
-      "steps": 5,
+      "steps": 3,
       "retries": 0,
-      "duration_s": 11.2,
+      "duration_s": 49.4,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "004d81ad30342062785fedcd9901a198"
     },
     {
       "task_id": "T-02",
       "kind": "list",
       "status": "completed",
-      "success": true,
-      "items_correct": 4,
-      "items_total": 4,
-      "problems": [],
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "no answer key for this task"
+      ],
       "wrong_disputes": 0,
       "steps": 4,
-      "retries": 0,
-      "duration_s": 9.3,
+      "retries": 1,
+      "duration_s": 37.6,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "174d0089a6c3cd48a25dfab3ea0ced4f"
     },
     {
       "task_id": "T-03",
       "kind": "list",
       "status": "completed",
-      "success": true,
-      "items_correct": 4,
-      "items_total": 4,
-      "problems": [],
-      "wrong_disputes": 0,
-      "steps": 4,
-      "retries": 2,
-      "duration_s": 15.7,
-      "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
-    },
-    {
-      "task_id": "T-04",
-      "kind": "one",
-      "status": "failed",
       "success": false,
       "items_correct": 0,
       "items_total": 0,
       "problems": [
-        "task failed: invoice TIR/26-27/10196 not found on portal",
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 4,
-      "retries": 0,
-      "duration_s": 8.0,
+      "steps": 5,
+      "retries": 2,
+      "duration_s": 57.7,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "863ed43031640e55b328de513dca088c"
+    },
+    {
+      "task_id": "T-04",
+      "kind": "one",
+      "status": "completed",
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "no answer key for this task"
+      ],
+      "wrong_disputes": 0,
+      "steps": 76,
+      "retries": 0,
+      "duration_s": 60.8,
+      "cost_inr": 0,
+      "human_steps": [],
+      "trace_id": "fdcf2c306784909909378712f93c7e96"
     },
     {
       "task_id": "T-05",
       "kind": "one",
       "status": "completed",
-      "success": true,
-      "items_correct": 1,
-      "items_total": 1,
-      "problems": [],
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "no answer key for this task"
+      ],
       "wrong_disputes": 0,
-      "steps": 19,
+      "steps": 82,
       "retries": 1,
-      "duration_s": 41.9,
+      "duration_s": 96.1,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "c9bb3059a424b6f5e648ceec3bd98732"
     },
     {
       "task_id": "T-06",
       "kind": "one",
-      "status": "failed",
+      "status": "completed",
       "success": false,
       "items_correct": 0,
       "items_total": 0,
       "problems": [
-        "task failed: invoice TIR/26-27/10183 not found on portal",
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 4,
-      "retries": 0,
-      "duration_s": 6.8,
+      "steps": 75,
+      "retries": 1,
+      "duration_s": 54.4,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "2081ff8f051e48b84063a3501fde436f"
     },
     {
       "task_id": "T-07",
       "kind": "one",
-      "status": "failed",
+      "status": "completed",
       "success": false,
       "items_correct": 0,
       "items_total": 0,
       "problems": [
-        "task failed: invoice TIR/26-27/10188 not found on portal",
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 4,
-      "retries": 1,
-      "duration_s": 10.3,
+      "steps": 79,
+      "retries": 3,
+      "duration_s": 98.4,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "711e967a1335e46d802621419b42edd8"
     },
     {
       "task_id": "T-08",
       "kind": "one",
-      "status": "failed",
+      "status": "completed",
       "success": false,
       "items_correct": 0,
       "items_total": 0,
       "problems": [
-        "task failed: invoice TIR/26-27/10210 not found on portal",
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 5,
-      "retries": 0,
-      "duration_s": 8.3,
+      "steps": 76,
+      "retries": 2,
+      "duration_s": 76.2,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "4905dd06c9079d641af93248cfb2ef9b"
     },
     {
       "task_id": "T-09",
       "kind": "lane_month",
       "status": "completed",
-      "success": true,
-      "items_correct": 4,
-      "items_total": 4,
-      "problems": [],
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "no answer key for this task"
+      ],
       "wrong_disputes": 0,
-      "steps": 45,
-      "retries": 6,
-      "duration_s": 93.3,
+      "steps": 86,
+      "retries": 1,
+      "duration_s": 104.5,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "4d50ee38ccc4e9b6ac60fe2e14bd08a2"
     },
     {
       "task_id": "T-10",
       "kind": "lane_month",
       "status": "completed",
-      "success": true,
-      "items_correct": 5,
-      "items_total": 5,
-      "problems": [],
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "no answer key for this task"
+      ],
       "wrong_disputes": 0,
-      "steps": 57,
+      "steps": 104,
       "retries": 2,
-      "duration_s": 103.2,
+      "duration_s": 170.2,
       "cost_inr": 0,
-      "human_steps": [
-        "otp",
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "08290166800d559b3e1ba058500854f8"
     },
     {
       "task_id": "T-11",
       "kind": "lane_month",
       "status": "completed",
-      "success": true,
-      "items_correct": 4,
-      "items_total": 4,
-      "problems": [],
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "no answer key for this task"
+      ],
       "wrong_disputes": 0,
-      "steps": 48,
-      "retries": 3,
-      "duration_s": 97.4,
+      "steps": 94,
+      "retries": 5,
+      "duration_s": 150.6,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "94732bd84c0b6862c6709c5f9934d6d9"
     },
     {
       "task_id": "T-12",
       "kind": "lane_month",
       "status": "completed",
-      "success": true,
-      "items_correct": 4,
-      "items_total": 4,
-      "problems": [],
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "no answer key for this task"
+      ],
       "wrong_disputes": 0,
-      "steps": 60,
-      "retries": 3,
-      "duration_s": 152.5,
+      "steps": 89,
+      "retries": 1,
+      "duration_s": 104.2,
       "cost_inr": 0,
-      "human_steps": [
-        "otp",
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "c5ca87c705f4430a3461c6cc9122d1d0"
     },
     {
       "task_id": "T-13",
       "kind": "lane_month",
-      "status": "needs_human",
+      "status": "completed",
       "success": false,
-      "items_correct": 5,
-      "items_total": 5,
+      "items_correct": 0,
+      "items_total": 0,
       "problems": [
-        "needs a human (unreadable proof or similar)"
+        "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 59,
-      "retries": 5,
-      "duration_s": 122.2,
+      "steps": 94,
+      "retries": 7,
+      "duration_s": 160.8,
       "cost_inr": 0,
-      "human_steps": [
-        "otp",
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "57a3785ab8465084747321122349949a"
     },
     {
       "task_id": "T-14",
       "kind": "missing",
       "status": "completed",
-      "success": true,
+      "success": false,
       "items_correct": 0,
       "items_total": 0,
-      "problems": [],
+      "problems": [
+        "no answer key for this task"
+      ],
       "wrong_disputes": 0,
-      "steps": 17,
-      "retries": 3,
-      "duration_s": 40.3,
+      "steps": 73,
+      "retries": 0,
+      "duration_s": 257.8,
       "cost_inr": 0,
       "human_steps": [
         "otp"
-      ]
+      ],
+      "trace_id": "71515e27b4edba48f2ef8eeed5a3fefb"
     },
     {
       "task_id": "T-15",
       "kind": "missing",
       "status": "completed",
-      "success": true,
+      "success": false,
       "items_correct": 0,
       "items_total": 0,
-      "problems": [],
+      "problems": [
+        "no answer key for this task"
+      ],
       "wrong_disputes": 0,
-      "steps": 22,
-      "retries": 2,
-      "duration_s": 40.3,
+      "steps": 71,
+      "retries": 0,
+      "duration_s": 28.6,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "f60639954a182253a28298b140bb1539"
     },
     {
       "task_id": "T-16",
       "kind": "missing",
       "status": "completed",
-      "success": true,
-      "items_correct": 1,
-      "items_total": 1,
-      "problems": [],
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "no answer key for this task"
+      ],
       "wrong_disputes": 0,
-      "steps": 23,
-      "retries": 3,
-      "duration_s": 55.3,
+      "steps": 71,
+      "retries": 0,
+      "duration_s": 35.3,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "65ac90d1a9312aa9ccaf20c0aaf5d91e"
     },
     {
       "task_id": "T-17",
       "kind": "collect",
-      "status": "needs_human",
+      "status": "completed",
       "success": false,
-      "items_correct": 4,
-      "items_total": 4,
+      "items_correct": 0,
+      "items_total": 0,
       "problems": [
-        "needs a human (unreadable proof or similar)"
+        "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 10,
-      "retries": 3,
-      "duration_s": 31.9,
+      "steps": 9,
+      "retries": 0,
+      "duration_s": 57.2,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "e0a2050a6a2dedaff1221c21829eb4ec"
     },
     {
       "task_id": "T-18",
       "kind": "collect",
       "status": "completed",
-      "success": true,
-      "items_correct": 4,
-      "items_total": 4,
-      "problems": [],
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "no answer key for this task"
+      ],
       "wrong_disputes": 0,
-      "steps": 9,
-      "retries": 2,
-      "duration_s": 44.5,
+      "steps": 8,
+      "retries": 1,
+      "duration_s": 58.8,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ]
+      "human_steps": [],
+      "trace_id": "1a8593748a02bb274988f5b2aecbf59b"
     },
     {
       "task_id": "T-19",
       "kind": "dispute",
       "status": "completed",
-      "success": true,
-      "items_correct": 5,
-      "items_total": 5,
-      "problems": [],
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "no answer key for this task"
+      ],
       "wrong_disputes": 0,
-      "steps": 65,
-      "retries": 8,
-      "duration_s": 144.5,
+      "steps": 155,
+      "retries": 5,
+      "duration_s": 413.6,
       "cost_inr": 0,
       "human_steps": [
-        "otp",
-        "otp",
         "approval"
-      ]
+      ],
+      "trace_id": "f0ff3c7c224aa13341cda690c3e8bba1"
     },
     {
       "task_id": "T-20",
       "kind": "dispute",
       "status": "completed",
-      "success": true,
-      "items_correct": 5,
-      "items_total": 5,
-      "problems": [],
+      "success": false,
+      "items_correct": 0,
+      "items_total": 0,
+      "problems": [
+        "no answer key for this task"
+      ],
       "wrong_disputes": 0,
-      "steps": 94,
-      "retries": 4,
-      "duration_s": 196.1,
+      "steps": 104,
+      "retries": 2,
+      "duration_s": 371.5,
       "cost_inr": 0,
       "human_steps": [
-        "otp",
-        "otp",
         "approval"
-      ]
+      ],
+      "trace_id": "481e3f7c852f78f885923f847e6289cf"
     }
   ],
-  "reruns": {
-    "T-19": {
-      "status": "completed",
-      "new_disputes": 0
-    },
-    "T-20": {
-      "status": "completed",
-      "new_disputes": 0
-    }
-  }
+  "reruns": {}
 }

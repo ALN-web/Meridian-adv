@@ -331,7 +331,7 @@ and approving each dispute (`harness/run_public.py --mode live`).
 | Wrong disputes | **0** |
 | Duplicate disputes | **0** (invoice 10172 already had a dispute; none raised again) |
 | Human steps | OTP only (a new code each time the portal ended the session; the saved session was reused in between) + dispute approvals |
-| Time per task | 159 s average, 64 steps average; cost ₹0 |
+| Time per task | 122 s average, 68 steps average; cost ₹0 (merged report `live-final`) |
 | Task success / invoice accuracy | not scored yet — no answer key published |
 
 Disputes filed, each only after operator approval and each confirmed in the portal's own dispute list:
@@ -344,6 +344,9 @@ Disputes filed, each only after operator approval and each confirmed in the port
 | TIR/26-27/10177 | math_error | ₹1,10,557.35 → ₹1,09,197.35 | DSP-5006 |
 | TIR/26-27/10178 | rate_wrong, detention_unjustified | ₹1,12,717.46 → ₹1,10,531.68 | DSP-5007 |
 | TIR/26-27/10170 | weight_over, detention_unjustified | ₹1,19,747.71 → ₹1,15,326.87 | DSP-5008 |
+
+The merged report comes from `python harness/rescore.py --runs live-full-3,live-rerun-3 --label live-final`;
+add `--key <answer key>` to score the same saved results once the key is published (no re-run).
 
 What the first pass taught us (all fixed, with tests where possible):
 - **T-07** waited 16 minutes for an OTP nobody typed; the request now closes cleanly on timeout
