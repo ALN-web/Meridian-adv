@@ -735,11 +735,11 @@ class PortalClient:
 
     # Invoices already read are kept on disk (runs/cache, git-ignored) and reused only while the
     # invoice list still shows the same total and status — a changed invoice is read again.
-    def _cache_file(self) -> Path:
+    def _cache_file(self, kind: str = "invoices") -> Path:
         from urllib.parse import urlparse
 
         host = urlparse(self.settings.portal_base_url).netloc.replace(":", "_") or "portal"
-        return Path("runs") / "cache" / f"invoices_{host}.pkl"
+        return Path("runs") / "cache" / f"{kind}_{host}.pkl"
 
     def _load_disk(self) -> dict:
         if getattr(self, "_disk", None) is None:
@@ -780,6 +780,45 @@ class PortalClient:
             f.write_bytes(pickle.dumps(d))
         except Exception as exc:
             log.warning("invoice cache not saved: %s", exc)
+
+    # A delivery proof does not change once the shipment is delivered, so confident PODs are kept
+    # on disk too (runs/cache/pods_<host>.pkl). Unreadable PODs and failed downloads are never
+    # cached: they are fetched again next time.
+    def _load_pods(self) -> dict:
+        if getattr(self, "_disk_pods", None) is None:
+            import pickle
+
+            try:
+                self._disk_pods = pickle.loads(self._cache_file("pods").read_bytes())
+            except Exception:
+                self._disk_pods = {}
+        return self._disk_pods
+
+    def _cached_pod(self, shipment_id: str):
+        if not self._disk_cache_on():
+            return None
+        hit = self._load_pods().get(shipment_id)
+        if hit is None:
+            return None
+        pod, pdf = hit
+        if pdf is not None and not Path(pdf).exists():
+            return None  # document gone from disk: fetch it again
+        self.log.add(f"pod:{shipment_id}", "cached", detail="delivery proof read before")
+        return pod, (Path(pdf) if pdf else None)
+
+    def _save_pod(self, shipment_id: str, pod, pdf) -> None:
+        if not self._disk_cache_on() or not pod.confident:
+            return
+        import pickle
+
+        try:
+            d = self._load_pods()
+            d[shipment_id] = (pod, str(pdf) if pdf else None)
+            f = self._cache_file("pods")
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(pickle.dumps(d))
+        except Exception as exc:
+            log.warning("POD cache not saved: %s", exc)
 
     async def _scanned_lines(self, invoice_no: str):
         """Legacy invoice: lines only in a scanned PDF. OCR + arithmetic cross-checks; if any check
@@ -834,7 +873,17 @@ class PortalClient:
 
         Dates come from the page; if the page only says "see attached", they are read from the
         PDF. A PDF with no readable text (a scan) gives ``confident=False`` — never a guess.
+        Confident PODs are cached on disk and reused on later runs (a POD does not change).
         """
+        if (hit := self._cached_pod(shipment_id)) is not None:
+            return hit
+        pod, pdf, pdf_failed = await self._fetch_pod(shipment_id)
+        if pod is not None and not pdf_failed:
+            self._save_pod(shipment_id, pod, pdf)
+        return pod, pdf
+
+    async def _fetch_pod(self, shipment_id: str):
+        """POD from the portal -> (Pod | None, pdf path | None, did the document download fail)."""
         from meridian.portal.pdftext import pod_dates_from_pdf
         from meridian.reconcile.types import Pod
 
@@ -853,14 +902,15 @@ class PortalClient:
 
         found = await self.step(f"pod:{shipment_id}", run)
         if found is None:
-            return None, None
+            return None, None, False
         prom, deliv = found
-        pdf = None
+        pdf, failed = None, False
         try:
             url = await self._document_url(r"view\s*pod|download|document|attachment|^pod$")
             if url:
                 pdf = await self.fetch_file(url, f"POD_{shipment_id}")
         except Exception as exc:
+            failed = True
             self.log.add(f"pod_pdf:{shipment_id}", "failed", error=type(exc).__name__)
 
         def to_date(t):
@@ -871,14 +921,14 @@ class PortalClient:
 
         p, dl = to_date(prom), to_date(deliv)
         if p and dl:
-            return Pod(shipment_id, p, dl, confident=True), pdf
+            return Pod(shipment_id, p, dl, confident=True), pdf, failed
         if pdf is not None:
             p2, d2 = pod_dates_from_pdf(pdf)
             if p2 and d2:
                 self.log.add(f"pod_pdf:{shipment_id}", "dates_from_pdf")
-                return Pod(shipment_id, p2, d2, confident=True), pdf
+                return Pod(shipment_id, p2, d2, confident=True), pdf, failed
         self.log.add(f"pod:{shipment_id}", "unreadable", detail="dates not on page and not readable from document")
-        return Pod(shipment_id, None, None, confident=False), pdf
+        return Pod(shipment_id, None, None, confident=False), pdf, failed
 
     async def rate_card(self):
         from meridian.portal.tables import parse_rate_card

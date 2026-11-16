@@ -279,6 +279,13 @@ tilted PDF ("Line item details are available in the attached PDF only"). Some PO
 PODs: text first; OCR only for scans, trusted only when the date lines were read with ≥ 80 % confidence.
 Tested in `tests/test_scaninvoice.py` (tilted synthetic scans, plus a refusal case).
 
+## Delivery proof cache
+
+A delivery proof does not change once the shipment is delivered, so confident POD dates (and the
+downloaded PDF) are kept in `runs/cache/pods_<host>.pkl` (git-ignored) and reused on later runs.
+Unreadable PODs, PODs whose PDF download failed and "no POD yet" results are never cached — they are
+fetched again. Off for the local fake portal. Measured live on T-09: 141 s → 60 s, same answer.
+
 ## Login session reuse
 
 After a good login the browser's cookies are saved to `.auth/<portal host>.json` (git-ignored).
