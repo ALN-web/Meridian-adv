@@ -988,28 +988,43 @@ class PortalClient:
     async def dispute_list(self) -> list[dict[str, str]]:
         """Rows of the portal's dispute list (raw header -> text)."""
 
+        from meridian.portal.tables import ALIASES
+
+        # Columns get renamed between visits (as on the invoice list), so the grid is found by any
+        # dispute-ish or invoice-ish header. If it can't be found the read FAILS: an empty answer
+        # here would mean "nothing is disputed yet" and could lead to a duplicate dispute.
+        grid_pat = r"dispute|claim|ticket|" + "|".join(ALIASES["invoice_no"])
+
         async def run():
             await self.open_menu("disputes")
-            if re.search(r"no disputes", await self.page.inner_text("body"), re.I):
+            if re.search(r"no disputes|no (records|claims|tickets) found", await self.page.inner_text("body"), re.I):
                 return []
             try:
-                g = await self.main_grid(r"dispute|claim|ticket")
+                g = await self.main_grid(grid_pat)
             except PageNotUnderstood:
-                return []
+                await self.debug_dump("dispute_list_unreadable")
+                raise
             rows = list(g.rows)
             while await self._next_page():
-                rows += (await self.main_grid(r"dispute|claim|ticket")).rows
+                rows += (await self.main_grid(grid_pat)).rows
             return rows
 
         return await self.step("dispute_list", run)
 
+    _INVOICE_NO = re.compile(r"\b[A-Z]{2,5}/\d{2}-\d{2}/\d{3,}\b")
+
     @staticmethod
     def disputed_invoices(rows: list[dict[str, str]]) -> set[str]:
+        """Invoice numbers on the dispute list, recognised by their format in ANY column (headers
+        get renamed). Rows but no invoice number at all means the list was not understood: raise,
+        so no dispute is proposed on a misread list."""
         out = set()
         for r in rows:
             for h, v in r.items():
-                if re.search(r"invoice", h, re.I) and v:
-                    out.add(v.strip())
+                if h != "__href" and v:
+                    out.update(PortalClient._INVOICE_NO.findall(v))
+        if rows and not out:
+            raise PageNotUnderstood(f"dispute list has {len(rows)} rows but no invoice numbers could be read")
         return out
 
     async def submit_dispute(self, invoice_no: str, reasons: list[str], expected_amount) -> str:
