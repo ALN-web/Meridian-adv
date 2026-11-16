@@ -207,6 +207,9 @@ class PortalClient:
         self._dispute_href: dict[str, str] = {}
         self._shipment_index: dict[str, list[InvoiceRow]] | None = None
         self._listed: dict[str, tuple[str, str]] = {}  # invoice no -> (total, status) as on the list page
+        # The full invoice list, read at most once per task (a client lives for one task). Cleared
+        # after a dispute is submitted, since that can change an invoice's status.
+        self._full_rows: list[InvoiceRow] | None = None
         self.unreadable: dict[str, str] = {}  # invoice no -> why its scanned lines could not be trusted
 
     # ------------------------------------------------------------------ lifecycle
@@ -502,8 +505,25 @@ class PortalClient:
         """Invoice list with pagination. ``month`` is YYYY-MM (invoice-date month).
 
         Filters the portal doesn't offer (the real one has no invoice-number box) are applied in
-        code, so the answer is the same either way.
+        code, so the answer is the same either way. Once the full list has been read in this task it
+        is reused: lane and status are then filtered in code, but only when every row shows them.
         """
+        reuse = self._full_rows is not None and (
+            (not lane or all(r.lane for r in self._full_rows))
+            and (not status or all(r.status for r in self._full_rows)))
+        if reuse:
+            rows = list(self._full_rows)
+            self.log.add(f"search_invoices:{lane or ''}:{month or ''}:{invoice_no or ''}", "reused",
+                         detail="full list already read in this task")
+            if lane:
+                rows = [r for r in rows if r.lane == lane]
+            if status:
+                rows = [r for r in rows if r.status.lower() == status.lower()]
+            if month:
+                rows = [r for r in rows if r.invoice_date is None or r.invoice_date.strftime("%Y-%m") == month]
+            if invoice_no:
+                rows = [r for r in rows if r.invoice_no == invoice_no]
+            return rows
 
         async def run():
             await self.open_menu("invoices")
@@ -538,6 +558,8 @@ class PortalClient:
             return rows
 
         rows = await self.step(f"search_invoices:{lane or ''}:{month or ''}:{invoice_no or ''}", run)
+        if not lane and not status:
+            self._full_rows = list(rows)  # nothing filtered by the portal: this is the whole list
         # Filter again in code — never trust the portal's filter alone.
         if lane:
             rows = [r for r in rows if r.lane is None or r.lane == lane]
@@ -981,6 +1003,7 @@ class PortalClient:
         Caller must have checked the dispute list first and must check it again afterwards.
         Returns the portal's message text (not proof by itself).
         """
+        self._full_rows = None  # the invoice's status may change: read the list again afterwards
         if invoice_no not in self._dispute_href:
             self._inv_cache.pop(invoice_no, None)
             await self.open_invoice(invoice_no, fresh=True)  # records the page's Raise Dispute link

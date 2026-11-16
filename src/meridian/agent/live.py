@@ -232,6 +232,8 @@ class LiveRunner:
             if not rows:
                 return {"invoices": [], "_status": "failed", "error": f"invoice {p['invoice_no']} not found on portal"}
         else:
+            # Billing history below needs the full list anyway: read it once, then take the lane from it.
+            await c.search_invoices()
             rows = await c.search_invoices(p["lane"], p["month"])
         self.phase(2)
         rate_card = await c.rate_card()
