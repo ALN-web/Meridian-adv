@@ -286,6 +286,14 @@ downloaded PDF) are kept in `runs/cache/pods_<host>.pkl` (git-ignored) and reuse
 Unreadable PODs, PODs whose PDF download failed and "no POD yet" results are never cached — they are
 fetched again. Off for the local fake portal. Measured live on T-09: 141 s → 60 s, same answer.
 
+## Alerts when a person is needed
+
+The OTP must be typed by a person within 5 minutes, so the operator screen makes a waiting OTP or
+dispute approval hard to miss: a short beep once per new request, a flashing tab title
+("(!) OTP needed"), a live countdown of the code's validity in the yellow bar, and — after one click
+on "Turn on desktop alerts" — a desktop notification. All of it stops when nothing is waiting.
+It only gets attention; it never answers anything (`src/meridian/ui/alerts.py`).
+
 ## Login session reuse
 
 After a good login the browser's cookies are saved to `.auth/<portal host>.json` (git-ignored).

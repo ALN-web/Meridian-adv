@@ -12,8 +12,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import streamlit as st  # noqa: E402
+import streamlit.components.v1  # noqa: E402,F401  (st.components.v1.html)
 
 from meridian.config import get_settings  # noqa: E402
+from meridian.ui import alerts  # noqa: E402
 from meridian.ui.common import CSS, get_store, human_signature  # noqa: E402
 from meridian.ui.views import disputes, documents, evaluation, needs, results, run, summary, system  # noqa: E402
 
@@ -53,11 +55,18 @@ def watch_humans():
     if sig != st.session_state.human_sig:
         st.session_state.human_sig = sig
         st.rerun(scope="app")
-    h, d = len(store.pending_human()), len(store.disputes(status="pending"))
+    ph, pd_ = store.pending_human(), store.disputes(status="pending")
+    h, d = len(ph), len(pd_)
+    left = alerts.otp_seconds_left(ph)
     if h or d:
         parts = ([f"{h} one-time password"] if h else []) + ([f"{d} dispute approval{'s' if d > 1 else ''}"] if d else [])
-        st.markdown(f"<div class='waitbar'><span>Waiting for you: {' · '.join(parts)}</span>"
-                    f"<a href='/needs-you' target='_self'>Open Needs you →</a></div>", unsafe_allow_html=True)
+        timer = "<span id='otp-countdown' class='otp-timer'></span>" if left is not None else ""
+        st.markdown(f"<div class='waitbar'><span>Waiting for you: {' · '.join(parts)} {timer}</span>"
+                    f"<span><a id='alert-enable' href='#' class='alert-enable'>Turn on desktop alerts</a> "
+                    f"<a href='/needs-you' target='_self'>Open Needs you →</a></span></div>", unsafe_allow_html=True)
+    # Sound, desktop notification, flashing tab title, OTP countdown — attention only, never an answer.
+    deadline = (max(r["created"] for r in ph if r["kind"] == "otp") + alerts.OTP_VALID_S) if left is not None else None
+    st.components.v1.html(alerts.script(alerts.items(ph, pd_), deadline), height=0)
 
 
 watch_humans()

@@ -76,6 +76,8 @@ iframe { border-radius: var(--R); }
 /* waiting bar under the top nav */
 .waitbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; border-radius: 999px;
   background: var(--yellow); color: var(--yellow-ink); font-weight: 600; font-size: .9rem; margin-bottom: 14px; }
+.waitbar .otp-timer { font-weight: 600; margin-left: 8px; font-variant-numeric: tabular-nums; }
+.waitbar a.alert-enable { margin-right: 6px; border-style: dashed; }
 .waitbar a { color: var(--yellow-ink) !important; text-decoration: none; border: 1px solid var(--yellow-ink); border-radius: 999px; padding: 3px 12px; }
 
 /* card heads used inside bento cards */
