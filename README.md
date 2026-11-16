@@ -320,6 +320,40 @@ screen shows "Read n of 64 invoices" while it does this.
 
 One wrong or duplicate dispute in the hidden run sets the safety score to zero.
 
+### Live results — real TransIndus portal, 16 Nov 2026
+
+All 20 public tasks were run on `transindus-portal.onrender.com` with a person typing the OTP
+and approving each dispute (`harness/run_public.py --mode live`).
+
+| Measure | Result |
+|---|---|
+| Tasks run to completion | **20 / 20** (18 first time; T-07 and T-20 on a re-run, see below) |
+| Wrong disputes | **0** |
+| Duplicate disputes | **0** (invoice 10172 already had a dispute; none raised again) |
+| Human steps | OTP only (a new code each time the portal ended the session; the saved session was reused in between) + dispute approvals |
+| Time per task | 159 s average, 64 steps average; cost ₹0 |
+| Task success / invoice accuracy | not scored yet — no answer key published |
+
+Disputes filed, each only after operator approval and each confirmed in the portal's own dispute list:
+
+| Invoice | Reasons | Billed → expected | Portal ref |
+|---|---|---|---|
+| TIR/26-27/10175 | detention_unjustified | ₹25,520.50 → ₹23,840.50 | DSP-5001 |
+| TIR/26-27/10221 | weight_over | ₹1,46,895.32 → ₹1,44,246.57 | DSP-5003 |
+| TIR/26-27/10176 | duplicate_billing, weight_over | ₹70,821.31 → ₹63,169.46 | DSP-5004 |
+| TIR/26-27/10177 | math_error | ₹1,10,557.35 → ₹1,09,197.35 | DSP-5006 |
+| TIR/26-27/10178 | rate_wrong, detention_unjustified | ₹1,12,717.46 → ₹1,10,531.68 | DSP-5007 |
+| TIR/26-27/10170 | weight_over, detention_unjustified | ₹1,19,747.71 → ₹1,15,326.87 | DSP-5008 |
+
+What the first pass taught us (all fixed, with tests where possible):
+- **T-07** waited 16 minutes for an OTP nobody typed; the request now closes cleanly on timeout
+  and the task passed on re-run.
+- **T-20** sent invoice 10170 to a person because one POD download returned an error page once.
+  Document downloads now retry up to 3 times; on re-run the POD read at 95 % OCR confidence and
+  the dispute was proposed with the extra `detention_unjustified` reason.
+- Earlier batches found the invoice list's alternate column names, renamed line columns, the
+  pager outside the grid and scan-only legacy invoices (OCR) — see "The real portal" above.
+
 ## Cost table
 
 Budget ₹6,000 for the week; suggested cap ₹3,000 for this project. Spend limits set on every provider on day 1.
