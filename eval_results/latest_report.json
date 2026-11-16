@@ -1,32 +1,32 @@
 {
-  "label": "live-final",
+  "label": "live-final-2",
   "mode": "live",
   "answer_key": null,
   "auto_otp": false,
   "auto_approve": false,
-  "started": "2026-11-16T08:58:16",
-  "wall_time_s": 3666.1,
+  "started": "2026-11-16T14:11:00",
+  "wall_time_s": 931.9,
   "merged_from": {
-    "T-01": "live-full-3",
-    "T-02": "live-full-3",
-    "T-03": "live-full-3",
-    "T-04": "live-full-3",
-    "T-05": "live-full-3",
-    "T-06": "live-full-3",
-    "T-07": "live-rerun-3",
-    "T-08": "live-full-3",
-    "T-09": "live-full-3",
-    "T-10": "live-full-3",
-    "T-11": "live-full-3",
-    "T-12": "live-full-3",
-    "T-13": "live-full-3",
-    "T-14": "live-full-3",
-    "T-15": "live-full-3",
-    "T-16": "live-full-3",
-    "T-17": "live-full-3",
-    "T-18": "live-full-3",
-    "T-19": "live-full-3",
-    "T-20": "live-rerun-3"
+    "T-01": "live-full-4a",
+    "T-02": "live-full-4a",
+    "T-03": "live-full-4a",
+    "T-04": "live-full-4a",
+    "T-05": "live-full-4a",
+    "T-06": "live-full-4b",
+    "T-07": "live-full-4a",
+    "T-08": "live-full-4a",
+    "T-09": "live-full-4a",
+    "T-10": "live-full-4a",
+    "T-11": "live-full-4a",
+    "T-12": "live-full-4a",
+    "T-13": "live-full-4b",
+    "T-14": "live-full-4b",
+    "T-15": "live-full-4b",
+    "T-16": "live-full-4b",
+    "T-17": "live-full-4b",
+    "T-18": "live-full-4b",
+    "T-19": "live-full-4b",
+    "T-20": "t20-dispute-check"
   },
   "targets": {
     "task_success": 0.8,
@@ -43,10 +43,10 @@
     "needs_human_tasks": 0,
     "human_steps_beyond_otp": 0,
     "failed_tasks": 0,
-    "avg_duration_s": 122.2,
-    "avg_steps": 67.9,
+    "avg_duration_s": 78.8,
+    "avg_steps": 65.2,
     "avg_cost_inr": 0.0,
-    "total_retries": 34,
+    "total_retries": 36,
     "pass": {
       "task_success": null,
       "invoice_accuracy": null,
@@ -67,11 +67,11 @@
       ],
       "wrong_disputes": 0,
       "steps": 3,
-      "retries": 0,
-      "duration_s": 49.4,
+      "retries": 1,
+      "duration_s": 49.1,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "004d81ad30342062785fedcd9901a198"
+      "trace_id": "1040d72f0d000b305a23b9e14469facb"
     },
     {
       "task_id": "T-02",
@@ -84,12 +84,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 4,
-      "retries": 1,
-      "duration_s": 37.6,
+      "steps": 3,
+      "retries": 2,
+      "duration_s": 46.4,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "174d0089a6c3cd48a25dfab3ea0ced4f"
+      "trace_id": "76917f8a93774da3de74c23e635724d8"
     },
     {
       "task_id": "T-03",
@@ -102,12 +102,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 5,
-      "retries": 2,
-      "duration_s": 57.7,
+      "steps": 3,
+      "retries": 1,
+      "duration_s": 24.9,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "863ed43031640e55b328de513dca088c"
+      "trace_id": "f25d0cbdac84997b1a9f941e8d56f493"
     },
     {
       "task_id": "T-04",
@@ -122,10 +122,10 @@
       "wrong_disputes": 0,
       "steps": 76,
       "retries": 0,
-      "duration_s": 60.8,
+      "duration_s": 34.0,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "fdcf2c306784909909378712f93c7e96"
+      "trace_id": "14ab347a45b9efa06cca5f1a829db2ba"
     },
     {
       "task_id": "T-05",
@@ -138,12 +138,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 82,
+      "steps": 80,
       "retries": 1,
-      "duration_s": 96.1,
+      "duration_s": 56.2,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "c9bb3059a424b6f5e648ceec3bd98732"
+      "trace_id": "d4bd603e547a293dbfe101e266e55327"
     },
     {
       "task_id": "T-06",
@@ -156,12 +156,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 75,
+      "steps": 76,
       "retries": 1,
-      "duration_s": 54.4,
+      "duration_s": 53.4,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "2081ff8f051e48b84063a3501fde436f"
+      "trace_id": "aea4c77115be0f4d70da476eab903664"
     },
     {
       "task_id": "T-07",
@@ -175,11 +175,11 @@
       ],
       "wrong_disputes": 0,
       "steps": 79,
-      "retries": 3,
-      "duration_s": 98.4,
+      "retries": 0,
+      "duration_s": 58.4,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "711e967a1335e46d802621419b42edd8"
+      "trace_id": "e8625af9fa8b6d4efdd36fce80d519f8"
     },
     {
       "task_id": "T-08",
@@ -193,11 +193,11 @@
       ],
       "wrong_disputes": 0,
       "steps": 76,
-      "retries": 2,
-      "duration_s": 76.2,
+      "retries": 1,
+      "duration_s": 51.3,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "4905dd06c9079d641af93248cfb2ef9b"
+      "trace_id": "f85c26d19d9f1c99c1e4789ad44538de"
     },
     {
       "task_id": "T-09",
@@ -210,12 +210,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 86,
+      "steps": 85,
       "retries": 1,
-      "duration_s": 104.5,
+      "duration_s": 38.6,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "4d50ee38ccc4e9b6ac60fe2e14bd08a2"
+      "trace_id": "6e82458454bf1a485019d4cdffbc3c41"
     },
     {
       "task_id": "T-10",
@@ -228,12 +228,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 104,
-      "retries": 2,
-      "duration_s": 170.2,
+      "steps": 105,
+      "retries": 10,
+      "duration_s": 235.5,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "08290166800d559b3e1ba058500854f8"
+      "trace_id": "0d41d8a925df4584c629dfe11b485a33"
     },
     {
       "task_id": "T-11",
@@ -246,12 +246,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 94,
-      "retries": 5,
-      "duration_s": 150.6,
+      "steps": 92,
+      "retries": 3,
+      "duration_s": 100.9,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "94732bd84c0b6862c6709c5f9934d6d9"
+      "trace_id": "45b3f41c55034a5b95587887c492fc3b"
     },
     {
       "task_id": "T-12",
@@ -264,12 +264,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 89,
-      "retries": 1,
-      "duration_s": 104.2,
+      "steps": 91,
+      "retries": 7,
+      "duration_s": 128.9,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "c5ca87c705f4430a3461c6cc9122d1d0"
+      "trace_id": "014228de81559a45abfe22f25737cc21"
     },
     {
       "task_id": "T-13",
@@ -282,12 +282,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 94,
-      "retries": 7,
-      "duration_s": 160.8,
+      "steps": 93,
+      "retries": 0,
+      "duration_s": 146.1,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "57a3785ab8465084747321122349949a"
+      "trace_id": "80e8420266855fd3d1d2e4b1115568cf"
     },
     {
       "task_id": "T-14",
@@ -300,14 +300,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 73,
+      "steps": 71,
       "retries": 0,
-      "duration_s": 257.8,
+      "duration_s": 28.7,
       "cost_inr": 0,
-      "human_steps": [
-        "otp"
-      ],
-      "trace_id": "71515e27b4edba48f2ef8eeed5a3fefb"
+      "human_steps": [],
+      "trace_id": "a42f1592df587bb2e903cbec2c694a14"
     },
     {
       "task_id": "T-15",
@@ -320,12 +318,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 71,
-      "retries": 0,
-      "duration_s": 28.6,
+      "steps": 74,
+      "retries": 4,
+      "duration_s": 60.9,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "f60639954a182253a28298b140bb1539"
+      "trace_id": "96a7d42f136159889626d87744d6d35c"
     },
     {
       "task_id": "T-16",
@@ -340,10 +338,10 @@
       "wrong_disputes": 0,
       "steps": 71,
       "retries": 0,
-      "duration_s": 35.3,
+      "duration_s": 30.8,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "65ac90d1a9312aa9ccaf20c0aaf5d91e"
+      "trace_id": "c1dda6c2e8d7c0705ac63afa4c538fb6"
     },
     {
       "task_id": "T-17",
@@ -356,12 +354,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 9,
+      "steps": 8,
       "retries": 0,
-      "duration_s": 57.2,
+      "duration_s": 35.3,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "e0a2050a6a2dedaff1221c21829eb4ec"
+      "trace_id": "25bcc3db02f7ad7b480f4409ec708c4f"
     },
     {
       "task_id": "T-18",
@@ -374,12 +372,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 8,
-      "retries": 1,
-      "duration_s": 58.8,
+      "steps": 7,
+      "retries": 0,
+      "duration_s": 22.3,
       "cost_inr": 0,
       "human_steps": [],
-      "trace_id": "1a8593748a02bb274988f5b2aecbf59b"
+      "trace_id": "89c1e61915bc2d1d672fac51e6f43b4e"
     },
     {
       "task_id": "T-19",
@@ -392,14 +390,14 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 155,
-      "retries": 5,
-      "duration_s": 413.6,
+      "steps": 118,
+      "retries": 4,
+      "duration_s": 325.7,
       "cost_inr": 0,
       "human_steps": [
-        "approval"
+        "otp"
       ],
-      "trace_id": "f0ff3c7c224aa13341cda690c3e8bba1"
+      "trace_id": "ab9f1410506cca77e48328f074eac1aa"
     },
     {
       "task_id": "T-20",
@@ -412,14 +410,12 @@
         "no answer key for this task"
       ],
       "wrong_disputes": 0,
-      "steps": 104,
-      "retries": 2,
-      "duration_s": 371.5,
+      "steps": 92,
+      "retries": 0,
+      "duration_s": 48.5,
       "cost_inr": 0,
-      "human_steps": [
-        "approval"
-      ],
-      "trace_id": "481e3f7c852f78f885923f847e6289cf"
+      "human_steps": [],
+      "trace_id": "5a717a126f23f93c897abd41729ab350"
     }
   ],
   "reruns": {}

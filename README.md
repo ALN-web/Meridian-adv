@@ -372,6 +372,26 @@ What the first pass taught us (all fixed, with tests where possible):
 - Earlier batches found the invoice list's alternate column names, renamed line columns, the
   pager outside the grid and scan-only legacy invoices (OCR) — see "The real portal" above.
 
+### Second full run — 16 Nov 2026, after the speed work (issues #1–#4)
+
+| Measure | Result |
+|---|---|
+| Tasks run to completion | **20 / 20** (merged report `live-final-2`, published in `eval_results/`) |
+| Answers vs the first run | **identical for all 20 tasks** |
+| Time per task | **79 s average** (was 122 s), 69 steps; cost ₹0 |
+| Wrong / duplicate disputes | **0 / 0**; no new disputes (all overcharges were already disputed) |
+
+Two more real-portal traps were found and fixed in this run:
+- **A refused OTP sends no new code.** The agent kept asking for a code that never came; it now
+  signs in again after "Invalid or expired OTP", which makes the portal send a fresh one.
+- **The dispute list could be misread as empty.** One T-20 run proposed a dispute for 10172, which
+  already had one from before this project. The operator rejected it, so nothing was filed. The
+  list is now read by invoice-number format in any column and a list that can't be read stops the
+  task instead of meaning "nothing disputed". The re-run marked 10170 and 10172 as already disputed.
+
+`python harness/rescore.py --runs live-full-4a,live-full-4b,t20-dispute-check --label live-final-2`
+(`live-full-4a` was rebuilt from the run store: that part of the batch was stopped before it wrote its files.)
+
 ## Cost table
 
 Budget ₹6,000 for the week; suggested cap ₹3,000 for this project. Spend limits set on every provider on day 1.

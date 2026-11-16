@@ -71,9 +71,9 @@ with status. ✅ done · 🟡 partial · ❌ not started · ⭐ stretch.
 
 | # | Feature | Status |
 |---|---|---|
-| 6.1 | Run all 20 public tasks from a script, unattended except OTP | ✅ 20/20 completed on the real portal (16 Nov 2026), see README "Live results" |
+| 6.1 | Run all 20 public tasks from a script, unattended except OTP | ✅ 20/20 completed on the real portal twice (16 Nov 2026), identical answers both times; see README "Live results" |
 | 6.2 | Results stored per run, shown on an evaluation page | ✅ |
-| 6.3 | Metrics: task success ≥ 80 %, invoice accuracy ≥ 90 %, 0 wrong / 0 duplicate disputes, human steps, time/steps/cost | ✅ live: 0 wrong / 0 duplicate disputes, 159 s and ₹0 per task; success and accuracy wait for the answer key |
+| 6.3 | Metrics: task success ≥ 80 %, invoice accuracy ≥ 90 %, 0 wrong / 0 duplicate disputes, human steps, time/steps/cost | ✅ live: 0 wrong / 0 duplicate disputes, 79 s and ₹0 per task (`live-final-2`); success and accuracy wait for the answer key |
 | 6.4 | Fake portal for offline testing with failures | ✅ |
 
 ## 7. Telemetry

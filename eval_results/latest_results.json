@@ -2,13 +2,8 @@
   "T-01": {
     "invoices": [
       {
-        "invoice_no": "TIR/26-27/10204",
-        "total_inr": 72002.97,
-        "status": "Open"
-      },
-      {
-        "invoice_no": "TIR/26-27/10203",
-        "total_inr": 144943.75,
+        "invoice_no": "TIR/26-27/10201",
+        "total_inr": 97927.3,
         "status": "Open"
       },
       {
@@ -17,26 +12,31 @@
         "status": "Open"
       },
       {
-        "invoice_no": "TIR/26-27/10201",
-        "total_inr": 97927.3,
+        "invoice_no": "TIR/26-27/10203",
+        "total_inr": 144943.75,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10204",
+        "total_inr": 72002.97,
         "status": "Open"
       }
     ],
     "task_id": "T-01",
     "status": "completed",
     "steps": 3,
-    "retries": 0,
-    "duration_s": 49.4,
+    "retries": 1,
+    "duration_s": 49.1,
     "cost_inr": 0.0,
-    "trace_id": "004d81ad30342062785fedcd9901a198",
+    "trace_id": "1040d72f0d000b305a23b9e14469facb",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/004d81ad30342062785fedcd9901a198"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/1040d72f0d000b305a23b9e14469facb"
   },
   "T-02": {
     "invoices": [
       {
-        "invoice_no": "TIR/26-27/10193",
-        "total_inr": 133312.82,
+        "invoice_no": "TIR/26-27/10195",
+        "total_inr": 105252.82,
         "status": "Open"
       },
       {
@@ -45,31 +45,26 @@
         "status": "Open"
       },
       {
-        "invoice_no": "TIR/26-27/10195",
-        "total_inr": 105252.82,
+        "invoice_no": "TIR/26-27/10193",
+        "total_inr": 133312.82,
         "status": "Open"
       }
     ],
     "task_id": "T-02",
     "status": "completed",
-    "steps": 4,
-    "retries": 1,
-    "duration_s": 37.6,
+    "steps": 3,
+    "retries": 2,
+    "duration_s": 46.4,
     "cost_inr": 0.0,
-    "trace_id": "174d0089a6c3cd48a25dfab3ea0ced4f",
+    "trace_id": "76917f8a93774da3de74c23e635724d8",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/174d0089a6c3cd48a25dfab3ea0ced4f"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/76917f8a93774da3de74c23e635724d8"
   },
   "T-03": {
     "invoices": [
       {
-        "invoice_no": "TIR/26-27/10209",
-        "total_inr": 18525.48,
-        "status": "Open"
-      },
-      {
-        "invoice_no": "TIR/26-27/10210",
-        "total_inr": 21714.02,
+        "invoice_no": "TIR/26-27/10212",
+        "total_inr": 61214.91,
         "status": "Open"
       },
       {
@@ -78,20 +73,25 @@
         "status": "Open"
       },
       {
-        "invoice_no": "TIR/26-27/10212",
-        "total_inr": 61214.91,
+        "invoice_no": "TIR/26-27/10210",
+        "total_inr": 21714.02,
+        "status": "Open"
+      },
+      {
+        "invoice_no": "TIR/26-27/10209",
+        "total_inr": 18525.48,
         "status": "Open"
       }
     ],
     "task_id": "T-03",
     "status": "completed",
-    "steps": 5,
-    "retries": 2,
-    "duration_s": 57.7,
+    "steps": 3,
+    "retries": 1,
+    "duration_s": 24.9,
     "cost_inr": 0.0,
-    "trace_id": "863ed43031640e55b328de513dca088c",
+    "trace_id": "f25d0cbdac84997b1a9f941e8d56f493",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/863ed43031640e55b328de513dca088c"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/f25d0cbdac84997b1a9f941e8d56f493"
   },
   "T-04": {
     "invoices": [
@@ -113,11 +113,11 @@
     "status": "completed",
     "steps": 76,
     "retries": 0,
-    "duration_s": 60.8,
+    "duration_s": 34.0,
     "cost_inr": 0.0,
-    "trace_id": "fdcf2c306784909909378712f93c7e96",
+    "trace_id": "14ab347a45b9efa06cca5f1a829db2ba",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/fdcf2c306784909909378712f93c7e96"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/14ab347a45b9efa06cca5f1a829db2ba"
   },
   "T-05": {
     "invoices": [
@@ -148,31 +148,13 @@
     "disputes": [],
     "task_id": "T-05",
     "status": "completed",
-    "steps": 82,
+    "steps": 80,
     "retries": 1,
-    "duration_s": 96.1,
+    "duration_s": 56.2,
     "cost_inr": 0.0,
-    "trace_id": "c9bb3059a424b6f5e648ceec3bd98732",
+    "trace_id": "d4bd603e547a293dbfe101e266e55327",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/c9bb3059a424b6f5e648ceec3bd98732"
-  },
-  "T-06": {
-    "invoices": [
-      {
-        "invoice_no": "TIR/26-27/10183",
-        "result": "cancelled"
-      }
-    ],
-    "disputes": [],
-    "task_id": "T-06",
-    "status": "completed",
-    "steps": 75,
-    "retries": 1,
-    "duration_s": 54.4,
-    "cost_inr": 0.0,
-    "trace_id": "2081ff8f051e48b84063a3501fde436f",
-    "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/2081ff8f051e48b84063a3501fde436f"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/d4bd603e547a293dbfe101e266e55327"
   },
   "T-07": {
     "invoices": [
@@ -195,12 +177,12 @@
     "task_id": "T-07",
     "status": "completed",
     "steps": 79,
-    "retries": 3,
-    "duration_s": 98.4,
+    "retries": 0,
+    "duration_s": 58.4,
     "cost_inr": 0.0,
-    "trace_id": "711e967a1335e46d802621419b42edd8",
+    "trace_id": "e8625af9fa8b6d4efdd36fce80d519f8",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/711e967a1335e46d802621419b42edd8"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/e8625af9fa8b6d4efdd36fce80d519f8"
   },
   "T-08": {
     "invoices": [
@@ -223,12 +205,12 @@
     "task_id": "T-08",
     "status": "completed",
     "steps": 76,
-    "retries": 2,
-    "duration_s": 76.2,
+    "retries": 1,
+    "duration_s": 51.3,
     "cost_inr": 0.0,
-    "trace_id": "4905dd06c9079d641af93248cfb2ef9b",
+    "trace_id": "f85c26d19d9f1c99c1e4789ad44538de",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/4905dd06c9079d641af93248cfb2ef9b"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/f85c26d19d9f1c99c1e4789ad44538de"
   },
   "T-09": {
     "invoices": [
@@ -289,13 +271,13 @@
     "disputes": [],
     "task_id": "T-09",
     "status": "completed",
-    "steps": 86,
+    "steps": 85,
     "retries": 1,
-    "duration_s": 104.5,
+    "duration_s": 38.6,
     "cost_inr": 0.0,
-    "trace_id": "4d50ee38ccc4e9b6ac60fe2e14bd08a2",
+    "trace_id": "6e82458454bf1a485019d4cdffbc3c41",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/4d50ee38ccc4e9b6ac60fe2e14bd08a2"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/6e82458454bf1a485019d4cdffbc3c41"
   },
   "T-10": {
     "invoices": [
@@ -384,13 +366,13 @@
     "disputes": [],
     "task_id": "T-10",
     "status": "completed",
-    "steps": 104,
-    "retries": 2,
-    "duration_s": 170.2,
+    "steps": 105,
+    "retries": 10,
+    "duration_s": 235.5,
     "cost_inr": 0.0,
-    "trace_id": "08290166800d559b3e1ba058500854f8",
+    "trace_id": "0d41d8a925df4584c629dfe11b485a33",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/08290166800d559b3e1ba058500854f8"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/0d41d8a925df4584c629dfe11b485a33"
   },
   "T-11": {
     "invoices": [
@@ -461,30 +443,58 @@
     "disputes": [],
     "task_id": "T-11",
     "status": "completed",
-    "steps": 94,
-    "retries": 5,
-    "duration_s": 150.6,
+    "steps": 92,
+    "retries": 3,
+    "duration_s": 100.9,
     "cost_inr": 0.0,
-    "trace_id": "94732bd84c0b6862c6709c5f9934d6d9",
+    "trace_id": "45b3f41c55034a5b95587887c492fc3b",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/94732bd84c0b6862c6709c5f9934d6d9"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/45b3f41c55034a5b95587887c492fc3b"
   },
   "T-12": {
     "invoices": [
       {
-        "invoice_no": "TIR/26-27/10200",
+        "invoice_no": "TIR/26-27/10196",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 13466.43,
+        "expected_inr": 13466.43,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10196",
+          "meridian:SHP-60331",
+          "pod:SHP-60331"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10197",
+        "result": "match",
+        "reasons": [],
+        "billed_inr": 58258.19,
+        "expected_inr": 58258.19,
+        "evidence": [
+          "portal:invoice/TIR/26-27/10197",
+          "meridian:SHP-60339",
+          "pod:SHP-60339",
+          "meridian:SHP-60363",
+          "pod:SHP-60363"
+        ]
+      },
+      {
+        "invoice_no": "TIR/26-27/10198",
         "result": "mismatch",
         "reasons": [
-          "detention_unjustified"
+          "weight_over"
         ],
-        "billed_inr": 47474.29,
-        "expected_inr": 45794.29,
+        "billed_inr": 77019.49,
+        "expected_inr": 74167.39,
         "evidence": [
-          "portal:invoice/TIR/26-27/10200",
-          "meridian:SHP-60352",
-          "pod:SHP-60352",
-          "meridian:SHP-60360",
-          "pod:SHP-60360"
+          "portal:invoice/TIR/26-27/10198",
+          "meridian:SHP-60358",
+          "pod:SHP-60358",
+          "meridian:SHP-60337",
+          "pod:SHP-60337",
+          "meridian:SHP-60369",
+          "pod:SHP-60369"
         ]
       },
       {
@@ -509,79 +519,65 @@
         ]
       },
       {
-        "invoice_no": "TIR/26-27/10198",
+        "invoice_no": "TIR/26-27/10200",
         "result": "mismatch",
         "reasons": [
-          "weight_over"
+          "detention_unjustified"
         ],
-        "billed_inr": 77019.49,
-        "expected_inr": 74167.39,
+        "billed_inr": 47474.29,
+        "expected_inr": 45794.29,
         "evidence": [
-          "portal:invoice/TIR/26-27/10198",
-          "meridian:SHP-60358",
-          "pod:SHP-60358",
-          "meridian:SHP-60337",
-          "pod:SHP-60337",
-          "meridian:SHP-60369",
-          "pod:SHP-60369"
-        ]
-      },
-      {
-        "invoice_no": "TIR/26-27/10197",
-        "result": "match",
-        "reasons": [],
-        "billed_inr": 58258.19,
-        "expected_inr": 58258.19,
-        "evidence": [
-          "portal:invoice/TIR/26-27/10197",
-          "meridian:SHP-60339",
-          "pod:SHP-60339",
-          "meridian:SHP-60363",
-          "pod:SHP-60363"
-        ]
-      },
-      {
-        "invoice_no": "TIR/26-27/10196",
-        "result": "match",
-        "reasons": [],
-        "billed_inr": 13466.43,
-        "expected_inr": 13466.43,
-        "evidence": [
-          "portal:invoice/TIR/26-27/10196",
-          "meridian:SHP-60331",
-          "pod:SHP-60331"
+          "portal:invoice/TIR/26-27/10200",
+          "meridian:SHP-60352",
+          "pod:SHP-60352",
+          "meridian:SHP-60360",
+          "pod:SHP-60360"
         ]
       }
     ],
     "disputes": [],
     "task_id": "T-12",
     "status": "completed",
-    "steps": 89,
-    "retries": 1,
-    "duration_s": 104.2,
+    "steps": 91,
+    "retries": 7,
+    "duration_s": 128.9,
     "cost_inr": 0.0,
-    "trace_id": "c5ca87c705f4430a3461c6cc9122d1d0",
+    "trace_id": "014228de81559a45abfe22f25737cc21",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/c5ca87c705f4430a3461c6cc9122d1d0"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/014228de81559a45abfe22f25737cc21"
+  },
+  "T-06": {
+    "invoices": [
+      {
+        "invoice_no": "TIR/26-27/10183",
+        "result": "cancelled"
+      }
+    ],
+    "disputes": [],
+    "task_id": "T-06",
+    "status": "completed",
+    "steps": 76,
+    "retries": 1,
+    "duration_s": 53.4,
+    "cost_inr": 0.0,
+    "trace_id": "aea4c77115be0f4d70da476eab903664",
+    "human_steps": [],
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/aea4c77115be0f4d70da476eab903664"
   },
   "T-13": {
     "invoices": [
       {
-        "invoice_no": "TIR/26-27/10180",
+        "invoice_no": "TIR/26-27/10182",
         "result": "match",
         "reasons": [],
-        "billed_inr": 98838.78,
-        "expected_inr": 98838.78,
+        "billed_inr": 41770.76,
+        "expected_inr": 41770.76,
         "evidence": [
-          "portal:invoice/TIR/26-27/10180",
-          "meridian:SHP-60228",
-          "pod:SHP-60228",
-          "meridian:SHP-60229",
-          "pod:SHP-60229",
-          "meridian:SHP-60232",
-          "pod:SHP-60232",
-          "meridian:SHP-60237",
-          "pod:SHP-60237"
+          "portal:invoice/TIR/26-27/10182",
+          "meridian:SHP-60243",
+          "pod:SHP-60243",
+          "meridian:SHP-60230",
+          "pod:SHP-60230"
         ]
       },
       {
@@ -613,30 +609,34 @@
         ]
       },
       {
-        "invoice_no": "TIR/26-27/10182",
+        "invoice_no": "TIR/26-27/10180",
         "result": "match",
         "reasons": [],
-        "billed_inr": 41770.76,
-        "expected_inr": 41770.76,
+        "billed_inr": 98838.78,
+        "expected_inr": 98838.78,
         "evidence": [
-          "portal:invoice/TIR/26-27/10182",
-          "meridian:SHP-60243",
-          "pod:SHP-60243",
-          "meridian:SHP-60230",
-          "pod:SHP-60230"
+          "portal:invoice/TIR/26-27/10180",
+          "meridian:SHP-60228",
+          "pod:SHP-60228",
+          "meridian:SHP-60229",
+          "pod:SHP-60229",
+          "meridian:SHP-60232",
+          "pod:SHP-60232",
+          "meridian:SHP-60237",
+          "pod:SHP-60237"
         ]
       }
     ],
     "disputes": [],
     "task_id": "T-13",
     "status": "completed",
-    "steps": 94,
-    "retries": 7,
-    "duration_s": 160.8,
+    "steps": 93,
+    "retries": 0,
+    "duration_s": 146.1,
     "cost_inr": 0.0,
-    "trace_id": "57a3785ab8465084747321122349949a",
+    "trace_id": "80e8420266855fd3d1d2e4b1115568cf",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/57a3785ab8465084747321122349949a"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/80e8420266855fd3d1d2e4b1115568cf"
   },
   "T-14": {
     "missing_in_portal": [
@@ -645,15 +645,13 @@
     ],
     "task_id": "T-14",
     "status": "completed",
-    "steps": 73,
+    "steps": 71,
     "retries": 0,
-    "duration_s": 257.8,
+    "duration_s": 28.7,
     "cost_inr": 0.0,
-    "trace_id": "71515e27b4edba48f2ef8eeed5a3fefb",
-    "human_steps": [
-      "otp"
-    ],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/71515e27b4edba48f2ef8eeed5a3fefb"
+    "trace_id": "a42f1592df587bb2e903cbec2c694a14",
+    "human_steps": [],
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/a42f1592df587bb2e903cbec2c694a14"
   },
   "T-15": {
     "missing_in_portal": [
@@ -661,13 +659,13 @@
     ],
     "task_id": "T-15",
     "status": "completed",
-    "steps": 71,
-    "retries": 0,
-    "duration_s": 28.6,
+    "steps": 74,
+    "retries": 4,
+    "duration_s": 60.9,
     "cost_inr": 0.0,
-    "trace_id": "f60639954a182253a28298b140bb1539",
+    "trace_id": "96a7d42f136159889626d87744d6d35c",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/f60639954a182253a28298b140bb1539"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/96a7d42f136159889626d87744d6d35c"
   },
   "T-16": {
     "missing_in_portal": [
@@ -677,11 +675,11 @@
     "status": "completed",
     "steps": 71,
     "retries": 0,
-    "duration_s": 35.3,
+    "duration_s": 30.8,
     "cost_inr": 0.0,
-    "trace_id": "65ac90d1a9312aa9ccaf20c0aaf5d91e",
+    "trace_id": "c1dda6c2e8d7c0705ac63afa4c538fb6",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/65ac90d1a9312aa9ccaf20c0aaf5d91e"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/c1dda6c2e8d7c0705ac63afa4c538fb6"
   },
   "T-17": {
     "pods": [
@@ -713,13 +711,13 @@
     ],
     "task_id": "T-17",
     "status": "completed",
-    "steps": 9,
+    "steps": 8,
     "retries": 0,
-    "duration_s": 57.2,
+    "duration_s": 35.3,
     "cost_inr": 0.0,
-    "trace_id": "e0a2050a6a2dedaff1221c21829eb4ec",
+    "trace_id": "25bcc3db02f7ad7b480f4409ec708c4f",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/e0a2050a6a2dedaff1221c21829eb4ec"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/25bcc3db02f7ad7b480f4409ec708c4f"
   },
   "T-18": {
     "pods": [
@@ -751,13 +749,13 @@
     ],
     "task_id": "T-18",
     "status": "completed",
-    "steps": 8,
-    "retries": 1,
-    "duration_s": 58.8,
+    "steps": 7,
+    "retries": 0,
+    "duration_s": 22.3,
     "cost_inr": 0.0,
-    "trace_id": "1a8593748a02bb274988f5b2aecbf59b",
+    "trace_id": "89c1e61915bc2d1d672fac51e6f43b4e",
     "human_steps": [],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/1a8593748a02bb274988f5b2aecbf59b"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/89c1e61915bc2d1d672fac51e6f43b4e"
   },
   "T-19": {
     "invoices": [
@@ -773,7 +771,8 @@
           "portal:invoice/TIR/26-27/10175",
           "meridian:SHP-60165",
           "pod:SHP-60165"
-        ]
+        ],
+        "existing_dispute": true
       },
       {
         "invoice_no": "TIR/26-27/10221",
@@ -801,7 +800,8 @@
           "pod:SHP-60176",
           "meridian:SHP-60174",
           "pod:SHP-60174"
-        ]
+        ],
+        "existing_dispute": true
       },
       {
         "invoice_no": "TIR/26-27/10176",
@@ -822,7 +822,8 @@
           "pod:SHP-60216",
           "meridian:SHP-60123",
           "portal:invoice/TIR/26-27/10167"
-        ]
+        ],
+        "existing_dispute": true
       },
       {
         "invoice_no": "TIR/26-27/10177",
@@ -848,7 +849,8 @@
           "pod:SHP-60209",
           "meridian:SHP-60200",
           "pod:SHP-60200"
-        ]
+        ],
+        "existing_dispute": true
       },
       {
         "invoice_no": "TIR/26-27/10178",
@@ -871,102 +873,45 @@
           "pod:SHP-60202",
           "meridian:SHP-60181",
           "pod:SHP-60181"
-        ]
+        ],
+        "existing_dispute": true
       }
     ],
-    "disputes": [
-      {
-        "invoice_no": "TIR/26-27/10175",
-        "reasons": [
-          "detention_unjustified"
-        ],
-        "expected_inr": 23840.5,
-        "portal_ref": "DSP-5001"
-      },
-      {
-        "invoice_no": "TIR/26-27/10221",
-        "reasons": [
-          "weight_over"
-        ],
-        "expected_inr": 144246.57,
-        "portal_ref": "DSP-5003"
-      },
-      {
-        "invoice_no": "TIR/26-27/10176",
-        "reasons": [
-          "duplicate_billing",
-          "weight_over"
-        ],
-        "expected_inr": 63169.46,
-        "portal_ref": "DSP-5004"
-      },
-      {
-        "invoice_no": "TIR/26-27/10177",
-        "reasons": [
-          "math_error"
-        ],
-        "expected_inr": 109197.35,
-        "portal_ref": "DSP-5006"
-      },
-      {
-        "invoice_no": "TIR/26-27/10178",
-        "reasons": [
-          "rate_wrong",
-          "detention_unjustified"
-        ],
-        "expected_inr": 110531.68,
-        "portal_ref": "DSP-5007"
-      }
-    ],
+    "disputes": [],
     "task_id": "T-19",
     "status": "completed",
-    "steps": 155,
-    "retries": 5,
-    "duration_s": 413.6,
+    "steps": 118,
+    "retries": 4,
+    "duration_s": 325.7,
     "cost_inr": 0.0,
-    "trace_id": "f0ff3c7c224aa13341cda690c3e8bba1",
+    "trace_id": "ab9f1410506cca77e48328f074eac1aa",
     "human_steps": [
-      "approval"
+      "otp"
     ],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/f0ff3c7c224aa13341cda690c3e8bba1"
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/ab9f1410506cca77e48328f074eac1aa"
   },
   "T-20": {
     "invoices": [
       {
-        "invoice_no": "TIR/26-27/10170",
-        "result": "mismatch",
-        "reasons": [
-          "weight_over",
-          "detention_unjustified"
-        ],
-        "billed_inr": 119747.71,
-        "expected_inr": 115326.87,
-        "evidence": [
-          "portal:invoice/TIR/26-27/10170",
-          "meridian:SHP-60117",
-          "pod:SHP-60117",
-          "meridian:SHP-60137",
-          "pod:SHP-60137",
-          "meridian:SHP-60140",
-          "pod:SHP-60140",
-          "meridian:SHP-60113",
-          "pod:SHP-60113",
-          "meridian:SHP-60120",
-          "pod:SHP-60120"
-        ]
+        "invoice_no": "TIR/26-27/10174",
+        "result": "cancelled"
       },
       {
-        "invoice_no": "TIR/26-27/10171",
+        "invoice_no": "TIR/26-27/10173",
         "result": "match",
         "reasons": [],
-        "billed_inr": 70167.9,
-        "expected_inr": 70167.9,
+        "billed_inr": 72364.94,
+        "expected_inr": 72364.94,
         "evidence": [
-          "portal:invoice/TIR/26-27/10171",
-          "meridian:SHP-60167",
-          "pod:SHP-60167",
-          "meridian:SHP-60148",
-          "pod:SHP-60148"
+          "portal:invoice/TIR/26-27/10173",
+          "meridian:SHP-60153",
+          "pod:SHP-60153",
+          "meridian:SHP-60157",
+          "pod:SHP-60157",
+          "meridian:SHP-60161",
+          "pod:SHP-60161",
+          "meridian:SHP-60169",
+          "pod:SHP-60169"
         ]
       },
       {
@@ -991,49 +936,53 @@
         "existing_dispute": true
       },
       {
-        "invoice_no": "TIR/26-27/10173",
+        "invoice_no": "TIR/26-27/10171",
         "result": "match",
         "reasons": [],
-        "billed_inr": 72364.94,
-        "expected_inr": 72364.94,
+        "billed_inr": 70167.9,
+        "expected_inr": 70167.9,
         "evidence": [
-          "portal:invoice/TIR/26-27/10173",
-          "meridian:SHP-60153",
-          "pod:SHP-60153",
-          "meridian:SHP-60157",
-          "pod:SHP-60157",
-          "meridian:SHP-60161",
-          "pod:SHP-60161",
-          "meridian:SHP-60169",
-          "pod:SHP-60169"
+          "portal:invoice/TIR/26-27/10171",
+          "meridian:SHP-60167",
+          "pod:SHP-60167",
+          "meridian:SHP-60148",
+          "pod:SHP-60148"
         ]
       },
       {
-        "invoice_no": "TIR/26-27/10174",
-        "result": "cancelled"
-      }
-    ],
-    "disputes": [
-      {
         "invoice_no": "TIR/26-27/10170",
+        "result": "mismatch",
         "reasons": [
           "weight_over",
           "detention_unjustified"
         ],
+        "billed_inr": 119747.71,
         "expected_inr": 115326.87,
-        "portal_ref": "DSP-5008"
+        "evidence": [
+          "portal:invoice/TIR/26-27/10170",
+          "meridian:SHP-60117",
+          "pod:SHP-60117",
+          "meridian:SHP-60137",
+          "pod:SHP-60137",
+          "meridian:SHP-60140",
+          "pod:SHP-60140",
+          "meridian:SHP-60113",
+          "pod:SHP-60113",
+          "meridian:SHP-60120",
+          "pod:SHP-60120"
+        ],
+        "existing_dispute": true
       }
     ],
+    "disputes": [],
     "task_id": "T-20",
     "status": "completed",
-    "steps": 104,
-    "retries": 2,
-    "duration_s": 371.5,
+    "steps": 92,
+    "retries": 0,
+    "duration_s": 48.5,
     "cost_inr": 0.0,
-    "trace_id": "481e3f7c852f78f885923f847e6289cf",
-    "human_steps": [
-      "approval"
-    ],
-    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/481e3f7c852f78f885923f847e6289cf"
+    "trace_id": "5a717a126f23f93c897abd41729ab350",
+    "human_steps": [],
+    "trace_url": "https://cloud.langfuse.com/project/cmwhp9p7v01cbad0k7aekqj7k/traces/5a717a126f23f93c897abd41729ab350"
   }
 }
