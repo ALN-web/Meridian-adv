@@ -12,6 +12,7 @@ has been run against the live portal; adjust ``MENU`` and selectors from its out
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -1013,12 +1014,18 @@ class PortalClient:
         return None
 
     async def fetch_file(self, url: str, name: str) -> Path:
-        """Fetch a document with the browser session's cookies; only real PDFs are kept."""
-        await self.limiter.wait()
-        resp = await self._ctx.request.get(url)
-        body = await resp.body()
-        if not resp.ok or not body.startswith(b"%PDF"):
-            raise PageNotUnderstood(f"document fetch gave {resp.status} {resp.headers.get('content-type', '')}")
+        """Fetch a document with the browser session's cookies; only real PDFs are kept.
+
+        The portal sometimes answers with an error page instead of the file, so a few tries."""
+        for attempt in range(3):
+            await self.limiter.wait()
+            resp = await self._ctx.request.get(url)
+            body = await resp.body()
+            if resp.ok and body.startswith(b"%PDF"):
+                break
+            if attempt == 2:
+                raise PageNotUnderstood(f"document fetch gave {resp.status} {resp.headers.get('content-type', '')}")
+            await asyncio.sleep(1.5 * (attempt + 1))
         self.download_dir.mkdir(parents=True, exist_ok=True)
         target = self.download_dir / (re.sub(r"[^A-Za-z0-9_.-]", "_", name) + ".pdf")
         target.write_bytes(body)
