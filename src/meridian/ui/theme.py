@@ -44,6 +44,9 @@ header[data-testid="stHeader"] a, header[data-testid="stHeader"] button, header[
 [data-testid="stDataFrame"], [data-testid="stTable"] { border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--white); }
 iframe { border-radius: var(--R); }
 .stIFrame, [data-testid="stIFrame"], [data-testid="stCustomComponentV1"] { border-radius: var(--R); box-shadow: var(--card-shadow); }
+/* the invisible alerts frame (height 0): out of the layout, so no gap and no shadow line */
+iframe[srcdoc*="__meridianAlert"] { box-shadow: none !important; display: block; }
+[data-testid="stElementContainer"]:has(iframe[srcdoc*="__meridianAlert"]) { position: absolute !important; width: 0; height: 0; margin: 0; overflow: hidden; }
 
 /* inputs */
 [data-baseweb="input"], [data-baseweb="textarea"], [data-baseweb="select"] > div, [data-baseweb="base-input"] {
@@ -167,6 +170,8 @@ iframe { border-radius: var(--R); }
 @media (max-width: 640px) {
   .block-container { padding-left: 16px; padding-right: 16px; padding-top: 4.6rem; }
   .stat4 { grid-template-columns: 1fr 1fr; } .board { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .chead { flex-wrap: wrap; } .chead .t { flex: 1 1 100%; }  /* tag drops under the title instead of squeezing it */
+  .waitbar { flex-wrap: wrap; border-radius: 18px; }
   .big { font-size: 1.25rem; }
 }
 </style>

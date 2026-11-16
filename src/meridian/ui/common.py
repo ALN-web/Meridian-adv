@@ -58,9 +58,15 @@ def section(label: str) -> None:
 
 
 def latest_details(store: Store) -> list[dict]:
-    """Newest explanation per invoice across all runs (a re-run supersedes older ones)."""
+    """Newest explanation per invoice (a re-run supersedes older ones).
+
+    Once the real portal has been used, only real-portal runs count: demo and practice-portal
+    runs are rehearsals and must not mix into the figures."""
+    runs = store.list_runs(500)
+    if any(r.mode == "live" for r in runs):
+        runs = [r for r in runs if r.mode == "live"]
     seen: dict[str, dict] = {}
-    for run in reversed(store.list_runs(500)):  # oldest first, newer overwrite
+    for run in reversed(runs):  # oldest first, newer overwrite
         for no, d in store.details(run.id).items():
             seen[no] = d
     return list(seen.values())
@@ -71,7 +77,17 @@ def inr(v) -> str:
         return "—"
     d = Decimal(str(v))
     sign = "-" if d < 0 else ""
-    return f"{sign}₹{abs(d):,.2f}"
+    return f"{sign}₹{indian(abs(d))}"
+
+
+def indian(d: Decimal) -> str:
+    """Indian digit grouping, as Meridian's staff write amounts: 171710.58 -> 1,71,710.58."""
+    whole, frac = f"{d:.2f}".split(".")
+    if len(whole) > 3:
+        head, tail = whole[:-3], whole[-3:]
+        head = ",".join([head[max(0, i - 2):i] for i in range(len(head), 0, -2)][::-1])
+        whole = f"{head},{tail}"
+    return f"{whole}.{frac}"
 
 
 def hhmm(ts: float | None) -> str:

@@ -21,7 +21,7 @@ def _otps(store) -> int:
         with st.container(border=True):
             if req["kind"] == "otp":
                 if store.otp_asked_before(req["run_id"]):
-                    st.warning("The portal did not accept the previous code (invalid or expired). Use the **newest** code — it is valid for 5 minutes.")
+                    st.warning("The portal did not accept the previous code (invalid or expired), so the agent signed in again and the portal sent a **new** code. Use that newest code — it is valid for 5 minutes.")
                 with st.form(f"n-otp-{req['id']}", clear_on_submit=True, border=False):
                     c = st.columns([3, 1], vertical_alignment="bottom")
                     code = c[0].text_input(f"One-time password · {who}", type="password", max_chars=10)
@@ -87,8 +87,11 @@ def _approvals(store) -> int:
 
 def _review(store) -> int:
     """Finished runs with items a person must check (unreadable proofs, missing rates)."""
-    items = []
-    for r in store.list_runs(50):
+    items, seen_tasks = [], set()
+    for r in store.list_runs(50):  # newest first
+        if r.status not in ("completed", "needs_human") or r.task_id in seen_tasks:
+            continue  # a newer run of the same task supersedes this one's open items
+        seen_tasks.add(r.task_id)
         res = r.result or {}
         for inv in res.get("invoices") or []:
             for why in inv.get("needs_human") or []:

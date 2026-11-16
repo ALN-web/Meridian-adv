@@ -40,7 +40,11 @@ def render() -> None:
         return
     checked = view[view["result"] != "cancelled"]
     over = checked[checked["overcharge"] > 0]["overcharge"].sum()
-    disputes = [d for d in store.disputes() if d["status"] == "confirmed" and d["invoice_no"] in set(view["invoice_no"])]
+    all_runs = store.list_runs(500)
+    real = {r.id for r in all_runs if r.mode == "live"}
+    counted = (lambda rid: rid in real) if real else (lambda rid: True)  # practice runs don't count once real ones exist
+    disputes = [d for d in store.disputes() if d["status"] == "confirmed" and counted(d["run_id"])
+                and d["invoice_no"] in set(view["invoice_no"])]
     st.write("")
     k = st.columns(4)
     big(k[0], "Invoices checked", str(len(checked)))
@@ -74,8 +78,8 @@ def render() -> None:
                                 "expected": money("Expected"), "overcharge": money("Overcharge")})
 
     missing = []
-    for r in store.list_runs(200):
-        if r.kind == "missing" and r.result and r.status == "completed":
+    for r in all_runs:
+        if r.kind == "missing" and r.result and r.status == "completed" and counted(r.id):
             if r.params.get("lane") in lanes and (month == "All" or r.params.get("month") == month):
                 missing += [(r.params["lane"], r.params["month"], s) for s in r.result.get("missing_in_portal") or []]
     if missing:

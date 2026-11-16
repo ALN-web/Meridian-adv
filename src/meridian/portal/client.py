@@ -426,6 +426,21 @@ class PortalClient:
             else:
                 await field_.press("Enter")
         self.log.add("otp", "submitted")
+        # A wrong or expired code leaves us on the OTP page ("Invalid or expired OTP", ?msg=bad) and the
+        # portal sends NO new code there. Asking the person again would wait for a code that never
+        # comes, so drop the half-done login and sign in again with the password: that sends a fresh code.
+        if await self._otp_rejected():
+            self.log.add("otp", "rejected", detail="portal did not accept the code; signing in again for a new one")
+            await self._ctx.clear_cookies()
+            raise SessionExpired("OTP not accepted; a new login sends a new code")
+
+    async def _otp_rejected(self) -> bool:
+        if re.search(r"[?&]msg=bad\b", self.page.url, re.I):
+            return True
+        if classify(await self.snapshot()) is not PageState.OTP:
+            return False
+        body = await self.page.inner_text("body")
+        return bool(re.search(r"(invalid|expired|incorrect|wrong)\s+(or\s+\w+\s+)?(otp|code|one[- ]time)", body, re.I))
 
     # ------------------------------------------------------------------ navigation + reading
 

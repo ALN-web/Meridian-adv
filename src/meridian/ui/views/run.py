@@ -219,7 +219,7 @@ def _human_inputs(store, run_id: str) -> None:
     for req in store.pending_human(run_id):
         if req["kind"] == "otp":
             if store.otp_asked_before(req["run_id"]):
-                st.warning("The portal did not accept the previous code (invalid or expired). Use the **newest** code — it is valid for 5 minutes.")
+                st.warning("The portal did not accept the previous code (invalid or expired), so the agent signed in again and the portal sent a **new** code. Use that newest code — it is valid for 5 minutes.")
             with st.form(f"otp-{req['id']}", clear_on_submit=True, border=True):
                 c = st.columns([3, 1.3], vertical_alignment="bottom")
                 code = c[0].text_input("One-time password from the operator inbox", type="password", max_chars=10)
