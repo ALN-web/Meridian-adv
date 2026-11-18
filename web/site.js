@@ -1,13 +1,46 @@
-// Shared behaviour: operator links, reveal on scroll, nav that adapts to dark sections.
+// Shared behaviour: operator links, phone menu, reveal on scroll, nav that adapts to dark sections.
 (() => {
-  const base = new URLSearchParams(location.search).get("app") ||
-    (location.hostname ? `${location.protocol}//${location.hostname}:8510` : "http://localhost:8510");
-  document.querySelectorAll("[data-app]").forEach(a => { a.href = base.replace(/\/$/, "") + a.dataset.app; });
+  // Where the operator screen lives.
+  // 1. <meta name="meridian-operator-url" content="https://ops.example.com"> (set this for a public deploy)
+  // 2. ?app=http://host:port, only honoured while the site itself runs on localhost (dev convenience)
+  // 3. Fallback: same host as this page, port 8510 (docker compose layout)
+  // Every candidate must be an absolute http(s) URL; anything else (javascript:, data:, //evil) is ignored.
+  const LOCAL = ["localhost", "127.0.0.1", "[::1]"];
+  const safeBase = (value) => {
+    if (!value) return null;
+    try {
+      const u = new URL(value);
+      if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+      return u.origin + u.pathname.replace(/\/$/, "");
+    } catch { return null; }
+  };
+  const meta = document.querySelector('meta[name="meridian-operator-url"]');
+  const fromMeta = safeBase(meta && meta.content.trim());
+  const fromQuery = LOCAL.includes(location.hostname) ? safeBase(new URLSearchParams(location.search).get("app")) : null;
+  const fallback = location.hostname ? `${location.protocol === "https:" ? "https:" : "http:"}//${location.hostname}:8510` : "http://localhost:8510";
+  const base = fromQuery || fromMeta || fallback;
+  document.querySelectorAll("[data-app]").forEach(a => {
+    const path = a.dataset.app.startsWith("/") ? a.dataset.app : "/" + a.dataset.app;
+    a.href = base + path;
+  });
+
+  // Phone menu
+  const nav = document.querySelector("nav.top");
+  const menuBtn = nav && nav.querySelector(".menu-btn");
+  if (menuBtn) {
+    const setOpen = (open) => {
+      nav.classList.toggle("open", open);
+      menuBtn.setAttribute("aria-expanded", String(open));
+      menuBtn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    };
+    menuBtn.addEventListener("click", () => setOpen(!nav.classList.contains("open")));
+    nav.querySelectorAll(".links a").forEach(a => a.addEventListener("click", () => setOpen(false)));
+    addEventListener("keydown", e => { if (e.key === "Escape" && nav.classList.contains("open")) { setOpen(false); menuBtn.focus(); } });
+  }
 
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: 0.12 });
   document.querySelectorAll(".reveal").forEach(el => io.observe(el));
 
-  const nav = document.querySelector("nav.top");
   if (!nav) return;
   const darks = [...document.querySelectorAll("section.dark, .ship, footer")];
   const onScroll = () => {

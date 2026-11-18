@@ -2,9 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Meridian Features</title>
+<title>Features · Meridian freight invoice audit agent</title>
 <meta name="description" content="Everything in the Meridian operator screen: run a task, approvals, results, documents, disputes, evaluation, summary and traces.">
+<!-- Public deploy: set the operator screen's address here, e.g. https://ops.example.com. Empty = same host, port 8510. -->
+<meta name="meridian-operator-url" content="">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Meridian">
+<meta property="og:title" content="One screen for the whole job.">
+<meta property="og:description" content="Everything in the Meridian operator screen: run a task, approvals, results, documents, disputes, evaluation, summary and traces.">
+<meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -95,15 +105,20 @@
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 
 <nav class="top" aria-label="Main">
   <div class="wrap">
-    <a class="brand" href="index.html"><span class="mark"><i></i><i></i></span>MERIDIAN</a>
-    <div class="links"><a href="index.html#how">How it works</a><a href="index.html#checks">Rules</a><a href="index.html#results">Results</a><a class="on" href="features.html">Features</a></div>
-    <a class="btn solid" data-app="/" href="http://localhost:8510/"><span class="txt">Open operator</span> <span class="arr">→</span></a>
+    <a class="brand" href="index.html" aria-label="Meridian, home"><span class="mark" aria-hidden="true"><i></i><i></i></span>MERIDIAN</a>
+    <div class="links" id="navlinks"><a href="index.html#how">How it works</a><a href="index.html#checks">Rules</a><a href="index.html#results">Results</a><a class="on" href="features.html" aria-current="page">Features</a></div>
+    <div class="nav-end">
+      <a class="btn solid" data-app="/" href="http://localhost:8510/" aria-label="Open the operator screen"><span class="txt">Open operator</span> <span class="arr" aria-hidden="true">→</span></a>
+      <button class="menu-btn" type="button" aria-expanded="false" aria-controls="navlinks" aria-label="Open menu"><i aria-hidden="true"></i></button>
+    </div>
   </div>
 </nav>
 
+<main id="main" tabindex="-1">
 <section class="intro">
   <div class="wrap">
     <div class="head reveal"><span class="label">Features</span><h1>One screen for the whole job.</h1><p class="lead">Run tasks, answer the agent, approve disputes and check the score.</p></div>
@@ -116,7 +131,7 @@
 
 <section class="feature" id="run">
   <div class="wrap grid">
-    <div class="f-text reveal"><span class="num">01</span><h2>Run a task</h2><p>Type it in plain English. Watch the plan and log live. Stop and resume any time.</p><a class="go" data-app="/" href="http://localhost:8510/">Open <span class="mono">→</span></a></div>
+    <div class="f-text reveal"><span class="num">01</span><h2>Run a task</h2><p>Type it in plain English. Watch the plan and log live. Stop and resume any time.</p><a class="go" data-app="/" href="http://localhost:8510/" aria-label="Open Run a task in the operator screen">Open <span class="mono" aria-hidden="true">→</span></a></div>
     <div class="f-mock reveal"><div class="mock"><div class="win">
       <div class="bar"><i></i><i></i><i></i><span>Run a task</span></div>
       <div class="body">
@@ -137,7 +152,7 @@
 
 <section class="feature" id="needs">
   <div class="wrap grid">
-    <div class="f-text reveal"><span class="num">02</span><h2>Needs you</h2><p>One inbox for passwords, CAPTCHAs and dispute approvals. Nothing happens without you.</p><a class="go" data-app="/needs-you" href="http://localhost:8510/needs-you">Open <span class="mono">→</span></a></div>
+    <div class="f-text reveal"><span class="num">02</span><h2>Needs you</h2><p>One inbox for passwords, CAPTCHAs and dispute approvals. Nothing happens without you.</p><a class="go" data-app="/needs-you" href="http://localhost:8510/needs-you" aria-label="Open Needs you in the operator screen">Open <span class="mono" aria-hidden="true">→</span></a></div>
     <div class="f-mock reveal"><div class="mock"><div class="win">
       <div class="bar"><i></i><i></i><i></i><span>Needs you · 2</span></div>
       <div class="body">
@@ -154,7 +169,7 @@
 
 <section class="feature" id="results">
   <div class="wrap grid">
-    <div class="f-text reveal"><span class="num">03</span><h2>Results</h2><p>Every invoice, billed against expected. Open any line to see why.</p><a class="go" data-app="/results" href="http://localhost:8510/results">Open <span class="mono">→</span></a></div>
+    <div class="f-text reveal"><span class="num">03</span><h2>Results</h2><p>Every invoice, billed against expected. Open any line to see why.</p><a class="go" data-app="/results" href="http://localhost:8510/results" aria-label="Open Results in the operator screen">Open <span class="mono" aria-hidden="true">→</span></a></div>
     <div class="f-mock reveal"><div class="mock"><div class="win">
       <div class="bar"><i></i><i></i><i></i><span>Results · lane-month</span></div>
       <div class="body">
@@ -172,7 +187,7 @@
 
 <section class="feature" id="documents">
   <div class="wrap grid">
-    <div class="f-text reveal"><span class="num">04</span><h2>Documents</h2><p>Every invoice PDF and delivery proof the agent collected. Scans it can't read are flagged.</p><a class="go" data-app="/documents" href="http://localhost:8510/documents">Open <span class="mono">→</span></a></div>
+    <div class="f-text reveal"><span class="num">04</span><h2>Documents</h2><p>Every invoice PDF and delivery proof the agent collected. Scans it can't read are flagged.</p><a class="go" data-app="/documents" href="http://localhost:8510/documents" aria-label="Open Documents in the operator screen">Open <span class="mono" aria-hidden="true">→</span></a></div>
     <div class="f-mock reveal"><div class="mock"><div class="win">
       <div class="bar"><i></i><i></i><i></i><span>Documents</span></div>
       <div class="body files">
@@ -187,7 +202,7 @@
 
 <section class="feature" id="disputes">
   <div class="wrap grid">
-    <div class="f-text reveal"><span class="num">05</span><h2>Disputes</h2><p>Every dispute and where it stands. Confirmed in the portal's own list, never twice.</p><a class="go" data-app="/disputes" href="http://localhost:8510/disputes">Open <span class="mono">→</span></a></div>
+    <div class="f-text reveal"><span class="num">05</span><h2>Disputes</h2><p>Every dispute and where it stands. Confirmed in the portal's own list, never twice.</p><a class="go" data-app="/disputes" href="http://localhost:8510/disputes" aria-label="Open Disputes in the operator screen">Open <span class="mono" aria-hidden="true">→</span></a></div>
     <div class="f-mock reveal"><div class="mock"><div class="win">
       <div class="bar"><i></i><i></i><i></i><span>Disputes</span></div>
       <div class="body">
@@ -205,7 +220,7 @@
 
 <section class="feature" id="summary">
   <div class="wrap grid">
-    <div class="f-text reveal"><span class="num">06</span><h2>Monthly summary</h2><p>For the logistics manager: overcharges by lane, and why.</p><a class="go" data-app="/summary" href="http://localhost:8510/summary">Open <span class="mono">→</span></a></div>
+    <div class="f-text reveal"><span class="num">06</span><h2>Monthly summary</h2><p>For the logistics manager: overcharges by lane, and why.</p><a class="go" data-app="/summary" href="http://localhost:8510/summary" aria-label="Open Monthly summary in the operator screen">Open <span class="mono" aria-hidden="true">→</span></a></div>
     <div class="f-mock reveal"><div class="mock"><div class="win">
       <div class="bar"><i></i><i></i><i></i><span>Monthly summary · Oct-26</span></div>
       <div class="body">
@@ -221,7 +236,7 @@
 
 <section class="feature" id="eval">
   <div class="wrap grid">
-    <div class="f-text reveal"><span class="num">07</span><h2>Evaluation</h2><p>Run all public tasks in one click. See the score against every target.</p><a class="go" data-app="/evaluation" href="http://localhost:8510/evaluation">Open <span class="mono">→</span></a></div>
+    <div class="f-text reveal"><span class="num">07</span><h2>Evaluation</h2><p>Run all public tasks in one click. See the score against every target.</p><a class="go" data-app="/evaluation" href="http://localhost:8510/evaluation" aria-label="Open Evaluation in the operator screen">Open <span class="mono" aria-hidden="true">→</span></a></div>
     <div class="f-mock reveal"><div class="mock"><div class="win">
       <div class="bar"><i></i><i></i><i></i><span>Evaluation</span></div>
       <div class="body">
@@ -239,7 +254,7 @@
 
 <section class="feature" id="traces">
   <div class="wrap grid">
-    <div class="f-text reveal"><span class="num">08</span><h2>Traces</h2><p>One trace per task, one span per step. Personal data masked.</p><a class="go" data-app="/results" href="http://localhost:8510/results">Open <span class="mono">→</span></a></div>
+    <div class="f-text reveal"><span class="num">08</span><h2>Traces</h2><p>One trace per task, one span per step. Personal data masked.</p><a class="go" data-app="/results" href="http://localhost:8510/results" aria-label="Open Traces in the operator screen">Open <span class="mono" aria-hidden="true">→</span></a></div>
     <div class="f-mock reveal"><div class="mock"><div class="win">
       <div class="bar"><i></i><i></i><i></i><span>Trace · 27 spans</span></div>
       <div class="body spans">
@@ -269,9 +284,10 @@
 <section class="sec tight cta">
   <div class="wrap">
     <h2>Try it on a task.</h2>
-    <a class="btn solid" data-app="/" href="http://localhost:8510/">Open the operator screen <span class="arr">→</span></a>
+    <a class="btn solid" data-app="/" href="http://localhost:8510/">Open the operator screen <span class="arr" aria-hidden="true">→</span></a>
   </div>
 </section>
+</main>
 
 <footer>
   <div class="wrap">
