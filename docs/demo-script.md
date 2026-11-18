@@ -76,6 +76,11 @@ Show **Disputes** page: submitted → confirmed, with masked before/after screen
 - **Evaluation** page, run `live-final`: all 20 public tasks completed on the real portal, 0 wrong
   and 0 duplicate disputes, ~2 minutes and ₹0 per task. Task success and accuracy say n/a until the
   answer key is out — "we score the saved results the moment it is published, no re-run needed"
+- **Stretch (+10 %), 20 s**: **Monthly summary** → "Whole-month runs" table, and open
+  `runs/month/2026-10/summary.md`. "Every lane of a month in 4 browser contexts under one 2 req/s limit
+  and one OTP — 1.4× faster than one at a time with identical answers, read-only, scheduled for day 2
+  of each month, with this summary for the logistics manager."
+  (Run `python harness/run_month.py --mode live --month 2026-10 --workers 4` beforehand so it is a real-portal run.)
 
 ## 7:30 – 8:00 · Close
 
@@ -92,4 +97,6 @@ Show **Disputes** page: submitted → confirmed, with masked before/after screen
 | What did the real portal throw at you? | Paging outside the grid, renamed columns, scan-only invoices, a notice popup, OTP expiry, error pages instead of PDFs — each one fixed and tested. |
 | What if it crashes mid-run? | Progress is in SQLite; **Resume** continues from the next invoice. |
 | How do you avoid duplicate disputes? | Check the dispute list before, confirm in the list after, and skip invoices already disputed. |
+| Doesn't parallel break the 2 requests/second rule? | No: all contexts share one limiter, so the total stays ≤ 2/s (the report shows the achieved rate). It's faster because the portal is slow, not because we push harder. |
+| Four contexts, four OTPs? | One. Contexts share the saved session; after a logout the first one logs in again and the others adopt its session. |
 | Where are the secrets? | Only in `.env` / environment; masked out of traces and screenshots; never in git. |

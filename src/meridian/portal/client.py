@@ -211,6 +211,11 @@ class PortalClient:
         # after a dispute is submitted, since that can change an invoice's status.
         self._full_rows: list[InvoiceRow] | None = None
         self.unreadable: dict[str, str] = {}  # invoice no -> why its scanned lines could not be trusted
+        # Parallel runs (agent/month.py): several contexts share one login. With a shared lock, a
+        # context whose session died first adopts a newer saved session (another context already
+        # logged in again) instead of asking the person for a second OTP.
+        self.login_lock: asyncio.Lock | None = None
+        self._session_seen = 0.0
 
     # ------------------------------------------------------------------ lifecycle
 
@@ -218,6 +223,7 @@ class PortalClient:
         self.download_dir.mkdir(parents=True, exist_ok=True)
         self.screenshot_dir.mkdir(parents=True, exist_ok=True)
         state = self.session_file()
+        self._session_seen = state.stat().st_mtime if state.exists() else 0.0
         self._ctx = await browser.new_context(accept_downloads=True, viewport={"width": 1280, "height": 900},
                                               storage_state=str(state) if state.exists() else None)
         self._ctx.set_default_timeout(ACTION_TIMEOUT_MS)
@@ -365,6 +371,33 @@ class PortalClient:
     # ------------------------------------------------------------------ login
 
     async def login(self) -> None:
+        if self.login_lock is None:
+            return await self._login()
+        async with self.login_lock:
+            if await self._adopt_saved_session():
+                return
+            await self._login()
+            f = self.session_file()
+            self._session_seen = f.stat().st_mtime if f.exists() else self._session_seen
+
+    async def _adopt_saved_session(self) -> bool:
+        """Take the cookies of a login another context made after this one last looked. Never logs
+        in and never asks for an OTP; if those cookies are dead too, the caller logs in for real."""
+        f = self.session_file()
+        if not f.exists() or f.stat().st_mtime <= self._session_seen:
+            return False
+        try:
+            cookies = json.loads(f.read_text(encoding="utf-8")).get("cookies", [])
+            await self._ctx.clear_cookies()
+            await self._ctx.add_cookies(cookies)
+        except Exception as exc:
+            log.warning("shared session not adopted: %s", exc)
+            return False
+        self._session_seen = f.stat().st_mtime
+        self.log.add("login", "shared_session", detail="another browser context had already logged in again")
+        return True
+
+    async def _login(self) -> None:
         async def attempt():
             await self.limiter.wait()
             resp = await self.page.goto(self.url("/Login.aspx"), wait_until="domcontentloaded")

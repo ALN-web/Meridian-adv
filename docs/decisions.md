@@ -23,3 +23,9 @@ Every threshold or rule we had to choose, and why. (Required in the README hand-
 | 17 | After submitting, the dispute list is checked 3 times, 4 s apart, before the one allowed resubmit | A slow list must not look like a lost dispute — resubmitting then would be a duplicate (safety score → 0) |
 | 18 | Documents (invoice PDF, POD) are fetched with the session's cookies and kept only if they really are PDFs | The real portal serves them from `GetDoc.ashx` behind a button / link; an HTML error page must never be stored as evidence |
 | 19 | Every page load, menu click, OTP submit and document fetch goes through the 2 req/s limiter | Brief rule; found and fixed when the fake portal rate-limited recon |
+| 20 | Whole-month run: default **4** browser contexts, one shared 2 req/s limiter | The limit is global, so more contexts only help while pages are slow; on the fake portal 4 contexts already run at 1.96 req/s, the cap |
+| 21 | Month runs are **read-only**: they list the disputes to raise, never submit one | A scheduled job has no person at hand to approve; disputes go through the dispute task with approval |
+| 22 | One login per month run; a context whose session dies adopts a newer saved session (shared lock) before logging in itself | Four contexts must not ask the operator for four OTPs |
+| 23 | In a month run, a failed delivery-proof download sends the invoice to a person instead of concluding `no_pod`; if any invoice could not be read, "missing in portal" is marked unsure | A download error is not evidence that the proof is missing |
+| 24 | Monthly schedule: day **2**, **07:10 IST**, previous month, up to 3 tries an hour apart, never twice for one month | Day 1 invoices can still be arriving; morning so a person is there for an OTP |
+

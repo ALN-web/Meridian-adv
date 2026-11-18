@@ -89,7 +89,7 @@ def test_stop_then_resume_skips_finished_invoices(store):
     threading.Thread(target=_auto_human, args=(store, stop), daemon=True).start()
     t = demo.DemoRunner(store, run_id, plan, "T-S").start()
     for _ in range(400):
-        if len(store.checkpoints(run_id)) >= 2:
+        if len(store.checkpoints(run_id)) >= 1:
             break
         time.sleep(0.02)
     store.request_cancel(run_id)

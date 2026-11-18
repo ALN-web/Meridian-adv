@@ -336,7 +336,7 @@ class DemoRunner:
             if done.get(inv.invoice_no, {}).get("state") == "done":
                 results.append(done[inv.invoice_no]["data"])
                 continue
-            if n == 2 and len(invs) > 3:
+            if len(invs) >= 2 and n == min(2, len(invs) - 1):  # one planted logout mid-task
                 self.step(f"invoice:{inv.invoice_no}", "session_expired", "Logged out mid-task — logging in again, resuming from checkpoint")
                 self.wait_otp()
             self.invoice_doc(inv)

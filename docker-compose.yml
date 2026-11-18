@@ -22,6 +22,22 @@ services:
       FAKE_PORTAL_PORT: "8600"
     ports: ["8600:8600"]
 
+  # Stretch goal: last month's whole-month check, every month (day 2, 07:10 IST). Opt-in:
+  #   docker compose --profile scheduler up -d
+  # OTPs (if the saved session has expired) are typed in the operator screen, which shares runs/.
+  scheduler:
+    build: .
+    profiles: ["scheduler"]
+    command: ["python", "harness/schedule_month.py", "--mode", "live"]
+    env_file: .env
+    environment:
+      TZ: Asia/Kolkata
+    volumes:
+      - ./runs:/app/runs
+      - ./data:/app/data
+      - ./.auth:/app/.auth
+    restart: unless-stopped
+
   website:
     image: python:3.12-slim
     command: ["python", "-m", "http.server", "8700", "--directory", "/web"]

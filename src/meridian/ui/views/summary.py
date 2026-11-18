@@ -82,7 +82,35 @@ def render() -> None:
         if r.kind == "missing" and r.result and r.status == "completed" and counted(r.id):
             if r.params.get("lane") in lanes and (month == "All" or r.params.get("month") == month):
                 missing += [(r.params["lane"], r.params["month"], s) for s in r.result.get("missing_in_portal") or []]
+        if r.kind == "month" and r.result and r.result.get("lanes") and counted(r.id):
+            if month == "All" or r.params.get("month") == month:
+                missing += [(ln, r.params["month"], s) for ln, b in r.result["lanes"].items() if ln in lanes
+                            for s in b.get("missing_in_portal") or []]
     if missing:
         st.markdown("**Delivered but never invoiced**")
         st.dataframe(pd.DataFrame(sorted(set(missing)), columns=["Lane", "Delivery month", "Shipment"]),
                      hide_index=True, width="stretch")
+
+    _month_runs(all_runs, month)
+
+
+def _month_runs(all_runs, month: str) -> None:
+    """Whole-month runs (harness/run_month.py or the monthly schedule): speed and disputes still to raise."""
+    runs = [r for r in all_runs if r.kind == "month" and r.result and r.result.get("lanes")
+            and (month == "All" or r.params.get("month") == month)]
+    if not runs:
+        return
+    st.markdown("**Whole-month runs** (every lane in parallel browser contexts · read-only)")
+    st.dataframe(pd.DataFrame([{
+        "month": r.params.get("month"), "mode": r.mode, "contexts": r.result.get("workers"),
+        "time_s": r.result.get("duration_s"), "requests_per_s": r.result.get("requests_per_s"),
+        "invoices": len(r.result.get("invoices") or []), "to_dispute": len(r.result.get("disputes_to_raise") or []),
+        "status": r.status} for r in runs]), hide_index=True, width="stretch")
+    todo = runs[0].result.get("disputes_to_raise") or []
+    if todo:
+        st.markdown("Disputes to raise from the latest month run — use a dispute task; each needs approval:")
+        st.dataframe(pd.DataFrame([{**d, "reasons": ", ".join(d["reasons"])} for d in todo]), hide_index=True,
+                     width="stretch", column_config={
+                         "billed_inr": st.column_config.NumberColumn("Billed", format="₹ %.2f"),
+                         "expected_inr": st.column_config.NumberColumn("Correct amount", format="₹ %.2f"),
+                         "overcharge_inr": st.column_config.NumberColumn("Over", format="₹ %.2f")})

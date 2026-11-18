@@ -13,12 +13,14 @@ class RateLimiter:
         self._next_slot = 0.0
         self._lock = asyncio.Lock()
         self._penalty_until = 0.0
+        self.count = 0  # requests let through, for reporting the achieved rate
 
     async def wait(self) -> None:
         async with self._lock:
             now = self._clock()
             slot = max(now, self._next_slot, self._penalty_until)
             self._next_slot = slot + self.min_interval
+            self.count += 1
         delay = slot - now
         if delay > 0:
             await self._sleep(delay)

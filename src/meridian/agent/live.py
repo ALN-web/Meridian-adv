@@ -55,11 +55,22 @@ class Cancelled(Exception):
 APPROVAL_TIMEOUT_S = 3600
 
 
+def is_local_portal(base_url: str) -> bool:
+    import re
+
+    return bool(re.search(r"//(127\.0\.0\.1|localhost|fakeportal)\b", base_url))
+
+
 def load_meridian_records(settings: Settings) -> dict[str, Shipment]:
     """Meridian's CSV: local copy in data/ if present, else fetched with the team key (never logged)."""
     local = Path("data/meridian-shipments.csv")
     if local.exists():
         return load_shipments(local)
+    if is_local_portal(settings.portal_base_url):
+        # The local fake portal is built from the same synthetic world (a fresh clone has no CSV).
+        from meridian.agent.demo import load_world_shipments
+
+        return load_world_shipments()
     import httpx
 
     key = settings.team_key.get_secret_value()

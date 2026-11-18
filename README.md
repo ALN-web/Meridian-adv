@@ -134,11 +134,12 @@ src/meridian/
   records.py         Meridian shipment records (CSV) loader
   reconcile/         rule engine — pure, deterministic, unit-tested
   portal/            Playwright client: login, search, download, disputes, retries
-  agent/             planner, task runner, checkpoint store, human-in-the-loop
+  agent/             planner, task runner, checkpoint store, human-in-the-loop; month.py = whole month in parallel
   vision/            screenshot → element fallback; week-2 document reader bridge
   telemetry.py       Langfuse spans + screenshot masking
   ui/                operator screen (task, live log, OTP box, approvals, results)
-harness/             runs all public tasks, scores against expected, writes eval results
+harness/             runs all public tasks, scores against expected, writes eval results;
+                     run_month.py / schedule_month.py = stretch goal
 tests/               unit tests (rules, parsing)
 docs/                brief notes, decisions, cost table
 ```
@@ -392,6 +393,46 @@ Two more real-portal traps were found and fixed in this run:
 `python harness/rescore.py --runs live-full-4a,live-full-4b,t20-dispute-check --label live-final-2`
 (`live-full-4a` was rebuilt from the run store: that part of the batch was stopped before it wrote its files.)
 
+## Stretch goal: a whole month in parallel, every month
+
+```bash
+python harness/run_month.py --mode live --month 2026-10 --workers 4      # real portal, OTP in the operator screen
+python harness/run_month.py --mode fake --month 2026-10 --workers 4 --compare   # fake portal, with a 1-context baseline
+python harness/schedule_month.py              # every month: day 2, 07:10 IST, last month
+docker compose --profile scheduler up -d      # the same schedule as a container
+```
+
+- **Parallel, but polite.** One browser, `--workers` separate browser contexts, **one shared limiter**, so the
+  portal still gets at most 2 requests a second in total. It is faster because the portal is slow: while one
+  context waits for a page or Tesseract reads a scan, the others use the free request slots.
+- **One OTP.** The lead context logs in; the others start from its saved session. When the portal ends the
+  session, the first context to notice logs in again (one OTP) and the others take that session under a shared
+  lock instead of asking for more codes (`PortalClient.login_lock`).
+- **Three shared queues:** read every invoice once (billing history) → read the delivery proofs of the
+  month's shipments → reconcile in code with the same rules engine (no portal calls). Missing-in-portal uses the
+  delivery month.
+- **Read-only.** A month run never raises a dispute. It lists the disputes to raise; a person raises them with the
+  dispute task and approves each one.
+- **Summary for the logistics manager:** `runs/month/<YYYY-MM>/summary.md` (at a glance, by lane, why invoices
+  were wrong, disputes to raise, delivered-but-never-invoiced, what needs a person, run speed), plus
+  `invoices.csv` and `report.json`. The run is stored like any task, so it shows on **Results** and **Monthly
+  summary** (new "Whole-month runs" table) and gets its own Langfuse trace.
+- **Schedule:** `schedule_month.py` sleeps until day 2, 07:10 IST, runs last month, retries up to 3 times an
+  hour apart and never runs a month twice. If the saved session has expired, the OTP is asked for on the
+  operator screen (beep + flashing tab). A cron line works too (see the script's docstring).
+
+Measured on the fake portal (chaos on, October 2026, every lane, 10 invoices / 30 PODs):
+
+| Contexts | Time | Portal requests | Requests/s | Answers |
+|---|---:|---:|---:|---|
+| 1 (one after another) | 247.5 s | 326 | 1.32 | — |
+| 4 (parallel) | 176.6 s | 347 | 1.96 | identical to the 1-context run and to the rules engine |
+
+The parallel run sits at the 2 req/s cap, so on the fake portal (fast pages) that is the ceiling; on the real
+portal, where a page takes seconds, the sequential run leaves more of the budget unused and parallel gains more.
+Tested in `tests/test_month.py` (shared session, limiter, schedule, summary, and an end-to-end parallel run on
+the fake portal checked against the engine with no dispute written).
+
 ## Cost table
 
 Budget ₹6,000 for the week; suggested cap ₹3,000 for this project. Spend limits set on every provider on day 1.
@@ -418,19 +459,19 @@ Tracked in [docs/decisions.md](docs/decisions.md).
 
 ## Roadmap
 
-- [ ] Day 1 — repo, Docker, spend limits; thinnest end-to-end path (log in, list one invoice)
+- [x] Day 1 — repo, Docker, spend limits; thinnest end-to-end path (log in, list one invoice)
 - [x] Reconciliation engine (`src/meridian/reconcile/`) — all rules, expected amounts, dispute proposals, missing-in-portal; unit-tested
 - [x] Portal client foundation (`src/meridian/portal/`) — login, OTP/CAPTCHA hand-off, page-state detection, safe notice dismissal, retries with backoff, re-login on expiry, 2 req/s limiter, layout-tolerant table parsing, masked screenshots
 - [x] Operator screen (`streamlit run src/meridian/ui/app.py`) — plain-English task → plan, live step log, OTP box, dispute approvals, results, evaluation summary; demo mode on a simulated portal
 - [x] Test harness + evaluation page — runs all 20 public tasks, scores against an answer key, checks duplicate disputes on re-run
 - [x] Fake portal with chaos + live browser runner (`src/meridian/agent/live.py`) — all task kinds, OTP via operator screen, PDF date reading, never-write-twice dispute flow
 - [x] Run `harness/recon.py` against the live portal and tune selectors (all pages incl. invoice view, POD result, raise-dispute form)
-- [ ] Day 2 — core path on public tasks
-- [ ] Day 3 — "portal that fights back": retries, resume, OTP, popups; first full test run
+- [x] Day 2 — core path on public tasks
+- [x] Day 3 — "portal that fights back": retries, resume, OTP, popups; first full test run
 - [x] Langfuse tracing (one trace per task, span per step, masked, screenshots attached)
-- [ ] Day 4 — safety (dispute gate), failure handling
+- [x] Day 4 — safety (dispute gate), failure handling
 - [ ] Day 5 — evaluation page, README, stretch goal, demo rehearsal
-- [ ] Stretch — whole month in parallel browser contexts within rate limit, scheduled monthly with a summary
+- [x] Stretch — whole month in parallel browser contexts within rate limit, scheduled monthly with a summary (see "Stretch goal")
 
 ## Related
 

@@ -96,8 +96,8 @@ with status. ✅ done · 🟡 partial · ❌ not started · ⭐ stretch.
 
 | # | Feature | Status |
 |---|---|---|
-| 9.1 | Whole month, every lane, parallel browser contexts within the rate limit | ❌ |
-| 9.2 | Scheduled monthly run with a summary for the logistics manager | ❌ (summary page in 5.13) |
+| 9.1 | Whole month, every lane, parallel browser contexts within the rate limit | ✅ `harness/run_month.py` · fake portal Oct 2026: 247.5 s one context → 176.6 s with 4 (1.4×) at 1.96 req/s, identical answers |
+| 9.2 | Scheduled monthly run with a summary for the logistics manager | ✅ `harness/schedule_month.py` / `docker compose --profile scheduler up -d` → `runs/month/<YYYY-MM>/summary.md` + Monthly summary page |
 
 ## Biggest open risk
 
