@@ -255,6 +255,13 @@ class MonthRunner:
         lane_out: dict[str, dict] = {ln: {"invoices": [], "missing_in_portal": [], "disputes_to_raise": []} for ln in lanes}
         details: dict[str, dict] = {}
         pod_map = {s: p for s, (p, _) in pods.items() if p is not None}
+        if self.store and self.run_id:  # evidence for the Results and Documents pages, as in a lane task
+            for r in targets:
+                if r.invoice_no in invoices and invoices[r.invoice_no][1]:
+                    self.store.add_document(self.run_id, "invoice_pdf", f"INV_{r.invoice_no}", str(invoices[r.invoice_no][1]))
+            for sid, (_, pdf) in pods.items():
+                if pdf:
+                    self.store.add_document(self.run_id, "pod_pdf", f"POD_{sid}", str(pdf))
         for row in sorted(targets, key=lambda r: r.invoice_no):
             out, detail, proposal = self._reconcile_row(row, invoices, inv_errors, index, pod_errors, pod_map,
                                                         shipments, rate_card, fuel, disputed)

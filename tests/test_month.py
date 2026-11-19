@@ -217,6 +217,8 @@ def test_month_run_in_parallel_matches_the_engine_and_writes_nothing(tmp_path, m
     want = {i.invoice_no: reconcile_invoice(i, w.shipments, w.reference()).to_output() for i in w.search(lane, "2026-10")}
     got = {i["invoice_no"]: i for i in rep["lanes"][lane]["invoices"]}
     assert set(got) == set(want)
+    labels = {d["label"] for d in store.documents(run_id)}
+    assert {f"INV_{no}" for no in want} <= labels and any(x.startswith("POD_") for x in labels)
     for no, o in want.items():
         assert (got[no]["result"], got[no].get("reasons"), got[no].get("expected_inr")) == \
                (o["result"], o.get("reasons"), o.get("expected_inr"))
