@@ -6,14 +6,9 @@ from collections import Counter
 import pandas as pd
 import streamlit as st
 
-from meridian.ui.common import big, get_store, header, inr, latest_details
+from meridian.ui.common import REASON_LABEL, big, get_store, header, inr, latest_details, money_table, reasons_text
 
 INK = "#0e0e0e"
-REASON_LABEL = {
-    "shipment_unknown": "Not our shipment", "duplicate_billing": "Billed twice", "no_pod": "No delivery proof",
-    "weight_over": "Weight over +2%", "rate_wrong": "Wrong rate", "surcharge_wrong": "Wrong fuel %",
-    "detention_unjustified": "Detention not due", "math_error": "Totals don't add up",
-}
 
 
 def render() -> None:
@@ -72,10 +67,10 @@ def render() -> None:
                                          wrong=("result", lambda s: int((s == "mismatch").sum())),
                                          billed=("billed", "sum"), expected=("expected", "sum"),
                                          overcharge=("overcharge", lambda s: s.clip(lower=0).sum())).reset_index()
-    money = lambda t: st.column_config.NumberColumn(t, format="₹ %.2f")  # noqa: E731
-    st.dataframe(table, hide_index=True, width="stretch",
-                 column_config={"lane": "Lane", "invoices": "Invoices", "wrong": "Wrong", "billed": money("Billed"),
-                                "expected": money("Expected"), "overcharge": money("Overcharge")})
+    money_table(table.sort_values("overcharge", ascending=False), ["billed", "expected", "overcharge"],
+                hide_index=True, width="stretch",
+                column_config={"lane": "Lane", "invoices": "Invoices", "wrong": "Wrong", "billed": "Billed",
+                               "expected": "Correct amount", "overcharge": "Over-billed"})
 
     missing = []
     for r in all_runs:
@@ -109,8 +104,7 @@ def _month_runs(all_runs, month: str) -> None:
     todo = runs[0].result.get("disputes_to_raise") or []
     if todo:
         st.markdown("Disputes to raise from the latest month run — use a dispute task; each needs approval:")
-        st.dataframe(pd.DataFrame([{**d, "reasons": ", ".join(d["reasons"])} for d in todo]), hide_index=True,
-                     width="stretch", column_config={
-                         "billed_inr": st.column_config.NumberColumn("Billed", format="₹ %.2f"),
-                         "expected_inr": st.column_config.NumberColumn("Correct amount", format="₹ %.2f"),
-                         "overcharge_inr": st.column_config.NumberColumn("Over", format="₹ %.2f")})
+        money_table(pd.DataFrame([{**d, "reasons": reasons_text(d["reasons"])} for d in todo]),
+                    ["billed_inr", "expected_inr", "overcharge_inr"], hide_index=True, width="stretch",
+                    column_config={"invoice_no": "Invoice", "reasons": "Why", "billed_inr": "Billed",
+                                   "expected_inr": "Correct amount", "overcharge_inr": "Over by"})

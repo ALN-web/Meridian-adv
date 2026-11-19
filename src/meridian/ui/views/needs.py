@@ -6,7 +6,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from meridian.ui.common import chips, get_store, header, inr
+from meridian.ui.common import REASON_LABEL, chips, get_store, header, inr
 from meridian.ui.views.widgets import documents_for, invoice_header, line_table
 
 
@@ -57,7 +57,7 @@ def _approvals(store) -> int:
         billed, expected = Decimal(d["billed_inr"]), Decimal(d["expected_inr"])
         with st.container(border=True):
             c = st.columns([2.2, 1.2, 1.2, 1.2, 1.4], vertical_alignment="center")
-            c[0].markdown(f"**{d['invoice_no']}**<br>" + chips(d["reasons"], "bad"), unsafe_allow_html=True)
+            c[0].markdown(f"**{d['invoice_no']}**<br>" + chips([REASON_LABEL.get(r, r) for r in d["reasons"]], "bad"), unsafe_allow_html=True)
             for col, label, val, color in ((c[1], "Billed", billed, ""), (c[2], "Correct", expected, ""),
                                            (c[3], "Over", billed - expected, "color:#c23338")):
                 col.markdown(f"<div class='lbl'>{label}</div><div class='big' style='{color}'>{inr(val)}</div>", unsafe_allow_html=True)

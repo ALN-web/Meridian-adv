@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 
 from meridian.store import Store
-from meridian.ui.common import chips, inr
+from meridian.ui.common import REASON_LABEL, chips, inr, money_table, reasons_text
 
 LINE_COLS = {
     "shipment_id": "Shipment",
@@ -43,26 +43,24 @@ def line_table(detail: dict) -> None:
         st.caption("No line details recorded for this invoice.")
         return
     df = pd.DataFrame(rows)
-    df["reasons"] = df["reasons"].map(lambda r: ", ".join(r) if r else "ok")
+    codes = df["reasons"].map(lambda r: list(r) if r else [])
+    df["reasons"] = codes.map(lambda r: reasons_text(r) if r else "OK")
     df = df[[c for c in LINE_COLS if c in df]].rename(columns=LINE_COLS)
 
     def hi(row):
-        bad = set()
-        for reason in str(row["Why"]).split(", "):
-            bad.update(REASON_COLS.get(reason, []))
-        return ["background-color: rgba(208,59,59,.16)" if c in bad or (c == "Why" and row["Why"] != "ok") else ""
+        bad = {c for code in codes[row.name] for c in REASON_COLS.get(code, [])}
+        return ["background-color: rgba(208,59,59,.16)" if c in bad or (c == "Why" and codes[row.name]) else ""
                 for c in row.index]
 
-    money = st.column_config.NumberColumn(format="₹ %.2f")
     kg = st.column_config.NumberColumn(format="%.1f")
     pct = st.column_config.NumberColumn(format="%.1f%%")
     rate = st.column_config.NumberColumn(format="%.2f")
-    st.dataframe(df.style.apply(hi, axis=1), hide_index=True, width="stretch",
-                 column_config={"Billed": money, "Expected": money, "Detention": money,
-                                "Billed kg": kg, "Actual kg": kg, "Limit (+2%)": kg,
-                                "Billed rate": rate, "Card rate": rate,
-                                "Billed fuel %": pct, "Month fuel %": pct,
-                                "Days late": st.column_config.NumberColumn(format="%d")})
+    money_table(df, ["Billed", "Expected", "Detention"], style=lambda sty: sty.apply(hi, axis=1), hide_index=True,
+                width="stretch",
+                column_config={"Billed kg": kg, "Actual kg": kg, "Limit (+2%)": kg,
+                               "Billed rate": rate, "Card rate": rate,
+                               "Billed fuel %": pct, "Month fuel %": pct,
+                               "Days late": st.column_config.NumberColumn(format="%d")})
 
 
 def invoice_header(detail: dict) -> None:
@@ -75,7 +73,7 @@ def invoice_header(detail: dict) -> None:
     big(c[2], "Expected", inr(detail.get("expected_inr")))
     big(c[3], "Difference", inr(detail.get("overcharge_inr")), "dispute exists" if detail.get("already_disputed") else "")
     reasons = detail.get("reasons") or []
-    st.markdown("<div style='margin-top:10px'>" + (chips(reasons, "bad") if reasons else chips(["all rules passed"], "ok")) + "</div>",
+    st.markdown("<div style='margin-top:10px'>" + (chips([REASON_LABEL.get(r, r) for r in reasons], "bad") if reasons else chips(["all rules passed"], "ok")) + "</div>",
                 unsafe_allow_html=True)
 
 

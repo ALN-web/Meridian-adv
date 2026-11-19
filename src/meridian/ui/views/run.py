@@ -14,17 +14,13 @@ import streamlit.components.v1 as components
 from meridian.agent.demo import sample_tasks
 from meridian.agent.modes import portal_reachable, start_runner
 from meridian.agent.planner import PlanError, plan_task
-from meridian.ui.common import badge, get_store, inr, is_active, latest_details, plan_of, public_tasks, run_label, section
+from meridian.ui.common import (REASON_LABEL, badge, get_store, inr, is_active, latest_details, plan_of,
+                                 public_tasks, run_label, section)
 from meridian.ui.theme import HUB_HEIGHT, hub_html, icon
 
 MODE_LABEL = {"demo": "Demo", "fake": "Fake portal", "live": "Real portal"}
 PROBLEM_OUTCOMES = {"failed", "needs_human", "session_expired", "not_found", "unreadable", "submit_error",
                     "not_confirmed", "rejected", "cancelled", "waiting_for_human", "otp_requested", "skipped"}
-REASON_LABEL = {
-    "shipment_unknown": "Not our shipment", "duplicate_billing": "Billed twice", "no_pod": "No delivery proof",
-    "weight_over": "Weight over +2%", "rate_wrong": "Wrong rate", "surcharge_wrong": "Wrong fuel %",
-    "detention_unjustified": "Detention not due", "math_error": "Totals don't add up",
-}
 LOWER_H = 430          # height of the lane map and invoice board cards
 PANEL_H = HUB_HEIGHT + LOWER_H + 16
 COMPOSER_H = 250

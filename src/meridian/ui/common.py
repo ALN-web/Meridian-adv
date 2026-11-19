@@ -90,6 +90,33 @@ def indian(d: Decimal) -> str:
     return f"{whole}.{frac}"
 
 
+REASON_LABEL = {
+    "shipment_unknown": "Not our shipment", "duplicate_billing": "Billed twice", "no_pod": "No delivery proof",
+    "weight_over": "Weight over +2%", "rate_wrong": "Wrong rate", "surcharge_wrong": "Wrong fuel %",
+    "detention_unjustified": "Detention not due", "math_error": "Totals don't add up",
+}
+RESULT_LABEL = {"match": "Billed right", "mismatch": "Wrong", "cancelled": "Cancelled"}
+HUMAN_LABEL = {"otp": "OTP", "approval": "Dispute approval", "captcha": "CAPTCHA"}
+
+
+def reasons_text(reasons) -> str:
+    """['weight_over', 'rate_wrong'] -> 'Weight over +2%, Wrong rate' (the words on screen, not the codes)."""
+    if not isinstance(reasons, (list, tuple)):
+        return ""
+    return ", ".join(REASON_LABEL.get(r, r.replace("_", " ").capitalize()) for r in reasons)
+
+
+def humans_text(kinds) -> str:
+    return ", ".join(HUMAN_LABEL.get(k, k) for k in sorted(set(kinds or []))) or "—"
+
+
+def money_table(df, money: list[str], *, style=None, **kwargs) -> None:
+    """st.dataframe with ₹ in Indian grouping (₹1,02,611.62). Values stay numbers, so columns still sort."""
+    styler = style(df.style) if style else df.style
+    styler = styler.format({c: inr for c in money if c in df.columns}, na_rep="—")
+    st.dataframe(styler, **kwargs)
+
+
 def hhmm(ts: float | None) -> str:
     return datetime.fromtimestamp(ts).strftime("%d %b %H:%M:%S") if ts else ""
 

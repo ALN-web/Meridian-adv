@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from meridian.ui.common import big, get_store, header, hhmm, inr
+from meridian.ui.common import big, get_store, header, hhmm, inr, money_table, reasons_text
 
 ORDER = ("pending", "approved", "submitted", "confirmed", "rejected", "skipped", "failed")
 FLOW = "<span class='pill p-grey'>Proposed</span> → <span class='pill p-wait'>Approved</span> → " \
@@ -47,14 +47,13 @@ def render() -> None:
     view = [d for d in rows if d["status"] in status]
     if view:
         df = pd.DataFrame(view)
-        df["reasons"] = df["reasons"].map(", ".join)
+        df["reasons"] = df["reasons"].map(reasons_text)
         df["overcharge"] = df.apply(lambda x: float(Decimal(x["billed_inr"]) - Decimal(x["expected_inr"])), axis=1)
         df["decided_at"] = df["decided_at"].map(hhmm)
-        money = lambda t: st.column_config.NumberColumn(t, format="₹ %.2f")  # noqa: E731
-        st.dataframe(df[["invoice_no", "status", "reasons", "overcharge", "portal_ref", "decided_at"]],
-                     hide_index=True, width="stretch",
-                     column_config={"invoice_no": "Invoice", "status": "Status", "reasons": "Reasons",
-                                    "overcharge": money("Over"), "portal_ref": "Portal ref", "decided_at": "Decided"})
+        money_table(df[["invoice_no", "status", "reasons", "overcharge", "portal_ref", "decided_at"]], ["overcharge"],
+                    hide_index=True, width="stretch",
+                    column_config={"invoice_no": "Invoice", "status": "Status", "reasons": "Why",
+                                   "overcharge": "Over by", "portal_ref": "Portal ref", "decided_at": "Decided"})
 
     receipts = []
     for d in rows:
