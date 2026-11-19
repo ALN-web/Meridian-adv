@@ -15,6 +15,7 @@ Flow per task kind
 from __future__ import annotations
 
 import asyncio
+import logging
 import threading
 import time
 from dataclasses import replace
@@ -28,6 +29,8 @@ from meridian.portal.errors import HumanNeeded, LoginFailed, PortalError
 from meridian.portal.human import StoreHumanGate
 from meridian.portal.throttle import RateLimiter
 from meridian.records import Shipment, load_shipments
+
+log = logging.getLogger(__name__)
 from meridian.reconcile import (
     BillingRecord,
     MissingReferenceData,
@@ -61,25 +64,47 @@ def is_local_portal(base_url: str) -> bool:
     return bool(re.search(r"//(127\.0\.0\.1|localhost|fakeportal)\b", base_url))
 
 
+_RECORDS_FETCHED: set[str] = set()  # portals whose CSV was downloaded in this process
+
+
 def load_meridian_records(settings: Settings) -> dict[str, Shipment]:
-    """Meridian's CSV: local copy in data/ if present, else fetched with the team key (never logged)."""
+    """Meridian's shipment records for the portal in use.
+
+    On the real portal the CSV is downloaded fresh (with the team key, never logged) once per process,
+    because a portal reset to a new seed (the hidden test) comes with new records: a copy left in data/
+    from the public seed would silently give wrong "missing" and "not our shipment" answers. The local
+    copy is only a fallback when the download fails, or when MERIDIAN_OFFLINE_RECORDS=1.
+    """
+    import os
+
     local = Path("data/meridian-shipments.csv")
-    if local.exists():
-        return load_shipments(local)
     if is_local_portal(settings.portal_base_url):
+        if local.exists():
+            return load_shipments(local)
         # The local fake portal is built from the same synthetic world (a fresh clone has no CSV).
         from meridian.agent.demo import load_world_shipments
 
         return load_world_shipments()
-    import httpx
-
     key = settings.team_key.get_secret_value()
-    if not key:
+    base = settings.portal_base_url.rstrip("/")
+    offline = os.environ.get("MERIDIAN_OFFLINE_RECORDS") == "1"
+    if key and not offline and base not in _RECORDS_FETCHED:
+        import httpx
+
+        try:
+            r = httpx.get(f"{base}/internal/meridian-shipments.csv", params={"key": key}, timeout=120)
+            r.raise_for_status()
+            if "shipment" not in r.text[:200].lower():
+                raise ValueError("response is not the shipments CSV")
+            local.parent.mkdir(exist_ok=True)
+            local.write_text(r.text, encoding="utf-8")
+            _RECORDS_FETCHED.add(base)
+        except Exception as exc:
+            if not local.exists():
+                raise RuntimeError(f"Could not download Meridian's records: {type(exc).__name__}") from None
+            log.warning("Meridian records download failed (%s); using the copy in data/", type(exc).__name__)
+    if not local.exists():
         raise RuntimeError("No data/meridian-shipments.csv and no TEAM_KEY to fetch it")
-    r = httpx.get(f"{settings.portal_base_url.rstrip('/')}/internal/meridian-shipments.csv", params={"key": key}, timeout=120)
-    r.raise_for_status()
-    local.parent.mkdir(exist_ok=True)
-    local.write_text(r.text, encoding="utf-8")
     return load_shipments(local)
 
 

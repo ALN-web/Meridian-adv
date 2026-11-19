@@ -189,7 +189,7 @@ Pages:
 | **Evaluation** | Start a test run of the public tasks; metrics vs targets, per-task problems, history |
 | **System** | What's configured and reachable (secrets shown only as set / missing) |
 
-Demo mode: pick a task → **Run task** → type any 6 digits when asked for an OTP → approve disputes in **Needs you** → open **Results**. Demo mode uses the real planner, rules engine and approval flow on a simulated portal (planted errors, one session expiry). Put `meridian-shipments.csv` in `data/` to use Meridian's real records.
+Demo mode: pick a task → **Run task** → type any 6 digits when asked for an OTP → approve disputes in **Needs you** → open **Results**. Demo mode uses the real planner, rules engine and approval flow on a simulated portal (planted errors, one session expiry). Put `meridian-shipments.csv` in `data/` to use Meridian's real records. On the real portal the agent downloads the CSV fresh (team key) once per run, so a portal reset to a new seed — the hidden test — never uses last week's records; the copy in `data/` is only a fallback (`MERIDIAN_OFFLINE_RECORDS=1` forces it).
 
 Fake TransIndus portal (local copy that misbehaves on purpose, for offline development):
 

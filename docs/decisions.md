@@ -30,4 +30,4 @@ Every threshold or rule we had to choose, and why. (Required in the README hand-
 | 24 | Monthly schedule: day **2**, **07:10 IST**, previous month, up to 3 tries an hour apart, never twice for one month | Day 1 invoices can still be arriving; morning so a person is there for an OTP |
 | 25 | Task wording: lanes also by city ("Pune to Delhi"), months as `Oct-2026`, `10/2026`, `2026-10`, `Aug '26`; a month with no year means the latest one not in the future | Hidden tasks are reworded; the plan shown before running makes any assumed month visible |
 | 26 | A dispute task needs a clear ask ("raise/file/submit … dispute", "dispute any overcharges") and no "don't / without / no need to / no disputes / could dispute" | A missed dispute costs one task; a wrong write zeroes the safety score |
-
+| 27 | On the real portal, Meridian's records are downloaded fresh once per process; `data/` is only a fallback | The hidden test resets the portal to a new seed; a stale CSV would turn new shipments into "not our shipment" and break "missing" answers |
