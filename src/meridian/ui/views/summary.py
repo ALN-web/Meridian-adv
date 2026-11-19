@@ -8,7 +8,46 @@ import streamlit as st
 
 from meridian.ui.common import REASON_LABEL, big, get_store, header, inr, latest_details, money_table, reasons_text
 
-INK = "#0e0e0e"
+INK, MUTED, YELLOW = "#0e0e0e", "#c9c8c2", "#f5c400"
+FONT = "Manrope, system-ui, sans-serif"
+
+
+def _short(v: float) -> str:
+    """₹11,352 -> ₹11.4 k, ₹2,45,000 -> ₹2.45 L (labels on bars stay short)."""
+    v = float(v)
+    if v >= 1e5:
+        return f"₹{v / 1e5:.2f} L"
+    if v >= 1e3:
+        return f"₹{v / 1e3:.1f} k"
+    return f"₹{v:.0f}"
+
+
+def _bars(df: pd.DataFrame, cat: str, val: str, *, horizontal: bool, fmt, title: str) -> None:
+    """Single-series bars: grey, the biggest in Meridian yellow, value on each bar, tooltip on hover."""
+    import altair as alt
+
+    d = df.copy()
+    d["label"] = d[val].map(fmt)
+    d["top"] = (d[val] == d[val].max()) & (d[val] > 0)
+    color = alt.condition("datum.top", alt.value(YELLOW), alt.value(MUTED))
+    order = list(d.sort_values(val, ascending=False)[cat])
+    top = float(d[val].max()) or 1.0  # headroom so the value labels are never cut off
+    tip = [alt.Tooltip(f"{cat}:N", title=""), alt.Tooltip("label:N", title=title)]
+    if horizontal:
+        base = alt.Chart(d).encode(y=alt.Y(f"{cat}:N", sort=order, title=None, axis=alt.Axis(labelLimit=180)),
+                                   x=alt.X(f"{val}:Q", title=None, axis=None,
+                                           scale=alt.Scale(domain=[0, top * 1.3])))
+        bars = base.mark_bar(cornerRadiusTopRight=4, cornerRadiusBottomRight=4, height={"band": 0.62})
+        text = base.mark_text(align="left", dx=6, color=INK, fontWeight=600, font=FONT).encode(text="label:N")
+    else:
+        base = alt.Chart(d).encode(x=alt.X(f"{cat}:N", sort=order, title=None, axis=alt.Axis(labelAngle=0)),
+                                   y=alt.Y(f"{val}:Q", title=None, axis=None,
+                                           scale=alt.Scale(domain=[0, top * 1.15])))
+        bars = base.mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, width={"band": 0.62})
+        text = base.mark_text(baseline="bottom", dy=-6, color=INK, fontWeight=600, font=FONT).encode(text="label:N")
+    chart = (bars.encode(color=color, tooltip=tip) + text).properties(height=260).configure_view(stroke=None) \
+        .configure_axis(labelColor="#44443f", labelFont=FONT, labelFontSize=12, domain=False, ticks=False, grid=False)
+    st.altair_chart(chart, width="stretch")
 
 
 def render() -> None:
@@ -52,13 +91,15 @@ def render() -> None:
     with left:
         st.markdown("**Overcharge by lane**")
         by_lane = checked.assign(o=checked["overcharge"].clip(lower=0)).groupby("lane")["o"].sum().sort_values(ascending=False)
-        st.bar_chart(by_lane.rename("Overcharge (₹)"), color=INK, y_label="₹", x_label="", height=260)
+        _bars(by_lane.rename("over").reset_index(), "lane", "over", horizontal=False,
+              fmt=lambda v: _short(v), title="Over-billed")
     with right:
         st.markdown("**Why invoices were wrong**")
         reasons = Counter(REASON_LABEL.get(r, r) for rs in checked["reasons"] for r in rs)
         if reasons:
-            rs = pd.Series(reasons).sort_values(ascending=True).rename("Invoices")
-            st.bar_chart(rs, color=INK, horizontal=True, x_label="", y_label="", height=260)
+            rs = pd.DataFrame({"reason": list(reasons), "n": list(reasons.values())})
+            _bars(rs, "reason", "n", horizontal=True, fmt=lambda v: f"{int(v)} invoice{'s' if v != 1 else ''}",
+                  title="Invoices")
         else:
             st.markdown("<p class='muted'>No problems found.</p>", unsafe_allow_html=True)
 
