@@ -173,6 +173,12 @@ iframe[srcdoc*="__meridianAlert"] { box-shadow: none !important; display: block;
   .chead { flex-wrap: wrap; } .chead .t { flex: 1 1 100%; }  /* tag drops under the title instead of squeezing it */
   .waitbar { flex-wrap: wrap; border-radius: 18px; }
   .big { font-size: 1.25rem; }
+  /* phones: the top nav folds into the sidebar; make its toggle a clear 'Menu' button, not a bare » */
+  [data-testid="stExpandSidebarButton"] { width: auto !important; height: 36px !important; padding: 0 14px 0 10px !important;
+    border-radius: 999px !important; background: var(--ink) !important; color: var(--white) !important; gap: 6px; }
+  [data-testid="stExpandSidebarButton"] * { color: var(--white) !important; }
+  [data-testid="stExpandSidebarButton"]::after { content: "Menu"; font: 600 13px Manrope, system-ui, sans-serif; }
+  [data-testid="stSidebar"] [data-testid="stSidebarNavLink"] { min-height: 44px; }  /* thumb-sized targets */
 }
 </style>
 """
