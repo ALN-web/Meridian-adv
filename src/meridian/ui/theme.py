@@ -202,14 +202,17 @@ def icon(name: str, size: int = 16, color: str = "currentColor") -> str:
 # ---------------------------------------------------------------- 3D scene
 
 _SCENE = r"""
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-"three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="importmap">{"imports":{"three":"/app/static/three/three.module.min.js",
+"three/addons/":"/app/static/three/addons/"}}</script>
+<script>/* 3D is decoration: if it hasn't started in 3.5 s (old Streamlit, no WebGL), show the still picture */
+setTimeout(() => { if (!window.__m3d) document.getElementById("card").classList.add("nogl"); }, 3500);</script>
 <script type="module">
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 const CFG = __CFG__;
+window.__m3d = true;
 const canvas = document.getElementById("c"), card = document.getElementById("card");
 let renderer;
 try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); }
@@ -350,7 +353,11 @@ html,body{height:100%;background:transparent;overflow:hidden;font-family:Manrope
   background:radial-gradient(90% 120% at 62% 30%,#ffffff 0%,#f4f3ef 45%,#e7e6e0 100%)}
 canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab}
 canvas:active{cursor:grabbing}
-.nogl canvas{display:none}
+.nogl canvas,.nogl #pin,.nogl #tag,.nogl .btns{display:none}
+#pin,#tag{opacity:0}
+.still{display:none}
+.nogl .still{display:block;position:absolute;right:5%;top:50%;transform:translateY(-58%);height:70%;max-width:46%}
+@media (max-width:700px){.nogl .still{display:none}}
 .chip{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.78);
   border:1px solid rgba(14,14,14,.06);font-size:12px;font-weight:600;color:#44443f;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .chip i{width:7px;height:7px;border-radius:50%;background:#2fbf71;box-shadow:0 0 0 3px rgba(47,191,113,.18)}
@@ -391,7 +398,7 @@ h1{font-weight:700;font-size:30px;line-height:1.02;letter-spacing:-.035em}
 @media (max-width:700px){.chips{grid-template-columns:1fr 1fr;gap:8px}.k{padding:9px 10px}.k b{font-size:16px}
   h1{font-size:24px}.mark i{height:36px;width:9px}#tag,#pin{display:none}.btn.txt{display:none}}
 </style></head><body>
-<div class="card" id="card"><canvas id="c" aria-label="3D view of a Meridian container on a road trailer. Drag to turn it."></canvas>
+<div class="card" id="card"><svg class="still" viewBox="0 0 620 360" aria-hidden="true"><ellipse cx="310" cy="318" rx="270" ry="22" fill="#0e0e0e" opacity=".08"/><path d="M70 120 L400 70 L560 130 L230 185 Z" fill="#2a2a27"/><path d="M70 120 L230 185 L230 300 L70 238 Z" fill="#0e0e0e"/><path d="M230 185 L560 130 L560 245 L230 300 Z" fill="#1b1b19"/><path d="M262 182 L262 294 M294 176 L294 289 M326 171 L326 284 M358 166 L358 278 M390 160 L390 273 M422 155 L422 267 M454 150 L454 262 M486 144 L486 256 M518 139 L518 251 M95 140 L95 238 M130 154 L130 252 M165 168 L165 266 M200 181 L200 279" stroke="#ffffff" stroke-opacity=".07" stroke-width="3"/><text x="268" y="232" font-family="Manrope, sans-serif" font-size="30" font-weight="700" fill="#ffffff" transform="skewY(-9.5) translate(0 45)">MERIDIAN</text><g transform="translate(470 196) skewY(-9.5)"><path d="M0 0 h12 l-10 38 h-12 z" fill="#f5c400"/><path d="M18 0 h12 l-10 38 h-12 z" fill="#ffffff"/></g></svg><canvas id="c" aria-label="3D view of a Meridian container on a road trailer. Drag to turn it."></canvas>
 <div id="pin">+</div><div id="tag"><span>Container ID</span><b>MRDU 204871-2</b><small>40 ft High Cube · Pune hub</small></div>
 <div class="ui">
   <div class="top">
@@ -413,7 +420,7 @@ h1{font-weight:700;font-size:34px;line-height:1.05;letter-spacing:-.035em}
 p{font-size:14px;color:#44443f;max-width:460px;line-height:1.45}
 @media (max-width:700px){.ui{background:rgba(244,243,239,.82);padding:18px}h1{font-size:26px}p{font-size:13px}}
 </style></head><body>
-<div class="card" id="card"><canvas id="c" aria-hidden="true"></canvas>
+<div class="card" id="card"><svg class="still" viewBox="0 0 620 360" aria-hidden="true"><ellipse cx="310" cy="318" rx="270" ry="22" fill="#0e0e0e" opacity=".08"/><path d="M70 120 L400 70 L560 130 L230 185 Z" fill="#2a2a27"/><path d="M70 120 L230 185 L230 300 L70 238 Z" fill="#0e0e0e"/><path d="M230 185 L560 130 L560 245 L230 300 Z" fill="#1b1b19"/><path d="M262 182 L262 294 M294 176 L294 289 M326 171 L326 284 M358 166 L358 278 M390 160 L390 273 M422 155 L422 267 M454 150 L454 262 M486 144 L486 256 M518 139 L518 251 M95 140 L95 238 M130 154 L130 252 M165 168 L165 266 M200 181 L200 279" stroke="#ffffff" stroke-opacity=".07" stroke-width="3"/><text x="268" y="232" font-family="Manrope, sans-serif" font-size="30" font-weight="700" fill="#ffffff" transform="skewY(-9.5) translate(0 45)">MERIDIAN</text><g transform="translate(470 196) skewY(-9.5)"><path d="M0 0 h12 l-10 38 h-12 z" fill="#f5c400"/><path d="M18 0 h12 l-10 38 h-12 z" fill="#ffffff"/></g></svg><canvas id="c" aria-hidden="true"></canvas>
 <div class="ui"><span class="label">__LABEL__</span><h1>__TITLE__</h1>__SUB__</div></div>__SCENE__</body></html>"""
 
 HUB_HEIGHT = 450

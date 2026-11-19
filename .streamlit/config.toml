@@ -12,3 +12,7 @@ toolbarMode = "minimal"
 
 [browser]
 gatherUsageStats = false
+
+[server]
+# Serves src/meridian/ui/static/ at /app/static/ (three.js for the 3D headers, no CDN needed)
+enableStaticServing = true
