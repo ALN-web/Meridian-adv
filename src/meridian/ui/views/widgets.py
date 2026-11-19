@@ -115,3 +115,69 @@ def trace_view(result: dict, key: str) -> None:
 def documents_for(store: Store, run_id: str, labels: list[str]) -> list[dict]:
     want = set(labels)
     return [d for d in store.documents(run_id) if d["label"] in want]
+
+
+@st.cache_data(show_spinner=False, max_entries=64)
+def _page_png(path: str, mtime: float, page: int = 0) -> bytes | None:
+    """First page of a PDF as a PNG, for showing evidence next to the numbers."""
+    try:
+        import io
+
+        import pypdfium2 as pdfium
+
+        pdf = pdfium.PdfDocument(path)
+        img = pdf[min(page, len(pdf) - 1)].render(scale=1.6).to_pil().convert("RGB")
+        from PIL import ImageChops, ImageOps
+
+        # trim the blank paper around the text (portal PDFs are mostly empty A4) and keep a margin
+        box = ImageChops.difference(img, ImageOps.invert(ImageOps.invert(img).point(lambda _: 0))).getbbox()
+        if box:
+            m = 40
+            img = img.crop((max(0, box[0] - m), max(0, box[1] - m), min(img.width, box[2] + m), min(img.height, box[3] + m)))
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return buf.getvalue()
+    except Exception:
+        return None
+
+
+def _show_doc(col, doc: dict | None, title: str, missing: str) -> None:
+    from pathlib import Path
+
+    col.markdown(f"**{title}**")
+    if doc is None or not Path(doc["path"]).exists():
+        col.markdown(f"<p class='muted'>{missing}</p>", unsafe_allow_html=True)
+        return
+    p = Path(doc["path"])
+    png = _page_png(str(p), p.stat().st_mtime) if p.suffix.lower() == ".pdf" else None
+    if png:
+        col.image(png, width="stretch")
+    elif p.suffix.lower() == ".png":
+        col.image(str(p), width="stretch")
+    col.download_button(f"Download {p.name}", p.read_bytes(), file_name=p.name, key=f"ev-{doc['id']}", width="stretch")
+
+
+def evidence(store: Store, run_id: str, detail: dict) -> None:
+    """The invoice and a delivery proof side by side, opened on the line that failed."""
+    no = detail.get("invoice_no", "")
+    lines = detail.get("lines") or []
+    sids = [l["shipment_id"] for l in lines]
+    docs = {d["label"]: d for d in documents_for(store, run_id, [f"INV_{no}"] + [f"POD_{s}" for s in sids])}
+    if not docs:
+        return
+    first_bad = next((l["shipment_id"] for l in lines if l.get("reasons")), sids[0] if sids else None)
+    st.markdown("<span class='label sec-label'>Evidence</span>", unsafe_allow_html=True)
+
+    def why(sid: str) -> str:
+        rs = next((l.get("reasons") or [] for l in lines if l["shipment_id"] == sid), [])
+        return f"{sid} · " + (", ".join(REASON_LABEL.get(r, r) for r in rs) if rs else "OK")
+
+    sid = None
+    if sids:
+        sid = st.selectbox("Delivery proof for", sids, index=sids.index(first_bad) if first_bad in sids else 0,
+                           format_func=why, key=f"ev-pod-{run_id}-{no}")
+    left, right = st.columns(2, gap="medium")
+    _show_doc(left, docs.get(f"INV_{no}"), f"Invoice {no}", "The invoice PDF wasn't kept for this run.")
+    if sid:
+        _show_doc(right, docs.get(f"POD_{sid}"), f"Delivery proof {sid}",
+                  "No delivery proof on the portal for this shipment.")

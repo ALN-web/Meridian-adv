@@ -2,14 +2,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
 from meridian.ui.common import (RESULT_LABEL, badge, big, chips, get_store, header, humans_text, money_table,
                                  pick_run, reasons_text)
-from meridian.ui.views.widgets import documents_for, invoice_header, line_table, trace_view
+from meridian.ui.views.widgets import evidence, invoice_header, line_table, trace_view
 
 ROW_BG = {"match": "rgba(47,191,113,.10)", "mismatch": "rgba(229,72,77,.08)", "cancelled": "rgba(127,127,127,.08)"}
 
@@ -77,13 +76,8 @@ def _drill(store, run, r) -> None:
     invoice_header(d)
     st.write("")
     line_table(d)
-    docs = [x for x in documents_for(store, run.id, [f"INV_{no}"] + [f"POD_{l['shipment_id']}" for l in d.get("lines", [])])
-            if Path(x["path"]).exists()]
-    if docs:
-        cols = st.columns(min(len(docs), 5))
-        for n, doc in enumerate(docs):
-            p = Path(doc["path"])
-            cols[n % len(cols)].download_button(doc["label"], p.read_bytes(), file_name=p.name, key=f"rd-{doc['id']}", width="stretch")
+    st.write("")
+    evidence(store, run.id, d)
 
 
 def render() -> None:
