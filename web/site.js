@@ -38,6 +38,20 @@
     addEventListener("keydown", e => { if (e.key === "Escape" && nav.classList.contains("open")) { setOpen(false); menuBtn.focus(); } });
   }
 
+  // 3D is decoration. If the scene script never starts (blocked network, old browser, no WebGL),
+  // drop the scroll-driven 3D sections and show the still picture and the month's real counts.
+  if (document.getElementById("hero3d")) {
+    const no3d = () => {
+      if (window.__meridian3d && !document.documentElement.classList.contains("nogl")) return;
+      document.documentElement.classList.add("nogl");
+      [["cLines", "1,180"], ["cPass", "1,032"], ["cBad", "148"]].forEach(([id, v]) => {
+        const el = document.getElementById(id); if (el) el.textContent = v;
+      });
+    };
+    addEventListener("error", e => { if (e.target && /scene3d\.js$/.test(e.target.src || "")) no3d(); }, true);
+    addEventListener("load", () => setTimeout(no3d, 2500));
+  }
+
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: 0.12 });
   document.querySelectorAll(".reveal").forEach(el => io.observe(el));
 

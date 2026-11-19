@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 
+window.__meridian3d = true;  // site.js shows the still picture if this never runs
+
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const isPhone = () => innerWidth < 680 || innerWidth <= innerHeight;
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));

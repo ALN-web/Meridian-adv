@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'sha256-gvsoaz6jS8ecPNLQkPywtO5qUv6AhTeORdzfdS03UU4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-pwctdEDh62Th+eeUH0z2ylZl9bB6dLw3tPktD5pDLtk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Meridian · Freight invoice audit agent</title>
 <meta name="description" content="An agent that checks every carrier invoice against what was delivered. Fictional company, synthetic data.">
@@ -96,6 +96,14 @@
   .cta .wrap { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); flex-wrap: wrap; }
 
   .nogl #hero3d, .nogl #ship3d { display: none; }
+  /* No WebGL (or the 3D script failed): no scroll-driven tall sections, a still picture instead. */
+  .still { display: none; }
+  .nogl .hero, .nogl .ship { height: auto; }
+  .nogl .stick { position: relative; height: auto; min-height: 0; overflow: visible; }
+  .nogl .hero-ui, .nogl .ship-ui { position: relative; padding: 120px 0 48px; gap: var(--s4); }
+  .nogl .hero .still { display: block; position: absolute; right: 4vw; top: 50%; transform: translateY(-40%); width: min(46vw, 620px); }
+  .nogl .readout { display: none; }
+  @media (max-width: 680px) { .nogl .hero .still { position: relative; right: auto; top: auto; transform: none; width: 100%; margin-top: var(--s3); } }
 
   @media (max-width: 900px) {
     .hero-copy { grid-column: 1 / -1; }
@@ -122,11 +130,11 @@
 </style>
 <script type="importmap">
 { "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  "three": "./vendor/three/three.module.min.js",
+  "three/addons/": "./vendor/three/addons/"
 }, "integrity": {
-  "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js": "sha384-61S/Nu32S3E5+n+KpCOTb2eRYps6fVKm+9Gz1QBvSePFthb46f063Aa/qe/lykFZ",
-  "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/geometries/RoundedBoxGeometry.js": "sha384-S52/WAm3DaIIFna675h5dmavqea/akLlPFtPdnzgWWhnz+/nMqR6PPsSXPOd8Gpw"
+  "./vendor/three/three.module.min.js": "sha384-8/hf5tabFfIo0BPku31TKUvGIKpWGYaMwNtlSNqNyZzXgZCMd4lnOGWbJElML9dv",
+  "./vendor/three/addons/geometries/RoundedBoxGeometry.js": "sha384-S52/WAm3DaIIFna675h5dmavqea/akLlPFtPdnzgWWhnz+/nMqR6PPsSXPOd8Gpw"
 } }
 </script>
 </head>
@@ -147,6 +155,18 @@
 <main id="main" tabindex="-1">
 <header class="hero" id="top">
   <div class="stick">
+    <svg class="still" viewBox="0 0 620 360" aria-hidden="true">
+      <ellipse cx="310" cy="318" rx="270" ry="22" fill="#0e0e0e" opacity=".08"/>
+      <path d="M70 120 L400 70 L560 130 L230 185 Z" fill="#f5c400"/>
+      <path d="M70 120 L230 185 L230 300 L70 238 Z" fill="#c99f00"/>
+      <path d="M230 185 L560 130 L560 245 L230 300 Z" fill="#e3b400"/>
+      <g stroke="#0e0e0e" stroke-opacity=".18" stroke-width="3">
+        <path d="M262 182 L262 294 M294 176 L294 289 M326 171 L326 284 M358 166 L358 278 M390 160 L390 273 M422 155 L422 267 M454 150 L454 262 M486 144 L486 256 M518 139 L518 251"/>
+      </g>
+      <path d="M95 140 L95 238 M130 154 L130 252 M165 168 L165 266 M200 181 L200 279" stroke="#0e0e0e" stroke-opacity=".2" stroke-width="3"/>
+      <text x="268" y="232" font-family="IBM Plex Mono, monospace" font-size="22" font-weight="600" fill="#0e0e0e" transform="skewY(-9.5) translate(0 45)">MRDU 204871-2</text>
+      <g transform="translate(470 196) skewY(-9.5)"><path d="M0 0 h12 l-10 38 h-12 z M18 0 h12 l-10 38 h-12 z" fill="#0e0e0e"/></g>
+    </svg>
     <canvas id="hero3d" role="img" aria-label="A branded container hangs from a crane hook and lands on a container stack as you scroll"></canvas>
     <div class="hero-ui">
       <div class="wrap grid">
