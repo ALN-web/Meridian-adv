@@ -29,7 +29,7 @@ def test_public_task_wording(text, kind, params):
 @pytest.mark.parametrize(
     "text,kind,params",
     [
-        ("reconcile october invoices on pun-blr", None, None),  # no year -> error
+        ("reconcile invoices on pun-blr", None, None),  # no month -> error
         ("Reconcile Oct 2026 on lane pun-hyd", "lane_month", {"lane": "PUN-HYD", "month": "2026-10"}),
         ("Reconcile 2026-09 on PUN-AMD and dispute overcharges", "dispute", {"lane": "PUN-AMD", "month": "2026-09"}),
         ("Which PUN-HYD shipments delivered in Aug '26 were never invoiced?", "missing", {"lane": "PUN-HYD", "month": "2026-08"}),

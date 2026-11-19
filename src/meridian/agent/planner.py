@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from datetime import date
 
 LANES = ("PUN-BLR", "PUN-HYD", "PUN-CHN", "PUN-DEL", "PUN-AMD")
 MONTHS = {m: i for i, m in enumerate(
@@ -21,9 +22,20 @@ MONTHS["sept"] = 9
 
 _INVOICE = re.compile(r"\b([A-Z]{2,5}/\d{2}-\d{2}/\d{3,6})\b", re.I)
 _SHIPMENT = re.compile(r"\bSHP-\d{3,6}\b", re.I)
-_LANE = re.compile(r"\bPUN-[A-Z]{3}\b", re.I)
-_MONTH = re.compile(r"\b(" + "|".join(sorted(MONTHS, key=len, reverse=True)) + r")[a-z]*\.?,?\s*(\d{4}|'?\d{2})\b", re.I)
-_ISO_MONTH = re.compile(r"\b(20\d{2})-(0[1-9]|1[0-2])\b")
+_LANE = re.compile(r"\bPUN[\s_-]*([A-Z]{3})\b", re.I)          # PUN-BLR, pun blr, PUN_BLR (dashes normalised first)
+CITIES = {"bengaluru": "BLR", "bangalore": "BLR", "hyderabad": "HYD", "chennai": "CHN", "madras": "CHN",
+          "delhi": "DEL", "new delhi": "DEL", "ahmedabad": "AMD"}
+_SEP = r"[\s.,'/-]*"
+_MONTH = re.compile(r"\b(" + "|".join(sorted(MONTHS, key=len, reverse=True)) + r")[a-z]*" + _SEP + r"(\d{4}|'?\d{2})\b", re.I)
+_ISO_MONTH = re.compile(r"\b(20\d{2})[-/](0?[1-9]|1[0-2])\b(?![-/]\d)")
+_NUM_MONTH = re.compile(r"\b(0?[1-9]|1[0-2])[-/](20\d{2})\b")
+_BARE_MONTH = re.compile(r"\b(january|february|march|april|june|july|august|september|october|november|december)\b", re.I)
+
+# Writing to the portal only when clearly asked, and never when the task says not to.
+_DISPUTE_YES = re.compile(r"\b(raise|file|submit|lodge|open)\b[^.;]{0,25}\bdisputes?\b"
+                          r"|\bdispute\s+(any|all|the|each|every)?\s*(overcharg|invoice|wrong)", re.I)
+_DISPUTE_NO = re.compile(r"\b(do not|don't|dont|without|never|no need to|not to)\b[^.;]{0,25}\b(disput|rais|fil)"
+                         r"|\bno disputes?\b|\bcould dispute\b|\bwhich (ones )?(we )?(could|should|can) dispute\b", re.I)
 
 
 class PlanError(ValueError):
@@ -37,27 +49,47 @@ class Plan:
     steps: list[str] = field(default_factory=list)
 
 
-def _month(text: str) -> str | None:
+def _month(text: str, today: date | None = None) -> str | None:
     m = _ISO_MONTH.search(text)
     if m:
-        return f"{m.group(1)}-{m.group(2)}"
+        return f"{m.group(1)}-{int(m.group(2)):02d}"
+    m = _NUM_MONTH.search(text)
+    if m:
+        return f"{m.group(2)}-{int(m.group(1)):02d}"
     m = _MONTH.search(text)
-    if not m:
-        return None
-    year = m.group(2).lstrip("'")
-    year = int(year) + 2000 if len(year) == 2 else int(year)
-    return f"{year:04d}-{MONTHS[m.group(1).lower()]:02d}"
+    if m:
+        year = m.group(2).lstrip("'")
+        year = int(year) + 2000 if len(year) == 2 else int(year)
+        return f"{year:04d}-{MONTHS[m.group(1).lower()[:3] if m.group(1).lower() not in MONTHS else m.group(1).lower()]:02d}"
+    m = _BARE_MONTH.search(text)  # "for August": the latest August that isn't in the future
+    if m:
+        today = today or date.today()
+        mon = MONTHS[m.group(1).lower()]
+        return f"{today.year if mon <= today.month else today.year - 1:04d}-{mon:02d}"
+    return None
 
 
-def plan_task(text: str) -> Plan:
-    t = " ".join(text.split())
+def _lane(text: str) -> str | None:
+    m = _LANE.search(text)
+    if m:
+        lane = f"PUN-{m.group(1).upper()}"
+        if lane not in LANES:
+            raise PlanError(f"Unknown lane {lane}. Lanes: {', '.join(LANES)}.")
+        return lane
+    low = text.lower()
+    found = {code for city, code in CITIES.items() if re.search(rf"\b{city}\b", low)}
+    return f"PUN-{found.pop()}" if len(found) == 1 else None
+
+
+def plan_task(text: str, today: date | None = None) -> Plan:
+    t = " ".join(text.replace("\u2013", "-").replace("\u2014", "-").replace("\u2192", " to ").split())
     low = t.lower()
-    lane = (_LANE.search(t).group(0).upper() if _LANE.search(t) else None)
-    month = _month(t)
+    lane = _lane(t)
+    month = _month(t, today)
     invoices = [m.upper() for m in _INVOICE.findall(t)]
     shipments = list(dict.fromkeys(s.upper() for s in _SHIPMENT.findall(t)))
 
-    if shipments and re.search(r"deliver(y|ed)? proof|pod|download", low):
+    if shipments and re.search(r"deliver(y|ed)? proof|proofs? of delivery|\bpods?\b|download|promised|delivered date", low):
         return Plan("collect", {"shipment_ids": shipments}, [
             "Log in to the portal (OTP via operator if asked)",
             *[f"Open delivery proof for {s}, download it, read promised & delivered dates" for s in shipments],
@@ -73,7 +105,8 @@ def plan_task(text: str) -> Plan:
             "Report shipments that appear on no invoice (no disputes)",
         ])
 
-    if re.search(r"\blist\b|show (me )?(all|every)", low) and not re.search(r"reconcile", low):
+    if re.search(r"\blist\b|\bshow\b|\b(what|which) invoices\b|total and status", low) and not re.search(
+            r"reconcile|\baudit\b|\bcheck\b", low):
         _need(lane, month, t)
         return Plan("list", {"lane": lane, "month": month}, [
             "Log in to the portal (OTP via operator if asked)",
@@ -81,7 +114,7 @@ def plan_task(text: str) -> Plan:
             "Report invoice number, total as printed, and status",
         ])
 
-    if invoices and len(invoices) == 1 and not lane:
+    if len(invoices) == 1 and not re.search(r"\ball invoices|\bevery invoice", low):
         inv = invoices[0]
         return Plan("one", {"invoice_no": inv}, [
             "Log in to the portal (OTP via operator if asked)",
@@ -92,9 +125,8 @@ def plan_task(text: str) -> Plan:
             "Report result with reasons, billed and expected amounts, and evidence",
         ])
 
-    if re.search(r"reconcile|check|audit", low) and lane and month:
-        dispute = bool(re.search(r"raise (a )?disputes?|file disputes?|dispute (the )?overcharges?", low)) and not re.search(
-            r"(do not|don't|without|no) (raise|rais|dispute)", low)
+    if re.search(r"reconcile|check|audit|verify", low) and lane and month:
+        dispute = bool(_DISPUTE_YES.search(low)) and not _DISPUTE_NO.search(low)
         kind = "dispute" if dispute else "lane_month"
         steps = [
             "Log in to the portal (OTP via operator if asked)",
