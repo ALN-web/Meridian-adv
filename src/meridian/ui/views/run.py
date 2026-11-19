@@ -133,13 +133,43 @@ def _board_card(details) -> None:
 
 # ---------------------------------------------------------------- agent panel
 
+FRIENDLY = {  # what failed, in the operator's words (the raw step stays in the Trace tab)
+    "invoice_pdf": "the invoice PDF", "pod_pdf": "a delivery proof", "pod": "a delivery proof",
+    "open_invoice": "an invoice", "search_invoices": "the invoice list", "rate_card": "the rate card",
+    "fuel_surcharge": "the fuel surcharge page", "dispute_list": "the dispute list", "login": "the login page",
+    "submit_dispute": "the dispute form",
+}
+WHY = {"PageNotUnderstood": "the page didn't look as expected", "TimeoutError": "the portal was too slow",
+       "SessionExpired": "the portal logged us out", "RateLimited": "the portal asked us to slow down"}
+
+
+def _problem(what: str, outcome: str, detail: str) -> str:
+    thing = FRIENDLY.get(what, what.replace("_", " "))
+    err = next((v for k, v in WHY.items() if k in detail), "")
+    if outcome == "failed":
+        return f"Couldn't open {thing}{f' — {err}' if err else ''}. Retrying."
+    if outcome == "session_expired":
+        return "The portal logged us out. Signing in again."
+    if outcome == "not_found":
+        return f"{thing.capitalize()} isn't on the portal."
+    if outcome == "unreadable":
+        return f"{thing.capitalize()} is unreadable. A person will check it."
+    if outcome in ("waiting_for_human", "otp_requested"):
+        return "I need the one-time password from the operator inbox."
+    return f"{thing.capitalize()}: {outcome.replace('_', ' ')}."
+
+
 def _say(step: dict) -> str | None:
     s, o, d = step["step"], step["outcome"], (step.get("detail") or "")
+    if " · " in s:  # whole-month run: "ctx-2 · invoice_pdf" -> same words as a single run
+        s = s.split(" · ", 1)[1]
     if s == "otp":
         return {"waiting_for_human": "I need the one-time password from the operator inbox.",
                 "submitted": "Code accepted. Signing in."}.get(o)
     if s == "login" and o == "ok":
         return "Signed in to the TransIndus portal."
+    if s == "login" and o == "shared_session":
+        return "Another browser tab signed in again; using its session (no extra OTP)."
     if s == "dismiss_notice" and o == "ok":
         return "Acknowledged the portal's maintenance notice."
     if s.startswith("search_invoices") and o == "ok":
@@ -148,10 +178,14 @@ def _say(step: dict) -> str | None:
         return f"Opened invoice {s.split(':', 1)[1]}."
     if s == "billing_history":
         return d or "Reading every invoice once for billing history."
+    if s == "contexts" and o == "ok":
+        return f"Working in parallel: {d}."
+    if s in ("invoices", "pods") and o == "progress":
+        return f"{'Invoices' if s == 'invoices' else 'Delivery proofs'} read: {d}."
     if s == "runner":
         return None
     if o in PROBLEM_OUTCOMES:
-        return f"{s.split(':')[0].replace('_', ' ').capitalize()}: {o.replace('_', ' ')}. {d}".strip()
+        return _problem(s.split(":")[0], o, d)
     return None
 
 
@@ -163,13 +197,19 @@ def _feed(store, run) -> str:
     for step in store.steps(run.id):
         line = _say(step)
         if line and line not in said:
+            if line.endswith(" read: " + line.rsplit(": ", 1)[-1]):  # progress: keep only the latest count
+                said = [x for x in said if not x.startswith(line.split(":", 1)[0] + ":")]
             said.append(line)
     for line in said[-6:]:
         out.append(f"<div class='msg bot'>{E(line)}</div>")
     res = run.result or {}
     if run.status == "completed":
         invs = res.get("invoices") or []
-        bad = [i for i in invs if float(i.get("overcharge_inr") or 0) > 0 or i.get("reasons")]
+        for i in invs:  # month runs report billed/expected only
+            if i.get("overcharge_inr") is None and i.get("billed_inr") is not None and i.get("expected_inr") is not None:
+                i["overcharge_inr"] = round(i["billed_inr"] - i["expected_inr"], 2)
+        bad = sorted([i for i in invs if float(i.get("overcharge_inr") or 0) > 0 or i.get("reasons")],
+                     key=lambda i: -float(i.get("overcharge_inr") or 0))
         out.append(f"<div class='msg bot'>Done. {len(invs)} invoice(s) in the result"
                    + (f", <b>{len(bad)} with problems</b>." if bad else ".") + "</div>")
         cards = []
